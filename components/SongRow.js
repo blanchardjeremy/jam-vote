@@ -1,6 +1,6 @@
 import { HeartIcon as HeartOutline } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
-import { TrashIcon, PencilIcon, EllipsisHorizontalIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, PencilIcon, EllipsisHorizontalIcon, UserIcon } from "@heroicons/react/24/outline";
 import { MusicalNoteIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
@@ -20,14 +20,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import SongRowButton from "@/components/SongRowButton";
 import SongFormModal from "@/components/AddSongModal";
+import CaptainTypeModal from "@/components/CaptainTypeModal";
+import { cn } from "@/lib/utils";
+import { useParams } from 'next/navigation';
 
 export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onEdit, isNext, hideType }) {
+  const params = useParams();
   const { song } = jamSong;
   const [isVoting, setIsVoting] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isTogglingPlayed, setIsTogglingPlayed] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCaptaining, setIsCaptaining] = useState(false);
+  const [isCaptainLoading, setIsCaptainLoading] = useState(false);
   
   useEffect(() => {
     // Check localStorage on mount
@@ -113,11 +119,42 @@ export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onE
     return isHovered ? 'text-indigo-600' : 'text-indigo-400';
   }
   
+  const handleCaptainSubmit = async (type, name) => {
+    if (isCaptainLoading) return;
+
+    setIsCaptainLoading(true);
+    try {
+      const response = await fetch(`/api/jams/${params.id}/captain`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          type,
+          songId: jamSong._id
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to sign up as captain');
+      }
+
+      // Close the modal on success
+      setIsCaptaining(false);
+    } catch (error) {
+      console.error('Error signing up as captain:', error);
+      // You might want to show an error message to the user here
+    } finally {
+      setIsCaptainLoading(false);
+    }
+  };
+  
   return (
     <TooltipProvider delayDuration={200}>
-      <div className={` border-2 border-transparent px-4 py-4 sm:px-6 ${jamSong.played ? 'bg-gray-100' : ''} ${
-        isNext ? ' border-2 border-indigo-400 bg-indigo-50/50 ' : ''
-      }`}>
+      <div className={cn(` border-2 border-transparent px-4 py-4 sm:px-6 ${jamSong.played ? 'bg-gray-100' : ''} ${
+        isNext ? ' border-indigo-400 bg-indigo-50/50 ' : ''
+      }`)}>
         <div className={`flex items-start gap-4 ${jamSong.played ? 'opacity-40' : ''}`}>
           {/* Vote Button */}
           <div className="flex flex-col items-center pt-1">
@@ -192,6 +229,14 @@ export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onE
                     />
                   )}
                   <SongRowButton
+                    icon={UserIcon}
+                    onClick={() => setIsCaptaining(true)}
+                    disabled={jamSong.played || isCaptainLoading}
+                    isLoading={isCaptainLoading}
+                    tooltip={jamSong.played ? 'Cannot captain a played song' : 'Sign up to captain'}
+                    className="hover:text-indigo-600 hover:bg-indigo-50"
+                  />
+                  <SongRowButton
                     icon={jamSong.played ? CheckCircleSolid : CheckCircleIcon}
                     onClick={handleTogglePlayed}
                     disabled={isTogglingPlayed}
@@ -261,6 +306,13 @@ export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onE
         mode="edit"
         initialData={song}
         onSubmit={handleEdit}
+      />
+
+      <CaptainTypeModal
+        isOpen={isCaptaining}
+        onClose={() => setIsCaptaining(false)}
+        onSubmit={handleCaptainSubmit}
+        songTitle={song.title}
       />
     </TooltipProvider>
   );

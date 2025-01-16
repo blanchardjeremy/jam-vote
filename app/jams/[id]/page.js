@@ -13,11 +13,20 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialogTitle, 
 } from "@/components/ui/alert-dialog";
 import { pusherClient } from "@/lib/pusher";
 import { SelectSeparator } from '@/components/ui/select';
 import { FireIcon, MusicalNoteIcon } from '@heroicons/react/24/solid';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import CaptainSignupButton from "@/components/CaptainSignupButton";
 
 // Helper component for rendering song lists
 function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit, hideTypeBadge, emptyMessage, groupingEnabled }) {
@@ -58,6 +67,7 @@ export default function JamPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [groupingEnabled, setGroupingEnabled] = useState(true);
   const [sortMethod, setSortMethod] = useState('votes'); // 'votes' or 'manual'
+  const [captains, setCaptains] = useState([]);
 
   // Function to determine if a song is a banger based on votes
   const isBanger = (song) => {
@@ -502,6 +512,10 @@ export default function JamPage() {
     }
   };
 
+  const handleCaptainSignup = (newCaptain) => {
+    setCaptains(prev => [...prev, newCaptain]);
+  };
+
   if (error) {
     return (
       <div className="rounded-md bg-red-50 p-4 mb-6">
@@ -543,38 +557,44 @@ export default function JamPage() {
 
       {/* Toolbar */}
       <div className="mb-4 flex items-center justify-between bg-white shadow-sm rounded-lg p-3 border border-gray-200">
-        <button
-          onClick={() => {
-            window.scrollTo({
-              top: document.documentElement.scrollHeight,
-              behavior: 'smooth',
-            });
-          }}
-          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          Add New Song
-        </button>
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => {
+              window.scrollTo({
+                top: document.documentElement.scrollHeight,
+                behavior: 'smooth',
+              });
+            }}
+            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Add New Song
+          </button>
+
+          <CaptainSignupButton jamId={params.id} onSignup={handleCaptainSignup} />
+        </div>
 
         <div className="flex items-center space-x-4">
-          <select
-            value={groupingEnabled ? 'type' : 'none'}
-            onChange={(e) => setGroupingEnabled(e.target.value === 'type')}
-            className="block w-auto text-gray-500 bg-transparent focus:text-gray-900 border-none border-0 text-sm focus:outline-none focus:ring-0"
-          >
-            <option value="type">Group by banger/ballad</option>
-            <option value="none">Group by none</option>
-          </select>
+          <Select value={groupingEnabled ? 'type' : 'none'} onValueChange={(value) => setGroupingEnabled(value === 'type')}>
+            <SelectTrigger className="w-auto border-none text-gray-500 focus:text-gray-900 text-sm focus:ring-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="type">Group by banger/ballad</SelectItem>
+              <SelectItem value="none">No grouping</SelectItem>
+            </SelectContent>
+          </Select>
 
-          <div className="w-px h-6 bg-gray-200" />
+          {/* <Separator orientation="vertical" className="h-6" />
 
-          <select
-            value={sortMethod}
-            onChange={(e) => setSortMethod(e.target.value)}
-            className="block w-44 text-gray-500 bg-transparent focus:text-gray-900 border-none border-0 text-sm focus:outline-none focus:ring-0"
-          >
-            <option value="votes">Sort by votes</option>
-            <option value="manual">Sort manually</option>
-          </select>
+          <Select value={sortMethod} onValueChange={setSortMethod}>
+            <SelectTrigger className="w-44 border-none text-gray-500 focus:text-gray-900 text-sm focus:ring-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="votes">Sort by votes</SelectItem>
+              <SelectItem value="manual">Sort manually</SelectItem>
+            </SelectContent>
+          </Select> */}
         </div>
       </div>
 
