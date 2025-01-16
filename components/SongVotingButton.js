@@ -57,26 +57,26 @@ export default function SongVotingButton({ jamSong, onVote }) {
   
   function getVoteButtonStyles() {
     if (jamSong.played) {
-      return 'text-indigo-400 pointer-events-none';
+      return 'text-primary/60 pointer-events-none';
     }
     
     if (hasVoted) {
-      return 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50';
+      return 'text-primary hover:text-primary/80 hover:bg-primary/5';
     }
     
-    return 'text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50';
+    return 'text-primary/60 hover:text-primary hover:bg-primary/5';
   }
   
   function getVoteIconStyles() {
     if (jamSong.played) {
-      return 'text-indigo-400';
+      return 'text-primary/60';
     }
     
     if (hasVoted) {
-      return isHovered ? 'text-indigo-700' : 'text-indigo-600';
+      return isHovered ? 'text-primary/80' : 'text-primary';
     }
     
-    return isHovered ? 'text-indigo-600' : 'text-indigo-400';
+    return isHovered ? 'text-primary' : 'text-primary/60';
   }
 
   return (
@@ -93,7 +93,7 @@ export default function SongVotingButton({ jamSong, onVote }) {
               getVoteButtonStyles()
             )}
           >
-            <VoteIcon className={cn('h-5 w-5', getVoteIconStyles())} />
+            <VoteIcon className={cn('h-7 w-7', getVoteIconStyles())} />
           </button>
         </TooltipTrigger>
         <TooltipContent>

@@ -11,22 +11,11 @@ import CaptainBadges from "@/components/CaptainBadges";
 
 export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onEdit, isNext, hideType }) {
   const { song } = jamSong;
-  const [isTogglingPlayed, setIsTogglingPlayed] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   const handleTogglePlayed = useCallback(async () => {
-    if (isTogglingPlayed) return;
-    
-    // Optimistically update UI
-    const newPlayedState = !jamSong.played;
-    setIsTogglingPlayed(true);
-    
-    try {
       await onTogglePlayed(jamSong._id);
-    } finally {
-      setIsTogglingPlayed(false);
-    }
-  }, [isTogglingPlayed, jamSong._id, jamSong.played, onTogglePlayed]);
+  }, [jamSong._id, jamSong.played, onTogglePlayed]);
   
   const handleEdit = async (updatedSong) => {
     onEdit?.(jamSong._id, updatedSong);
@@ -34,10 +23,12 @@ export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onE
   
   return (
     <TooltipProvider delayDuration={200}>
-      <div className={cn(` border-2 border-transparent px-4 py-4 sm:px-6 ${jamSong.played ? 'bg-gray-100' : ''} ${
-        isNext ? ' border-indigo-400 bg-indigo-50/50 ' : ''
+      <div className={cn(`border-2 border-transparent px-4 py-4 sm:px-6 ${
+        jamSong.played ? 'bg-gray-200 opacity-50' : ''
+      } ${
+        isNext ? 'border-primary/70 bg-primary/5' : ''
       }`)}>
-        <div className={`flex items-start gap-4 ${jamSong.played ? 'opacity-40' : ''}`}>
+        <div className={`flex items-start gap-4 text-played-foreground`}>
           {/* Vote Button */}
           <SongVotingButton jamSong={jamSong} onVote={onVote} />
 
@@ -46,14 +37,14 @@ export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onE
             {/* Top Row: Title, Type, and Buttons */}
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2 flex-wrap flex-1">
-                <h2 className={`text-lg font-semibold ${isNext ? 'text-indigo-500' : ''}`}>
+                <h2 className={`text-lg font-semibold ${isNext ? 'text-primary' : ''}`}>
                   {song.title}
                 </h2>
                 {!hideType && (
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                     song.type === 'banger' 
-                      ? 'bg-orange-100 text-orange-800' 
-                      : 'bg-blue-100 text-blue-800'
+                      ? 'bg-banger text-banger-foreground' 
+                      : 'bg-jam text-jam-foreground'
                   }`}>
                     {song.type}
                   </span>
@@ -65,7 +56,6 @@ export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onE
                   song={song}
                   jamSong={jamSong}
                   handleTogglePlayed={handleTogglePlayed}
-                  isTogglingPlayed={isTogglingPlayed}
                   setIsEditModalOpen={setIsEditModalOpen}
                   onRemove={onRemove}
                 />
@@ -74,18 +64,18 @@ export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onE
             
             {/* Middle Row: Artist and Meta Info */}
             <div className="mt-0 flex items-baseline justify-between gap-4 flex-wrap">
-              <p className="text-md text-gray-500 font-medium">
+              <p className="text-md text-muted-foreground font-medium">
                 {song.artist}
               </p>
               {song.timesPlayed > 0 && (
-                <div className="text-sm text-gray-400 space-x-4 shrink-0">
+                <div className="text-sm text-muted-foreground space-x-4 shrink-0">
                   <span>
                     <span className="ml-1">Played{' '}</span>
-                    <span className="text-gray-900">{song.timesPlayed} times</span>
+                    <span className="text-foreground">{song.timesPlayed} times</span>
                   </span>
                   <span>
                     <span className="ml-1">Last played on{' '}</span>
-                    <span className="text-gray-900">
+                    <span className="text-foreground">
                       {new Date(song.lastPlayed).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </span>
                   </span>

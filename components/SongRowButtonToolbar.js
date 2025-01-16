@@ -16,7 +16,6 @@ export default function SongRowButtonToolbar({
   song,
   jamSong,
   handleTogglePlayed,
-  isTogglingPlayed,
   setIsEditModalOpen,
   onRemove
 }) {
@@ -33,33 +32,31 @@ export default function SongRowButtonToolbar({
       <SongRowButton
         icon={jamSong.played ? CheckCircleSolid : CheckCircleIcon}
         onClick={handleTogglePlayed}
-        disabled={isTogglingPlayed}
-        isLoading={isTogglingPlayed}
         variant="success"
         tooltip={jamSong.played ? 'Mark as not played' : 'Mark as played'}
         className={jamSong.played 
-          ? 'text-green-600 hover:text-green-700 hover:bg-green-50' 
-          : 'hover:text-green-600 hover:bg-green-50'
+          ? 'text-success hover:text-success hover:bg-success-muted' 
+          : 'text-success hover:text-success hover:bg-success-muted'
         }
       />
       
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-all duration-150 ease-in-out">
+          <button className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-150 ease-in-out">
             <EllipsisHorizontalIcon className="h-5 w-5" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem
             onClick={() => setIsEditModalOpen(true)}
-            className="text-gray-700 hover:text-gray-900"
+            className="text-foreground hover:text-foreground"
           >
             <PencilIcon className="h-4 w-4 mr-2" />
             <span>Edit song</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onRemove}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
           >
             <TrashIcon className="h-4 w-4 mr-2" />
             <span>Remove from jam</span>
