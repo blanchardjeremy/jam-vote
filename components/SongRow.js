@@ -116,7 +116,7 @@ export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onE
   return (
     <TooltipProvider delayDuration={200}>
       <div className={` border-2 border-transparent px-4 py-4 sm:px-6 ${jamSong.played ? 'bg-gray-100' : ''} ${
-        isNext ? ' border-2 border-indigo-200 bg-indigo-50/50 ' : ''
+        isNext ? ' border-2 border-indigo-400 bg-indigo-50/50 ' : ''
       }`}>
         <div className={`flex items-start gap-4 ${jamSong.played ? 'opacity-40' : ''}`}>
           {/* Vote Button */}
@@ -125,7 +125,7 @@ export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onE
               <TooltipTrigger asChild>
                 <button
                   className={`
-                    group flex flex-col items-center space-y-2 p-2 -my-2 rounded-lg 
+                    group flex flex-col items-center space-y p-2 -my-2 rounded-lg 
                     transition-all duration-150 ease-in-out cursor-pointer
                     ${isVoting ? 'opacity-75' : ''}
                     ${getVoteButtonStyles()}
