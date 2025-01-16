@@ -1,6 +1,8 @@
 import { Inter } from "next/font/google";
 import "@/styles/globals.css";
 import AppLayout from "@/components/layouts/AppLayout";
+import { Toaster } from "@/components/ui/sonner"
+
 
 const inter = Inter({
   subsets: ["latin"],
@@ -34,6 +36,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className={`${inter.variable} font-sans antialiased min-h-screen pb-32`}>
         <AppLayout>{children}</AppLayout>
+        <Toaster />
       </body>
     </html>
   );

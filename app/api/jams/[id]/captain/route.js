@@ -7,10 +7,11 @@ export async function POST(request, context) {
   try {
     console.log('[Captain API] Received captain signup request');
     await connectDB();
-    const { name, type } = await request.json();
-    const jamId = await context.params.id;
+    const { name, type, songId } = await request.json();
+    const params = await context.params;
+    const jamId = params.id;
     
-    console.log('[Captain API] Request details:', { jamId, name, type });
+    console.log('[Captain API] Request details:', { jamId, name, type, songId });
 
     const jam = await Jam.findById(jamId);
     if (!jam) {
@@ -18,15 +19,30 @@ export async function POST(request, context) {
       return NextResponse.json({ error: 'Jam not found' }, { status: 404 });
     }
 
-    // Add the captain to the jam's captains array
+    // Find the song in the jam
+    const jamSong = jam.songs.id(songId);
+    if (!jamSong) {
+      console.log('[Captain API] Song not found in jam:', songId);
+      return NextResponse.json({ error: 'Song not found in jam' }, { status: 404 });
+    }
+
+    // Check if user is already a captain for this song
+    if (jamSong.captains?.some(captain => captain.name === name)) {
+      console.log('[Captain API] User is already a captain for this song:', name);
+      return NextResponse.json({ 
+        error: 'You are already a captain for this song'
+      }, { status: 400 });
+    }
+
+    // Add the captain to the song's captains array
     const newCaptain = {
       name,
       type,
       createdAt: new Date()
     };
 
-    jam.captains = jam.captains || [];
-    jam.captains.push(newCaptain);
+    jamSong.captains = jamSong.captains || [];
+    jamSong.captains.push(newCaptain);
     
     await jam.save();
     console.log('[Captain API] Saved jam successfully');
@@ -34,6 +50,7 @@ export async function POST(request, context) {
     // Trigger Pusher event
     console.log('[Captain API] Triggering Pusher event');
     await pusherServer.trigger(`jam-${jamId}`, 'captain-added', {
+      songId,
       captain: newCaptain
     });
     console.log('[Captain API] Pusher event triggered');

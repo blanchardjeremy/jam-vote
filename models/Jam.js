@@ -1,5 +1,22 @@
 import mongoose from 'mongoose';
 
+const captainSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
+  },
+  type: {
+    type: String,
+    enum: ['regular', 'piano'],
+    required: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+    required: true
+  }
+});
+
 const jamSongSchema = new mongoose.Schema({
   song: {
     type: mongoose.Schema.Types.ObjectId,
@@ -17,7 +34,8 @@ const jamSongSchema = new mongoose.Schema({
   played: {
     type: Boolean,
     default: false
-  }
+  },
+  captains: [captainSchema]
 });
 
 const jamSchema = new mongoose.Schema({

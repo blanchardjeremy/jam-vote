@@ -6,12 +6,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { UserIcon } from "@heroicons/react/24/outline";
-import CaptainSignupModal from './CaptainSignupModal';
+import { UserIcon as UserIconOutline } from "@heroicons/react/24/outline";
+import { UserIcon as UserIconSolid } from "@heroicons/react/24/solid";
 
-export default function CaptainSignupButton({ jamId, onSignup }) {
-  const [showModal, setShowModal] = useState(false);
-  const [captainType, setCaptainType] = useState(null);
+export default function CaptainSignupButton({ jamId, onSignup, isCaptain }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [captainName, setCaptainName] = useState(null);
 
@@ -59,13 +57,15 @@ export default function CaptainSignupButton({ jamId, onSignup }) {
     }
   };
 
+  const Icon = isCaptain ? UserIconSolid : UserIconOutline;
+
   return (
     <>
       <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="gap-2">
-            <UserIcon className="h-4 w-4" />
-            Sign Up as Captain
+            <Icon className="h-4 w-4" />
+            {isCaptain ? 'Captain Settings' : 'Sign Up as Song Captain'}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -77,12 +77,6 @@ export default function CaptainSignupButton({ jamId, onSignup }) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <CaptainSignupModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        onSubmit={(name) => handleSignup(name, captainType)}
-      />
     </>
   );
 } 

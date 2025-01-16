@@ -26,7 +26,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import CaptainSignupButton from "@/components/CaptainSignupButton";
 
 // Helper component for rendering song lists
 function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit, hideTypeBadge, emptyMessage, groupingEnabled }) {
@@ -64,16 +63,9 @@ export default function JamPage() {
   const [songToDelete, setSongToDelete] = useState(null);
   const [isRemoving, setIsRemoving] = useState(false);
   const [duplicateSong, setDuplicateSong] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
   const [groupingEnabled, setGroupingEnabled] = useState(true);
   const [sortMethod, setSortMethod] = useState('votes'); // 'votes' or 'manual'
-  const [captains, setCaptains] = useState([]);
 
-  // Function to determine if a song is a banger based on votes
-  const isBanger = (song) => {
-    // Consider a song a banger if it has more than 2 votes
-    return song.votes > 2;
-  };
 
   // Function to group songs
   const getGroupedSongs = (songs) => {
@@ -149,7 +141,6 @@ export default function JamPage() {
     // Clean up any existing bindings first
     channel.unbind_all();
     
-    setIsConnected(true);
 
     // Handle vote updates
     channel.bind('vote', (data) => {
@@ -178,6 +169,19 @@ export default function JamPage() {
         return {
           ...prevJam,
           songs: updatedSongs
+        };
+      });
+    });
+
+    // Handle captain updates
+    channel.bind('captain-added', (data) => {
+      console.log('[Pusher Client] Received captain-added event:', data);
+      setJam(prevJam => {
+        if (!prevJam) return prevJam;
+        
+        return {
+          ...prevJam,
+          captains: [...(prevJam.captains || []), data.captain]
         };
       });
     });
@@ -259,7 +263,6 @@ export default function JamPage() {
     // Handle connection state changes
     const connectionHandler = (states) => {
       console.log('[Pusher Client] Connection state changed:', states.current);
-      setIsConnected(states.current === 'connected');
     };
     pusherClient.connection.bind('state_change', connectionHandler);
 
@@ -512,9 +515,6 @@ export default function JamPage() {
     }
   };
 
-  const handleCaptainSignup = (newCaptain) => {
-    setCaptains(prev => [...prev, newCaptain]);
-  };
 
   if (error) {
     return (
@@ -570,7 +570,6 @@ export default function JamPage() {
             Add New Song
           </button>
 
-          <CaptainSignupButton jamId={params.id} onSignup={handleCaptainSignup} />
         </div>
 
         <div className="flex items-center space-x-4">

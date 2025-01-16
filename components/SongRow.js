@@ -1,10 +1,10 @@
 import { HeartIcon as HeartOutline } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
-import { TrashIcon, PencilIcon, EllipsisHorizontalIcon, UserIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, PencilIcon, EllipsisHorizontalIcon, UserIcon as UserIconOutline } from "@heroicons/react/24/outline";
+import { UserIcon as UserIconSolid } from "@heroicons/react/24/solid";
 import { MusicalNoteIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
-import { CheckIcon } from "@heroicons/react/24/solid";
 import { useState, useEffect, useCallback } from "react";
 import {
   Tooltip,
@@ -20,9 +20,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import SongRowButton from "@/components/SongRowButton";
 import SongFormModal from "@/components/AddSongModal";
-import CaptainTypeModal from "@/components/CaptainTypeModal";
+import CaptainNameModal from "@/components/CaptainNameModal";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useParams } from 'next/navigation';
+import { pusherClient } from "@/lib/pusher";
+import { toast } from "sonner";
+
 
 export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onEdit, isNext, hideType }) {
   const params = useParams();
@@ -32,14 +36,54 @@ export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onE
   const [isHovered, setIsHovered] = useState(false);
   const [isTogglingPlayed, setIsTogglingPlayed] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isCaptaining, setIsCaptaining] = useState(false);
+  const [showNameModal, setShowNameModal] = useState(false);
   const [isCaptainLoading, setIsCaptainLoading] = useState(false);
+  const [captainDropdownOpen, setCaptainDropdownOpen] = useState(false);
+  const [isCaptain, setIsCaptain] = useState(false);
+  const [captains, setCaptains] = useState(jamSong.captains || []);
   
   useEffect(() => {
     // Check localStorage on mount
     const voted = localStorage.getItem(`vote-${jamSong._id}`);
     setHasVoted(voted === 'true');
-  }, [jamSong._id]);
+
+    // Check if user is a captain for this song
+    const userName = localStorage.getItem('userFirstName');
+    if (userName && jamSong.captains) {
+      setIsCaptain(jamSong.captains.some(captain => captain.name === userName));
+    }
+
+    // Initialize captains state
+    setCaptains(jamSong.captains || []);
+
+    // Set up Pusher subscription
+    const channelName = `jam-${params.id}`;
+    const channel = pusherClient.subscribe(channelName);
+
+    // Handle captain updates
+    channel.bind('captain-added', (data) => {
+      if (data.songId === jamSong._id) {
+        // Only add the captain if they're not already in the list
+        setCaptains(prevCaptains => {
+          const captainExists = prevCaptains.some(c => 
+            c.name === data.captain.name && c.type === data.captain.type
+          );
+          if (captainExists) return prevCaptains;
+          return [...prevCaptains, data.captain];
+        });
+        
+        // Check if the current user is the new captain
+        const userName = localStorage.getItem('userFirstName');
+        if (userName && data.captain.name === userName) {
+          setIsCaptain(true);
+        }
+      }
+    });
+
+    return () => {
+      channel.unbind('captain-added');
+    };
+  }, [jamSong._id, jamSong.captains, params.id]);
   
   const handleVote = useCallback(async () => {
     if (isVoting) return;
@@ -119,6 +163,28 @@ export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onE
     return isHovered ? 'text-indigo-600' : 'text-indigo-400';
   }
   
+  const handleCaptainClick = () => {
+    // Don't open dropdown if already a captain
+    if (isCaptain) {
+      toast.info('You are already a captain for this song');
+      return;
+    }
+    setCaptainDropdownOpen(true);
+  };
+
+  const handleTypeSelect = async (type) => {
+    setCaptainDropdownOpen(false);
+    const userName = localStorage.getItem('userFirstName');
+    
+    if (!userName) {
+      setShowNameModal(true);
+      // Store the selected type to use after name input
+      localStorage.setItem('pendingCaptainType', type);
+    } else {
+      await handleCaptainSubmit(type, userName);
+    }
+  };
+
   const handleCaptainSubmit = async (type, name) => {
     if (isCaptainLoading) return;
 
@@ -137,16 +203,29 @@ export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onE
       });
 
       if (!response.ok) {
-        throw new Error('Failed to sign up as captain');
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to sign up as captain');
       }
 
-      // Close the modal on success
-      setIsCaptaining(false);
+      const data = await response.json();
+      // Optimistically update UI immediately
+      const newCaptain = data.captain;
+      setIsCaptain(true);
+      setCaptains(prevCaptains => [...prevCaptains, newCaptain]);
+      toast.success('Successfully signed up as captain!');
     } catch (error) {
       console.error('Error signing up as captain:', error);
-      // You might want to show an error message to the user here
+      toast.error(error.message);
     } finally {
       setIsCaptainLoading(false);
+      localStorage.removeItem('pendingCaptainType');
+    }
+  };
+
+  const handleNameSubmit = (name) => {
+    const type = localStorage.getItem('pendingCaptainType');
+    if (type) {
+      handleCaptainSubmit(type, name);
     }
   };
   
@@ -218,6 +297,15 @@ export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onE
                     {song.type}
                   </span>
                 )}
+                {captains.map((captain, index) => (
+                  <Badge 
+                    key={`${captain.name}-${index}`}
+                    variant={captain.type === 'piano' ? 'secondary' : 'default'}
+                    className="text-xs"
+                  >
+                    {captain.name} ({captain.type === 'piano' ? '🎹' : '🎸'})
+                  </Badge>
+                ))}
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
@@ -228,14 +316,42 @@ export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onE
                       tooltip="View chord chart"
                     />
                   )}
-                  <SongRowButton
-                    icon={UserIcon}
-                    onClick={() => setIsCaptaining(true)}
-                    disabled={jamSong.played || isCaptainLoading}
-                    isLoading={isCaptainLoading}
-                    tooltip={jamSong.played ? 'Cannot captain a played song' : 'Sign up to captain'}
-                    className="hover:text-indigo-600 hover:bg-indigo-50"
-                  />
+                  <DropdownMenu 
+                    open={captainDropdownOpen} 
+                    onOpenChange={setCaptainDropdownOpen}
+                  >
+                    <DropdownMenuTrigger asChild>
+                      <div>
+                        <SongRowButton
+                          icon={isCaptain ? UserIconSolid : UserIconOutline}
+                          onClick={handleCaptainClick}
+                          disabled={jamSong.played || isCaptainLoading || isCaptain}
+                          isLoading={isCaptainLoading}
+                          tooltip={
+                            jamSong.played 
+                              ? 'Cannot captain a played song' 
+                              : isCaptain 
+                                ? 'You are already a captain for this song'
+                                : 'Sign up to captain'
+                          }
+                          className={cn(
+                            "hover:text-indigo-600 hover:bg-indigo-50",
+                            isCaptain && "text-indigo-600"
+                          )}
+                        />
+                      </div>
+                    </DropdownMenuTrigger>
+                    {!isCaptain && (
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuItem onClick={() => handleTypeSelect('regular')}>
+                          Regular Captain
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleTypeSelect('piano')}>
+                          Piano Captain
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    )}
+                  </DropdownMenu>
                   <SongRowButton
                     icon={jamSong.played ? CheckCircleSolid : CheckCircleIcon}
                     onClick={handleTogglePlayed}
@@ -308,11 +424,10 @@ export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onE
         onSubmit={handleEdit}
       />
 
-      <CaptainTypeModal
-        isOpen={isCaptaining}
-        onClose={() => setIsCaptaining(false)}
-        onSubmit={handleCaptainSubmit}
-        songTitle={song.title}
+      <CaptainNameModal
+        isOpen={showNameModal}
+        onClose={() => setShowNameModal(false)}
+        onSubmit={handleNameSubmit}
       />
     </TooltipProvider>
   );
