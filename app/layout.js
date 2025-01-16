@@ -34,7 +34,7 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-status-bar-style" content="black" />
         <meta name="apple-mobile-web-app-title" content="Music Jam" />
       </head>
-      <body className={`${inter.variable} font-sans antialiased min-h-screen pb-32`}>
+      <body className={`${inter.variable} font-sans antialiased min-h-screen pb-64`}>
         <AppLayout>{children}</AppLayout>
         <Toaster />
       </body>

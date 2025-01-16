@@ -14,10 +14,10 @@ export default function SongVotingButton({ jamSong, onVote }) {
   const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
-    // Check localStorage on mount
+    // Check localStorage on mount and when jamSong changes
     const voted = localStorage.getItem(`vote-${jamSong._id}`);
     setHasVoted(voted === 'true');
-  }, [jamSong._id]);
+  }, [jamSong]);
 
   const handleVote = useCallback(async () => {
     if (isVoting) return;

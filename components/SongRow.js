@@ -62,7 +62,7 @@ export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onE
             </div>
             
             {/* Middle Row: Artist and Meta Info */}
-            <div className="mt-0 flex items-baseline justify-between gap-2 md:gap-4 flex-wrap">
+            <div className="mt-1 flex items-baseline justify-between gap-2 md:gap-4 flex-wrap">
               <p className="text-sm md:text-md text-muted-foreground font-medium">
                 {song.artist}
               </p>

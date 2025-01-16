@@ -67,6 +67,67 @@ export default function JamPage() {
   const [sortMethod, setSortMethod] = useState('votes'); // 'votes' or 'manual'
   const songAutocompleteRef = useRef(null);
 
+  // Helper function to add a song to the jam
+  const addSongToJam = async (songId) => {
+    const res = await fetch(`/api/jams/${params.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ songId })
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Failed to add song to jam');
+    }
+
+    const { jam: updatedJam, addedSongId } = await res.json();
+    setJam(updatedJam);
+    
+    // Set localStorage to mark the song as voted by this user
+    if (addedSongId) {
+      localStorage.setItem(`vote-${addedSongId}`, 'true');
+    }
+
+    return updatedJam;
+  };
+
+  const handleSelectExisting = async (song) => {
+    try {
+      // Check if song already exists in the jam
+      if (jam.songs.some(existingSong => existingSong.song._id === song._id)) {
+        setDuplicateSong(song);
+        return;
+      }
+
+      await addSongToJam(song._id);
+    } catch (e) {
+      console.error('Error adding song to jam:', e);
+    }
+  };
+
+  const handleAddNew = (title) => {
+    setNewSongTitle(title);
+    setIsModalOpen(true);
+  };
+
+  const handleAddSong = async (newSong) => {
+    try {
+      // Check if song already exists in the jam
+      if (jam.songs.some(existingSong => existingSong.song._id === newSong._id)) {
+        setDuplicateSong(newSong);
+        setIsModalOpen(false);
+        return;
+      }
+
+      await addSongToJam(newSong._id);
+      setIsModalOpen(false);
+    } catch (e) {
+      console.error('Error adding new song to jam:', e);
+    }
+  };
+
   // Function to group songs
   const getGroupedSongs = (songs) => {
     // Helper function to sort within groups
@@ -274,71 +335,6 @@ export default function JamPage() {
       pusherClient.connection.unbind('state_change', connectionHandler);
     };
   }, [params.id, sortMethod]);
-
-  const handleSelectExisting = async (song) => {
-    try {
-      // Check if song already exists in the jam
-      if (jam.songs.some(existingSong => existingSong.song._id === song._id)) {
-        setDuplicateSong(song);
-        return;
-      }
-
-      const res = await fetch(`/api/jams/${params.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ songId: song._id })
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to add song to jam');
-      }
-
-      const updatedJam = await res.json();
-      setJam(updatedJam);
-    } catch (e) {
-      console.error('Error adding song to jam:', e);
-      // Optionally show an error message to the user
-    }
-  };
-
-  const handleAddNew = (title) => {
-    setNewSongTitle(title);
-    setIsModalOpen(true);
-  };
-
-  const handleAddSong = async (newSong) => {
-    try {
-      // Check if song already exists in the jam
-      if (jam.songs.some(existingSong => existingSong.song._id === newSong._id)) {
-        setDuplicateSong(newSong);
-        setIsModalOpen(false);
-        return;
-      }
-
-      const res = await fetch(`/api/jams/${params.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ songId: newSong._id })
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to add song to jam');
-      }
-
-      const updatedJam = await res.json();
-      setJam(updatedJam);
-      setIsModalOpen(false);
-    } catch (e) {
-      console.error('Error adding new song to jam:', e);
-      // Optionally show an error message to the user
-    }
-  };
 
   const handleVote = async (songId, action) => {
     try {
