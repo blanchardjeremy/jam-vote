@@ -144,7 +144,7 @@ export default function CaptainSignupButton({ jamSong }) {
             />
           </div>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuContent align="end" className="w-64">
           {isCaptain ? (
             <DropdownMenuItem onClick={handleCaptainClick} className="text-red-600 focus:text-red-600 focus:bg-red-50">
               Remove me as captain
@@ -152,10 +152,10 @@ export default function CaptainSignupButton({ jamSong }) {
           ) : (
             <>
               <DropdownMenuItem onClick={() => handleTypeSelect('regular')}>
-                Regular Captain
+                🎤 Sign up as regular captain
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleTypeSelect('piano')}>
-                Piano Captain
+                🎹 Sign up as piano captain
               </DropdownMenuItem>
             </>
           )}

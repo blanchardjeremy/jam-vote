@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { XCircle } from 'lucide-react';
 import { AutoComplete } from "@/components/ui/autocomplete";
 
-export default function SongAutocomplete({ onSelect, onAddNew, currentSongs = [] }) {
+const SongAutocomplete = forwardRef(({ onSelect, onAddNew, currentSongs = [] }, ref) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -115,6 +115,7 @@ export default function SongAutocomplete({ onSelect, onAddNew, currentSongs = []
   return (
     <div className="relative">
       <AutoComplete
+        ref={ref}
         options={allOptions}
         value={null}
         onValueChange={handleValueChange}
@@ -134,4 +135,8 @@ export default function SongAutocomplete({ onSelect, onAddNew, currentSongs = []
       />
     </div>
   );
-} 
+});
+
+SongAutocomplete.displayName = 'SongAutocomplete';
+
+export default SongAutocomplete; 

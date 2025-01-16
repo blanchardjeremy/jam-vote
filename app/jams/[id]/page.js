@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import SongAutocomplete from "@/components/SongAutocomplete";
 import AddSongModal from "@/components/AddSongModal";
 import { useParams } from 'next/navigation';
@@ -65,7 +65,7 @@ export default function JamPage() {
   const [duplicateSong, setDuplicateSong] = useState(null);
   const [groupingEnabled, setGroupingEnabled] = useState(true);
   const [sortMethod, setSortMethod] = useState('votes'); // 'votes' or 'manual'
-
+  const songAutocompleteRef = useRef(null);
 
   // Function to group songs
   const getGroupedSongs = (songs) => {
@@ -564,10 +564,14 @@ export default function JamPage() {
                 top: document.documentElement.scrollHeight,
                 behavior: 'smooth',
               });
+              // Focus the input after scrolling
+              setTimeout(() => {
+                songAutocompleteRef.current?.focus();
+              }, 500);
             }}
             className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
-            Add New Song
+            Add Song
           </button>
 
         </div>
@@ -664,6 +668,7 @@ export default function JamPage() {
 
       <div className="mt-6">
         <SongAutocomplete 
+          ref={songAutocompleteRef}
           onSelect={handleSelectExisting} 
           onAddNew={handleAddNew}
           currentSongs={jam.songs}
@@ -691,7 +696,7 @@ export default function JamPage() {
             <AlertDialogAction
               onClick={() => songToDelete && handleRemove(songToDelete._id)}
               disabled={isRemoving}
-              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              className="bg-destructive hover:bg-destructive/80 focus:ring-destructive"
             >
               {isRemoving ? 'Removing...' : 'Remove Song'}
             </AlertDialogAction>

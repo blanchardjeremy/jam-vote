@@ -89,18 +89,18 @@ export default function SongVotingButton({ jamSong, onVote }) {
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             className={cn(
-              'p-1 rounded-lg transition-all duration-150 ease-in-out',
+              'p-0.5 md:p-1 rounded-lg transition-all duration-150 ease-in-out',
               getVoteButtonStyles()
             )}
           >
-            <VoteIcon className={cn('h-7 w-7', getVoteIconStyles())} />
+            <VoteIcon className={cn('h-6 w-6 md:h-7 md:w-7', getVoteIconStyles())} />
           </button>
         </TooltipTrigger>
         <TooltipContent>
           <p>{hasVoted ? 'Remove vote' : 'Vote for this song'}</p>
         </TooltipContent>
       </Tooltip>
-      <span className="text-sm font-medium text-gray-900">{jamSong.votes}</span>
+      <span className="text-xs md:text-sm font-medium text-gray-900">{jamSong.votes}</span>
     </div>
   );
 } 

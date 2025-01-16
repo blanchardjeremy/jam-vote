@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useParams } from 'next/navigation';
 import { pusherClient } from "@/lib/pusher";
 
-export default function CaptainBadges({ jamSong }) {
+export default function CaptainBadges({ jamSong, isNext }) {
   const params = useParams();
   const [captains, setCaptains] = useState(jamSong.captains || []);
   
@@ -47,16 +47,16 @@ export default function CaptainBadges({ jamSong }) {
   }, [jamSong._id, jamSong.captains, params.id]);
 
   return (
-    <>
+    <div className="flex gap-1">
       {captains.map((captain, index) => (
         <Badge 
           key={`${captain.name}-${index}`}
-          variant={captain.type === 'piano' ? 'secondary' : 'default'}
+          variant={isNext ? 'default' : 'secondary'}
           className="text-xs"
         >
           {captain.name} {captain.type === 'piano' ? '🎹' : '🎤'}
         </Badge>
       ))}
-    </>
+    </div>
   );
 } 
