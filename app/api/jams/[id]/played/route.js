@@ -26,22 +26,46 @@ export async function POST(request, context) {
     const newPlayedStatus = !jamSong.played;
     jamSong.played = newPlayedStatus;
 
-    // If marking as played (not unplaying), update the original song's play history
-    if (newPlayedStatus) {
-      const originalSong = await Song.findById(jamSong.song._id);
-      if (originalSong) {
-        // Update play count and last played date
-        originalSong.timesPlayed = (originalSong.timesPlayed || 0) + 1;
-        originalSong.lastPlayed = new Date();
-        
-        // Add to play history
-        originalSong.playHistory.push({
+    const originalSong = await Song.findById(jamSong.song._id);
+    if (originalSong) {
+      if (newPlayedStatus) {
+        // Only add to play history if we're marking as played
+        const playHistoryEntry = {
           date: new Date(),
-          event: jam.name // Store the jam name as the event
-        });
+          event: jam.name
+        };
         
-        await originalSong.save();
+        // Check if this jam is already in play history to avoid duplicates
+        const jamAlreadyInHistory = originalSong.playHistory.some(
+          entry => entry.event === jam.name
+        );
+        
+        if (!jamAlreadyInHistory) {
+          originalSong.playHistory.push(playHistoryEntry);
+        }
+      } else {
+        // Remove this jam from play history when unmarking
+        originalSong.playHistory = originalSong.playHistory.filter(
+          entry => entry.event !== jam.name
+        );
       }
+
+      // Calculate actual times played from unique jams
+      const uniqueJams = new Set(originalSong.playHistory.map(entry => entry.event));
+      originalSong.timesPlayed = uniqueJams.size;
+      
+      // Update last played date
+      if (originalSong.playHistory.length > 0) {
+        originalSong.lastPlayed = originalSong.playHistory.reduce((latest, entry) => 
+          entry.date > latest ? entry.date : latest,
+          originalSong.playHistory[0].date
+        );
+      } else {
+        // If no play history, reset lastPlayed to null
+        originalSong.lastPlayed = null;
+      }
+      
+      await originalSong.save();
     }
 
     await jam.save();
