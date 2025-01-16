@@ -48,19 +48,29 @@ export async function PATCH(request, context) {
     const nextOrder = jam.songs.length > 0 
       ? Math.max(...jam.songs.map(s => s.order)) + 1 
       : 1;
-    jam.songs.push({ song: songId, votes: 0, order: nextOrder });
+    jam.songs.push({ song: songId, votes: 1, order: nextOrder });
     await jam.save();
 
     // Re-fetch to get the populated song data
     const updatedJam = await Jam.findById(jamId).populate('songs.song');
     const addedSong = updatedJam.songs[updatedJam.songs.length - 1];
 
-    // Broadcast the update using Pusher
+    // Broadcast the song addition using Pusher
     await pusherServer.trigger(`jam-${jamId}`, 'song-added', {
       song: addedSong
     });
 
-    return NextResponse.json(updatedJam);
+    // Also broadcast the initial vote
+    await pusherServer.trigger(`jam-${jamId}`, 'vote', {
+      songId: addedSong._id,
+      votes: 1
+    });
+
+    // Return the jam and the added song's ID for localStorage
+    return NextResponse.json({
+      jam: updatedJam,
+      addedSongId: addedSong._id
+    });
   } catch (error) {
     console.error('Error adding song to jam:', error);
     return NextResponse.json({ error: 'Failed to add song to jam' }, { status: 500 });

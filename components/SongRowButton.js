@@ -16,15 +16,9 @@ export default function SongRowButton({
 }) {
   const baseStyles = "p-1 rounded-lg transition-all duration-150 ease-in-out";
   const variantStyles = {
-    default: "text-gray-400 hover:text-indigo-600 hover:bg-indigo-50",
-    success: "text-gray-400 hover:text-green-600 hover:bg-green-50",
-    danger: "text-gray-400 hover:text-red-600 hover:bg-red-50",
-  };
-
-  const activeStyles = {
-    default: "text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50",
-    success: "text-green-600 hover:text-green-700 hover:bg-green-50",
-    danger: "text-red-600 hover:text-red-700 hover:bg-red-50",
+    default: "text-muted-foreground hover:text-foreground hover:bg-muted",
+    success: "text-muted-foreground hover:text-success hover:bg-success-muted",
+    danger: "text-muted-foreground hover:text-destructive hover:bg-destructive/10",
   };
 
   const styles = `

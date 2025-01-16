@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import SongAutocomplete from "@/components/SongAutocomplete";
 import AddSongModal from "@/components/AddSongModal";
 import { useParams } from 'next/navigation';
@@ -13,11 +13,19 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialogTitle, 
 } from "@/components/ui/alert-dialog";
 import { pusherClient } from "@/lib/pusher";
 import { SelectSeparator } from '@/components/ui/select';
 import { FireIcon, MusicalNoteIcon } from '@heroicons/react/24/solid';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 // Helper component for rendering song lists
 function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit, hideTypeBadge, emptyMessage, groupingEnabled }) {
@@ -55,14 +63,69 @@ export default function JamPage() {
   const [songToDelete, setSongToDelete] = useState(null);
   const [isRemoving, setIsRemoving] = useState(false);
   const [duplicateSong, setDuplicateSong] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
   const [groupingEnabled, setGroupingEnabled] = useState(true);
   const [sortMethod, setSortMethod] = useState('votes'); // 'votes' or 'manual'
+  const songAutocompleteRef = useRef(null);
 
-  // Function to determine if a song is a banger based on votes
-  const isBanger = (song) => {
-    // Consider a song a banger if it has more than 2 votes
-    return song.votes > 2;
+  // Helper function to add a song to the jam
+  const addSongToJam = async (songId) => {
+    const res = await fetch(`/api/jams/${params.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ songId })
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Failed to add song to jam');
+    }
+
+    const { jam: updatedJam, addedSongId } = await res.json();
+    setJam(updatedJam);
+    
+    // Set localStorage to mark the song as voted by this user
+    if (addedSongId) {
+      localStorage.setItem(`vote-${addedSongId}`, 'true');
+    }
+
+    return updatedJam;
+  };
+
+  const handleSelectExisting = async (song) => {
+    try {
+      // Check if song already exists in the jam
+      if (jam.songs.some(existingSong => existingSong.song._id === song._id)) {
+        setDuplicateSong(song);
+        return;
+      }
+
+      await addSongToJam(song._id);
+    } catch (e) {
+      console.error('Error adding song to jam:', e);
+    }
+  };
+
+  const handleAddNew = (title) => {
+    setNewSongTitle(title);
+    setIsModalOpen(true);
+  };
+
+  const handleAddSong = async (newSong) => {
+    try {
+      // Check if song already exists in the jam
+      if (jam.songs.some(existingSong => existingSong.song._id === newSong._id)) {
+        setDuplicateSong(newSong);
+        setIsModalOpen(false);
+        return;
+      }
+
+      await addSongToJam(newSong._id);
+      setIsModalOpen(false);
+    } catch (e) {
+      console.error('Error adding new song to jam:', e);
+    }
   };
 
   // Function to group songs
@@ -139,7 +202,6 @@ export default function JamPage() {
     // Clean up any existing bindings first
     channel.unbind_all();
     
-    setIsConnected(true);
 
     // Handle vote updates
     channel.bind('vote', (data) => {
@@ -168,6 +230,19 @@ export default function JamPage() {
         return {
           ...prevJam,
           songs: updatedSongs
+        };
+      });
+    });
+
+    // Handle captain updates
+    channel.bind('captain-added', (data) => {
+      console.log('[Pusher Client] Received captain-added event:', data);
+      setJam(prevJam => {
+        if (!prevJam) return prevJam;
+        
+        return {
+          ...prevJam,
+          captains: [...(prevJam.captains || []), data.captain]
         };
       });
     });
@@ -249,7 +324,6 @@ export default function JamPage() {
     // Handle connection state changes
     const connectionHandler = (states) => {
       console.log('[Pusher Client] Connection state changed:', states.current);
-      setIsConnected(states.current === 'connected');
     };
     pusherClient.connection.bind('state_change', connectionHandler);
 
@@ -261,71 +335,6 @@ export default function JamPage() {
       pusherClient.connection.unbind('state_change', connectionHandler);
     };
   }, [params.id, sortMethod]);
-
-  const handleSelectExisting = async (song) => {
-    try {
-      // Check if song already exists in the jam
-      if (jam.songs.some(existingSong => existingSong.song._id === song._id)) {
-        setDuplicateSong(song);
-        return;
-      }
-
-      const res = await fetch(`/api/jams/${params.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ songId: song._id })
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to add song to jam');
-      }
-
-      const updatedJam = await res.json();
-      setJam(updatedJam);
-    } catch (e) {
-      console.error('Error adding song to jam:', e);
-      // Optionally show an error message to the user
-    }
-  };
-
-  const handleAddNew = (title) => {
-    setNewSongTitle(title);
-    setIsModalOpen(true);
-  };
-
-  const handleAddSong = async (newSong) => {
-    try {
-      // Check if song already exists in the jam
-      if (jam.songs.some(existingSong => existingSong.song._id === newSong._id)) {
-        setDuplicateSong(newSong);
-        setIsModalOpen(false);
-        return;
-      }
-
-      const res = await fetch(`/api/jams/${params.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ songId: newSong._id })
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to add song to jam');
-      }
-
-      const updatedJam = await res.json();
-      setJam(updatedJam);
-      setIsModalOpen(false);
-    } catch (e) {
-      console.error('Error adding new song to jam:', e);
-      // Optionally show an error message to the user
-    }
-  };
 
   const handleVote = async (songId, action) => {
     try {
@@ -502,6 +511,7 @@ export default function JamPage() {
     }
   };
 
+
   if (error) {
     return (
       <div className="rounded-md bg-red-50 p-4 mb-6">
@@ -543,38 +553,47 @@ export default function JamPage() {
 
       {/* Toolbar */}
       <div className="mb-4 flex items-center justify-between bg-white shadow-sm rounded-lg p-3 border border-gray-200">
-        <button
-          onClick={() => {
-            window.scrollTo({
-              top: document.documentElement.scrollHeight,
-              behavior: 'smooth',
-            });
-          }}
-          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          Add New Song
-        </button>
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => {
+              window.scrollTo({
+                top: document.documentElement.scrollHeight,
+                behavior: 'smooth',
+              });
+              // Focus the input after scrolling
+              setTimeout(() => {
+                songAutocompleteRef.current?.focus();
+              }, 500);
+            }}
+            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Add Song
+          </button>
+
+        </div>
 
         <div className="flex items-center space-x-4">
-          <select
-            value={groupingEnabled ? 'type' : 'none'}
-            onChange={(e) => setGroupingEnabled(e.target.value === 'type')}
-            className="block w-auto text-gray-500 bg-transparent focus:text-gray-900 border-none border-0 text-sm focus:outline-none focus:ring-0"
-          >
-            <option value="type">Group by banger/ballad</option>
-            <option value="none">Group by none</option>
-          </select>
+          <Select value={groupingEnabled ? 'type' : 'none'} onValueChange={(value) => setGroupingEnabled(value === 'type')}>
+            <SelectTrigger className="w-auto border-none text-gray-500 focus:text-gray-900 text-sm focus:ring-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="type">Group by banger/ballad</SelectItem>
+              <SelectItem value="none">No grouping</SelectItem>
+            </SelectContent>
+          </Select>
 
-          <div className="w-px h-6 bg-gray-200" />
+          {/* <Separator orientation="vertical" className="h-6" />
 
-          <select
-            value={sortMethod}
-            onChange={(e) => setSortMethod(e.target.value)}
-            className="block w-44 text-gray-500 bg-transparent focus:text-gray-900 border-none border-0 text-sm focus:outline-none focus:ring-0"
-          >
-            <option value="votes">Sort by votes</option>
-            <option value="manual">Sort manually</option>
-          </select>
+          <Select value={sortMethod} onValueChange={setSortMethod}>
+            <SelectTrigger className="w-44 border-none text-gray-500 focus:text-gray-900 text-sm focus:ring-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="votes">Sort by votes</SelectItem>
+              <SelectItem value="manual">Sort manually</SelectItem>
+            </SelectContent>
+          </Select> */}
         </div>
       </div>
 
@@ -645,6 +664,7 @@ export default function JamPage() {
 
       <div className="mt-6">
         <SongAutocomplete 
+          ref={songAutocompleteRef}
           onSelect={handleSelectExisting} 
           onAddNew={handleAddNew}
           currentSongs={jam.songs}
@@ -672,7 +692,7 @@ export default function JamPage() {
             <AlertDialogAction
               onClick={() => songToDelete && handleRemove(songToDelete._id)}
               disabled={isRemoving}
-              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              className="bg-destructive hover:bg-destructive/80 focus:ring-destructive"
             >
               {isRemoving ? 'Removing...' : 'Remove Song'}
             </AlertDialogAction>
