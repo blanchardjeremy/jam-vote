@@ -100,7 +100,7 @@ export default function SongVotingButton({ jamSong, onVote }) {
           <p>{hasVoted ? 'Remove vote' : 'Vote for this song'}</p>
         </TooltipContent>
       </Tooltip>
-      <span className="text-xs md:text-sm font-medium text-gray-900">{jamSong.votes}</span>
+      <span className="text-xs md:text-sm font-medium text-primary">{jamSong.votes}</span>
     </div>
   );
 } 
