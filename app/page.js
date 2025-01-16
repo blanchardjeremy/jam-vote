@@ -1,0 +1,105 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { useRouter } from 'next/navigation';
+import CreateJamModal from "@/components/CreateJamModal";
+
+export default function Home() {
+  const router = useRouter();
+  const [jams, setJams] = useState([]);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const fetchJams = async () => {
+    try {
+      const res = await fetch('/api/jams');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to fetch jams');
+      }
+      const data = await res.json();
+      setJams(data);
+    } catch (e) {
+      setError(e.message);
+      console.error('Error in Home component:', e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchJams();
+  }, []);
+
+  const handleCreateJam = async (newJam) => {
+    setIsModalOpen(false);
+    router.push(`/jams/${newJam._id}`);
+  };
+
+  if (error) {
+    return (
+      <div className="rounded-md bg-red-50 p-4 mb-6">
+        <div className="flex">
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-red-800">Error loading jams</h3>
+            <div className="mt-2 text-sm text-red-700">
+              <p>{error}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-32">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="mb-6 flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-900">Jam Sessions</h1>
+      </div>
+
+      {/* Jams List */}
+      <div className="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
+        <ul className="divide-y divide-gray-200">
+          {jams.map((jam) => (
+            <li 
+              key={jam._id} 
+              className="hover:bg-gray-50 cursor-pointer"
+              onClick={() => router.push(`/jams/${jam._id}`)}
+            >
+              <div className="px-4 py-4 sm:px-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      {jam.name}
+                    </h2>
+                    <p className="mt-1 text-sm text-gray-600">
+                      {new Date(jam.jamDate).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {jam.songs.length} songs
+                  </div>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </>
+  );
+}
