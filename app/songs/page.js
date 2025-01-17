@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TrashIcon } from "@heroicons/react/24/outline";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { fetchSongs, useSongOperations } from '@/lib/services/songs';
-import { toast } from 'sonner';
+import ImportSongsModal from "@/components/ImportSongsModal";
 
 export default function SongsPage() {
   const [songs, setSongs] = useState([]);
@@ -27,6 +27,7 @@ export default function SongsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [lastClickedIndex, setLastClickedIndex] = useState(null);
   const [isShiftPressed, setIsShiftPressed] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Track shift key state
   useEffect(() => {
@@ -56,19 +57,19 @@ export default function SongsPage() {
     onError: null
   });
 
-  useEffect(() => {
-    const loadSongs = async () => {
-      try {
-        const data = await fetchSongs();
-        setSongs(data);
-      } catch (e) {
-        setError(e.message);
-        console.error('Error fetching songs:', e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const loadSongs = async () => {
+    try {
+      const data = await fetchSongs();
+      setSongs(data);
+    } catch (e) {
+      setError(e.message);
+      console.error('Error fetching songs:', e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadSongs();
   }, []);
 
@@ -181,13 +182,21 @@ export default function SongsPage() {
             </Select>
 
             <Button
-              variant="outline-destructive"
+              variant={selectedSongs.size === 0 ? "outline-destructive" : "destructive"}
               size="sm"
               onClick={() => setShowDeleteDialog(true)}
               disabled={isDeleting || selectedSongs.size === 0}
             >
               <TrashIcon className="h-4 w-4 mr-2" />
               {isDeleting ? 'Deleting...' : selectedSongs.size === 0 ? 'Delete' : `Delete ${selectedSongs.size} selected`}
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => setIsImportModalOpen(true)}
+              className="ml-4"
+            >
+              Import CSV
             </Button>
           </div>
         </div>
@@ -226,6 +235,13 @@ export default function SongsPage() {
         confirmText={isDeleting ? 'Deleting...' : 'Delete Songs'}
         cancelText="Cancel"
         disabled={isDeleting}
+      />
+
+      <ImportSongsModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onSuccess={loadSongs}
+        allSongs={songs}
       />
     </div>
   );

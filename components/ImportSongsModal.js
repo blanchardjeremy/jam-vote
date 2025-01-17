@@ -10,8 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
 import { EXAMPLE_CSV, processCSV, processImport } from '@/lib/importSongs';
+import { toast } from 'sonner';
+import { createSongsBulk } from '@/lib/services/songs';
 
-export default function ImportSongsModal({ isOpen, onClose, onImport, jamId, allSongs = [] }) {
+export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs = [] }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -92,13 +94,33 @@ export default function ImportSongsModal({ isOpen, onClose, onImport, jamId, all
         setImportResults(result);
       } else {
         // No fuzzy duplicates, proceed with import
-        await onImport(result.songs);
+        await importSongs(result.songs);
         setImportResults(result);
       }
     } catch (err) {
       setError(err.message);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const importSongs = async (songs) => {
+    try {
+      const { results, errors } = await createSongsBulk(songs);
+      
+      if (errors.length > 0) {
+        console.error('Some songs failed to import:', errors);
+        toast.error(`${errors.length} songs failed to import`);
+      }
+      
+      toast.success('Songs imported successfully');
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (e) {
+      console.error('Error importing songs:', e);
+      toast.error('Failed to import songs');
+      throw e;
     }
   };
 
@@ -114,7 +136,7 @@ export default function ImportSongsModal({ isOpen, onClose, onImport, jamId, all
       }
     });
 
-    await onImport(approvedSongs);
+    await importSongs(approvedSongs);
     setShowDuplicateReview(false);
   };
 

@@ -26,7 +26,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import ImportSongsModal from "@/components/ImportSongsModal";
 import Loading from "@/app/loading";
 import { toast } from 'sonner';
 import { useJamSongOperations, addSongToJam } from '@/lib/services/jamSongs';
@@ -356,34 +355,6 @@ export default function JamPage() {
     };
   }, [params.id, sortMethod]);
 
-  const handleImportSongs = async (songs) => {
-    try {
-      // Create songs one by one
-      for (const songData of songs) {
-        // First create the song
-        const songRes = await fetch('/api/songs', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(songData)
-        });
-
-        if (!songRes.ok) {
-          throw new Error(`Failed to create song: ${songData.title}`);
-        }
-
-        const song = await songRes.json();
-
-        // Then add it to the jam
-        await handleAddSongToJam(song._id);
-      }
-    } catch (e) {
-      console.error('Error importing songs:', e);
-      throw e;
-    }
-  };
-
   if (error) {
     return (
       <div className="rounded-md bg-red-50 p-4 mb-6">
@@ -439,13 +410,6 @@ export default function JamPage() {
           >
             Add Song
           </button>
-
-          <button
-            onClick={() => setIsImportModalOpen(true)}
-            className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Import CSV
-          </button>
         </div>
 
         <div className="flex items-center space-x-4">
@@ -458,18 +422,6 @@ export default function JamPage() {
               <SelectItem value="none">No grouping</SelectItem>
             </SelectContent>
           </Select>
-
-          {/* <Separator orientation="vertical" className="h-6" />
-
-          <Select value={sortMethod} onValueChange={setSortMethod}>
-            <SelectTrigger className="w-44 border-none text-gray-500 focus:text-gray-900 text-sm focus:ring-0">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="votes">Sort by votes</SelectItem>
-              <SelectItem value="manual">Sort manually</SelectItem>
-            </SelectContent>
-          </Select> */}
         </div>
       </div>
 
@@ -591,14 +543,6 @@ export default function JamPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <ImportSongsModal
-        isOpen={isImportModalOpen}
-        onClose={() => setIsImportModalOpen(false)}
-        onImport={handleImportSongs}
-        jamId={params.id}
-        allSongs={allSongs}
-      />
     </>
   );
 } 
