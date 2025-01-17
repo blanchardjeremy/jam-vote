@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useRouter } from 'next/navigation';
 import CreateJamModal from "@/components/CreateJamModal";
+import { TrashIcon } from "@heroicons/react/24/outline";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import Loading from "@/app/loading";
 
 export default function Home() {
   const router = useRouter();
@@ -81,9 +83,7 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-32">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-      </div>
+      <Loading />
     );
   }
 
@@ -124,14 +124,15 @@ export default function Home() {
                       {jam.songs.length} songs
                     </div>
                     <Button
-                      variant="destructive"
-                      size="sm"
+                      variant="ghost"
+                      size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
                         setJamToDelete(jam);
                       }}
+                      aria-label={`Delete ${jam.name}`}
                     >
-                      Delete
+                      <TrashIcon className="h-5 w-5 text-gray-500 hover:text-red-600" />
                     </Button>
                   </div>
                 </div>

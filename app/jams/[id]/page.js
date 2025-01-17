@@ -135,7 +135,10 @@ export default function JamPage() {
   };
 
   // Function to group songs
-  const getGroupedSongs = (songs) => {
+  const getGroupedSongs = (songs = []) => {
+    // Ensure songs is an array
+    const songsArray = Array.isArray(songs) ? songs : [];
+    
     // Helper function to sort within groups
     const sortWithinGroup = (songs) => {
       return [...songs].sort((a, b) => {
@@ -147,8 +150,8 @@ export default function JamPage() {
     };
 
     // First split into played and unplayed
-    const playedSongs = songs.filter(song => song.played);
-    const unplayedSongs = songs.filter(song => !song.played);
+    const playedSongs = songsArray.filter(jamSong => jamSong.played);
+    const unplayedSongs = songsArray.filter(jamSong => !jamSong.played);
 
     if (!groupingEnabled) {
       // Even in ungrouped view, we still want played songs at the top
@@ -165,10 +168,10 @@ export default function JamPage() {
     }
 
     // For grouped view, split each played status group into bangers and ballads
-    const playedBangers = sortWithinGroup(playedSongs.filter(song => song.song.type === 'banger'));
-    const playedBallads = sortWithinGroup(playedSongs.filter(song => song.song.type === 'ballad'));
-    const unplayedBangers = sortWithinGroup(unplayedSongs.filter(song => song.song.type === 'banger'));
-    const unplayedBallads = sortWithinGroup(unplayedSongs.filter(song => song.song.type === 'ballad'));
+    const playedBangers = sortWithinGroup(playedSongs.filter(jamSong => jamSong.song?.type === 'banger'));
+    const playedBallads = sortWithinGroup(playedSongs.filter(jamSong => jamSong.song?.type === 'ballad'));
+    const unplayedBangers = sortWithinGroup(unplayedSongs.filter(jamSong => jamSong.song?.type === 'banger'));
+    const unplayedBallads = sortWithinGroup(unplayedSongs.filter(jamSong => jamSong.song?.type === 'ballad'));
 
     // Find next unplayed song - first check bangers, then ballads
     const nextSongId = unplayedBangers[0]?._id || unplayedBallads[0]?._id;
@@ -188,7 +191,12 @@ export default function JamPage() {
         throw new Error(errorData.error || 'Failed to fetch jam');
       }
       const data = await res.json();
-      setJam(data);
+      // Ensure songs is initialized as an array
+      setJam({
+        ...data,
+        songs: data.songs || []
+      });
+      return data;
     } catch (e) {
       setError(e.message);
       console.error('Error in JamPage component:', e);
@@ -231,14 +239,30 @@ export default function JamPage() {
           return prevJam;
         }
         
+        // Ensure songs is an array
+        const songs = Array.isArray(prevJam.songs) ? prevJam.songs : [];
+        
         // Only update if the vote count is different to avoid unnecessary re-renders
-        const songToUpdate = prevJam.songs.find(s => s._id === data.songId);
+        const songToUpdate = songs.find(jamSong => jamSong._id.toString() === data.songId.toString());
         if (!songToUpdate || songToUpdate.votes === data.votes) {
+          console.log('[Pusher Client] No song to update or votes unchanged', { 
+            songId: data.songId, 
+            currentVotes: songToUpdate?.votes,
+            newVotes: data.votes 
+          });
           return prevJam;
         }
         
-        const updatedSongs = prevJam.songs.map(s => 
-          s._id === data.songId ? { ...s, votes: data.votes } : s
+        console.log('[Pusher Client] Updating votes', {
+          songId: data.songId,
+          oldVotes: songToUpdate.votes,
+          newVotes: data.votes
+        });
+        
+        const updatedSongs = songs.map(jamSong => 
+          jamSong._id.toString() === data.songId.toString() 
+            ? { ...jamSong, votes: data.votes }
+            : jamSong
         );
         
         // Only sort if we're using vote-based sorting

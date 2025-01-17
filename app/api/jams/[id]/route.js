@@ -3,7 +3,6 @@ import connectDB from '@/lib/mongodb';
 import Jam from '@/models/Jam';
 import Song from '@/models/Song';
 import { pusherServer } from '@/lib/pusher';
-import { connectToDatabase } from '@/lib/db';
 import { ObjectId } from 'mongodb';
 
 export async function GET(request, context) {
@@ -79,16 +78,14 @@ export async function PATCH(request, context) {
   }
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(request, context) {
   try {
-    const { db } = await connectToDatabase();
-    const { id } = params;
+    await connectDB();
+    const { id } = await context.params;
 
-    const result = await db.collection('jams').deleteOne({
-      _id: new ObjectId(id)
-    });
+    const result = await Jam.findByIdAndDelete(id);
 
-    if (result.deletedCount === 0) {
+    if (!result) {
       return NextResponse.json(
         { error: 'Jam not found' },
         { status: 404 }
