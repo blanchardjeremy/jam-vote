@@ -1,27 +1,21 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Song from '@/models/Song';
-import Jam from '@/models/Jam';
-import { pusherServer } from '@/lib/pusher';
 
-export async function PUT(request, { params }) {
+export async function DELETE(request, context) {
   try {
     await connectDB();
-    const { id } = params;
-    const { title, artist, type, chordChart } = await request.json();
+    
+    const songId = context.params.id;
+    if (!songId) {
+      return NextResponse.json(
+        { error: 'Song ID is required' },
+        { status: 400 }
+      );
+    }
 
-    const song = await Song.findByIdAndUpdate(
-      id,
-      { 
-        title,
-        artist,
-        type,
-        chordChart: chordChart || null,
-        updatedAt: new Date()
-      },
-      { new: true }
-    );
-
+    const song = await Song.findByIdAndDelete(songId);
+    
     if (!song) {
       return NextResponse.json(
         { error: 'Song not found' },
@@ -29,21 +23,43 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // Find all jams that contain this song and trigger Pusher events for each
-    const jams = await Jam.find({ 'songs.song': id });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error in DELETE /api/songs/[id]:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to delete song' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request, context) {
+  try {
+    await connectDB();
     
-    for (const jam of jams) {
-      await pusherServer.trigger(`jam-${jam._id}`, 'song-edited', {
-        songId: id,
-        updatedSong: song
-      });
+    const songId = await context.params.id;
+    if (!songId) {
+      return NextResponse.json(
+        { error: 'Song ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const data = await request.json();
+    const song = await Song.findByIdAndUpdate(songId, data, { new: true });
+    
+    if (!song) {
+      return NextResponse.json(
+        { error: 'Song not found' },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json(song);
   } catch (error) {
-    console.error('Error updating song:', error);
+    console.error('Error in PUT /api/songs/[id]:', error);
     return NextResponse.json(
-      { error: 'Failed to update song' },
+      { error: error.message || 'Failed to update song' },
       { status: 500 }
     );
   }

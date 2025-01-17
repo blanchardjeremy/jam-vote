@@ -26,9 +26,11 @@ export default function Modal({
         'w-full overflow-hidden',
         // Width
         `max-w-${maxWidth}`,
+        // Height and scroll
+        'max-h-[calc(100vh-4rem)] overflow-y-auto',
       )}>
 
-        <DialogHeader>
+        <DialogHeader className="sticky top-0 bg-background z-10 pb-4">
           {title && <DialogTitle>{title}</DialogTitle>}
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
@@ -40,7 +42,7 @@ export default function Modal({
 
         {/* Actions */}
         {actions && (
-          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row-reverse sm:mt-4">
+          <div className="sticky bottom-0 bg-background pt-4 mt-6 flex flex-col-reverse gap-3 sm:flex-row-reverse sm:mt-4">
             {actions}
           </div>
         )}

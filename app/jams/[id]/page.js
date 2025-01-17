@@ -26,6 +26,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import ImportSongsModal from "@/components/ImportSongsModal";
+import Loading from "@/app/loading";
+import { toast } from 'sonner';
+import { useJamSongOperations, addSongToJam } from '@/lib/services/jamSongs';
+import { fetchSongs } from '@/lib/services/songs';
 
 // Helper component for rendering song lists
 function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit, hideTypeBadge, emptyMessage, groupingEnabled }) {
@@ -56,41 +61,43 @@ function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit,
 export default function JamPage() {
   const params = useParams();
   const [jam, setJam] = useState(null);
+  const [allSongs, setAllSongs] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [duplicateSong, setDuplicateSong] = useState(null);
+  const [groupingEnabled, setGroupingEnabled] = useState(true);
+  const [sortMethod, setSortMethod] = useState('votes');
+  const songAutocompleteRef = useRef(null);
   const [newSongTitle, setNewSongTitle] = useState('');
   const [songToDelete, setSongToDelete] = useState(null);
   const [isRemoving, setIsRemoving] = useState(false);
-  const [duplicateSong, setDuplicateSong] = useState(null);
-  const [groupingEnabled, setGroupingEnabled] = useState(true);
-  const [sortMethod, setSortMethod] = useState('votes'); // 'votes' or 'manual'
-  const songAutocompleteRef = useRef(null);
+
+  // Get jam song operations from our service
+  const { handleEdit, handleRemove, handleVote, handleTogglePlayed } = useJamSongOperations({
+    jamId: params.id,
+    songs: jam?.songs || [],
+    setSongs: (newSongs) => setJam(prev => ({ ...prev, songs: newSongs })),
+    sortMethod
+  });
 
   // Helper function to add a song to the jam
-  const addSongToJam = async (songId) => {
-    const res = await fetch(`/api/jams/${params.id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ songId })
-    });
+  const handleAddSongToJam = async (songId) => {
+    try {
+      const { jam: updatedJam, addedSongId } = await addSongToJam(params.id, songId);
+      setJam(updatedJam);
+      
+      // Set localStorage to mark the song as voted by this user
+      if (addedSongId) {
+        localStorage.setItem(`vote-${addedSongId}`, 'true');
+      }
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.error || 'Failed to add song to jam');
+      return updatedJam;
+    } catch (e) {
+      console.error('Error adding song to jam:', e);
+      toast.error(e.message);
     }
-
-    const { jam: updatedJam, addedSongId } = await res.json();
-    setJam(updatedJam);
-    
-    // Set localStorage to mark the song as voted by this user
-    if (addedSongId) {
-      localStorage.setItem(`vote-${addedSongId}`, 'true');
-    }
-
-    return updatedJam;
   };
 
   const handleSelectExisting = async (song) => {
@@ -101,7 +108,7 @@ export default function JamPage() {
         return;
       }
 
-      await addSongToJam(song._id);
+      await handleAddSongToJam(song._id);
     } catch (e) {
       console.error('Error adding song to jam:', e);
     }
@@ -109,7 +116,7 @@ export default function JamPage() {
 
   const handleAddNew = (title) => {
     setNewSongTitle(title);
-    setIsModalOpen(true);
+    setIsAddModalOpen(true);
   };
 
   const handleAddSong = async (newSong) => {
@@ -117,12 +124,12 @@ export default function JamPage() {
       // Check if song already exists in the jam
       if (jam.songs.some(existingSong => existingSong.song._id === newSong._id)) {
         setDuplicateSong(newSong);
-        setIsModalOpen(false);
+        setIsAddModalOpen(false);
         return;
       }
 
-      await addSongToJam(newSong._id);
-      setIsModalOpen(false);
+      await handleAddSongToJam(newSong._id);
+      setIsAddModalOpen(false);
     } catch (e) {
       console.error('Error adding new song to jam:', e);
     }
@@ -192,16 +199,29 @@ export default function JamPage() {
   };
 
   useEffect(() => {
-    fetchJam();
+    const initialize = async () => {
+      setIsLoading(true);
+      try {
+        const [jamData, songsData] = await Promise.all([
+          fetchJam(),
+          fetchSongs()
+        ]);
+        setAllSongs(songsData);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    initialize();
+  }, [params.id]);
 
-    // Set up Pusher connection
+  // Set up Pusher connection in a separate useEffect
+  useEffect(() => {
     console.log('[Pusher Client] Setting up connection');
     const channelName = `jam-${params.id}`;
     const channel = pusherClient.subscribe(channelName);
     
     // Clean up any existing bindings first
     channel.unbind_all();
-    
 
     // Handle vote updates
     channel.bind('vote', (data) => {
@@ -336,181 +356,33 @@ export default function JamPage() {
     };
   }, [params.id, sortMethod]);
 
-  const handleVote = async (songId, action) => {
+  const handleImportSongs = async (songs) => {
     try {
-      // Optimistically update UI
-      setJam(prevJam => {
-        if (!prevJam) return prevJam;
-        
-        const updatedSongs = prevJam.songs.map(s => 
-          s._id === songId 
-            ? { ...s, votes: action === 'vote' ? s.votes + 1 : s.votes - 1 }
-            : s
-        );
-        
-        // Only sort if we're using vote-based sorting
-        if (sortMethod === 'votes') {
-          updatedSongs.sort((a, b) => b.votes - a.votes);
+      // Create songs one by one
+      for (const songData of songs) {
+        // First create the song
+        const songRes = await fetch('/api/songs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(songData)
+        });
+
+        if (!songRes.ok) {
+          throw new Error(`Failed to create song: ${songData.title}`);
         }
-        
-        return {
-          ...prevJam,
-          songs: updatedSongs
-        };
-      });
 
-      const res = await fetch(`/api/jams/${params.id}/vote`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ songId, action })
-      });
+        const song = await songRes.json();
 
-      if (!res.ok) {
-        // Revert optimistic update on error
-        setJam(prevJam => {
-          if (!prevJam) return prevJam;
-          
-          const updatedSongs = prevJam.songs.map(s => 
-            s._id === songId 
-              ? { ...s, votes: action === 'vote' ? s.votes - 1 : s.votes + 1 }
-              : s
-          );
-          
-          // Only sort if we're using vote-based sorting
-          if (sortMethod === 'votes') {
-            updatedSongs.sort((a, b) => b.votes - a.votes);
-          }
-          
-          return {
-            ...prevJam,
-            songs: updatedSongs
-          };
-        });
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to vote for song');
+        // Then add it to the jam
+        await handleAddSongToJam(song._id);
       }
     } catch (e) {
-      console.error('[Vote] Error:', e);
-      throw e; // Propagate error to SongRow component
+      console.error('Error importing songs:', e);
+      throw e;
     }
   };
-
-  const handleRemove = async (songId) => {
-    try {
-      setIsRemoving(true);
-      // Optimistically update the UI
-      setJam(prevJam => ({
-        ...prevJam,
-        songs: prevJam.songs.filter(s => s._id !== songId)
-      }));
-
-      const res = await fetch(`/api/jams/${params.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ songId })
-      });
-
-      if (!res.ok) {
-        // Revert the optimistic update if the request fails
-        await fetchJam();
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to remove song');
-      }
-    } catch (e) {
-      console.error('Error removing song:', e);
-    } finally {
-      setIsRemoving(false);
-      setSongToDelete(null);
-    }
-  };
-
-  const handleTogglePlayed = async (songId) => {
-    try {
-      // Optimistically update UI
-      setJam(prevJam => {
-        if (!prevJam) return prevJam;
-        
-        const updatedSongs = prevJam.songs.map(s => 
-          s._id === songId ? { ...s, played: !s.played } : s
-        );
-        
-        return {
-          ...prevJam,
-          songs: updatedSongs
-        };
-      });
-
-      const res = await fetch(`/api/jams/${params.id}/played`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ songId })
-      });
-
-      if (!res.ok) {
-        // Revert optimistic update on error
-        setJam(prevJam => {
-          if (!prevJam) return prevJam;
-          
-          const updatedSongs = prevJam.songs.map(s => 
-            s._id === songId ? { ...s, played: !s.played } : s
-          );
-          
-          return {
-            ...prevJam,
-            songs: updatedSongs
-          };
-        });
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to update played status');
-      }
-    } catch (e) {
-      console.error('Error updating played status:', e);
-    }
-  };
-
-  const handleEdit = async (songId, updatedSong) => {
-    try {
-      // Optimistically update UI
-      setJam(prevJam => {
-        if (!prevJam) return prevJam;
-        
-        const updatedSongs = prevJam.songs.map(s => 
-          s._id === songId 
-            ? { ...s, song: { ...s.song, ...updatedSong } }
-            : s
-        );
-        
-        return {
-          ...prevJam,
-          songs: updatedSongs
-        };
-      });
-
-      const res = await fetch(`/api/songs/${updatedSong._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedSong)
-      });
-
-      if (!res.ok) {
-        // Revert optimistic update on error
-        await fetchJam();
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to update song');
-      }
-    } catch (e) {
-      console.error('Error updating song:', e);
-    }
-  };
-
 
   if (error) {
     return (
@@ -529,9 +401,7 @@ export default function JamPage() {
 
   if (isLoading || !jam) {
     return (
-      <div className="flex justify-center items-center h-32">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-      </div>
+      <Loading />
     );
   }
 
@@ -570,6 +440,12 @@ export default function JamPage() {
             Add Song
           </button>
 
+          <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Import CSV
+          </button>
         </div>
 
         <div className="flex items-center space-x-4">
@@ -672,8 +548,8 @@ export default function JamPage() {
       </div>
 
       <AddSongModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
         initialTitle={newSongTitle}
         onAdd={handleAddSong}
         jamId={params.id}
@@ -715,6 +591,14 @@ export default function JamPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ImportSongsModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImport={handleImportSongs}
+        jamId={params.id}
+        allSongs={allSongs}
+      />
     </>
   );
 } 
