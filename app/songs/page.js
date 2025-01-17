@@ -42,8 +42,8 @@ export default function SongsPage() {
     setSongs,
     selectedSongs,
     setSelectedSongs,
-    onSuccess: (message) => toast.success(message),
-    onError: (message) => toast.error(message)
+    onSuccess: null,
+    onError: null
   });
 
   useEffect(() => {
