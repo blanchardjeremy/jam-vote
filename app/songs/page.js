@@ -13,16 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TrashIcon } from "@heroicons/react/24/outline";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { fetchSongs, useSongOperations } from '@/lib/services/songs';
 import { toast } from 'sonner';
 
@@ -35,6 +26,25 @@ export default function SongsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [lastClickedIndex, setLastClickedIndex] = useState(null);
+  const [isShiftPressed, setIsShiftPressed] = useState(false);
+
+  // Track shift key state
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Shift') setIsShiftPressed(true);
+    };
+    const handleKeyUp = (e) => {
+      if (e.key === 'Shift') setIsShiftPressed(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
 
   // Get song operations from our service
   const { handleEdit, handleDelete, handleBulkDelete } = useSongOperations({
@@ -67,30 +77,28 @@ export default function SongsPage() {
     try {
       await handleBulkDelete(selectedSongs);
       setShowDeleteDialog(false);
+      // Reset selection after successful delete
+      setSelectedSongs(new Set());
+      setLastClickedIndex(null);
     } finally {
       setIsDeleting(false);
     }
   };
 
-  const toggleSelection = (songId, currentIndex, event) => {
-    // Handle both checkbox change events and native click events
-    const isShiftClick = event?.shiftKey || event?.nativeEvent?.shiftKey;
-    
-    if (isShiftClick && lastClickedIndex !== null) {
+  const toggleSelection = (songId, currentIndex) => {
+    console.log('Toggle Selection:', { songId, currentIndex, lastClickedIndex, isShiftPressed });
+
+    if (isShiftPressed && lastClickedIndex !== null) {
       // Handle shift-click range selection
       const start = Math.min(lastClickedIndex, currentIndex);
       const end = Math.max(lastClickedIndex, currentIndex);
       const rangeIds = filteredSongs.slice(start, end + 1).map(song => song._id);
 
+      console.log('Shift-click range:', { start, end, rangeIds });
+
       setSelectedSongs(prev => {
         const next = new Set(prev);
-        // If we're unselecting, remove all in range
-        if (next.has(songId)) {
-          rangeIds.forEach(id => next.delete(id));
-        } else {
-          // If we're selecting, add all in range
-          rangeIds.forEach(id => next.add(id));
-        }
+        rangeIds.forEach(id => next.add(id));
         return next;
       });
     } else {
@@ -152,38 +160,36 @@ export default function SongsPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="mb-4 flex items-center justify-between bg-white shadow-sm rounded-lg p-3 border border-gray-200">
-        <div className="flex items-center gap-4">
-          <Checkbox
-            checked={selectedSongs.size === filteredSongs.length && filteredSongs.length > 0}
-            onCheckedChange={toggleAllSelection}
-            aria-label="Select all songs"
-          />
-          
+      <div className="sticky top-0 z-10">
+        <div className="mb-4 flex items-center justify-between bg-white/80 backdrop-blur-sm shadow-sm rounded-lg p-3 border border-gray-200">
+          <div className="flex items-center gap-4">
+            <Checkbox
+              checked={selectedSongs.size === filteredSongs.length && filteredSongs.length > 0}
+              onCheckedChange={toggleAllSelection}
+              aria-label="Select all songs"
+            />
 
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="Filter by type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All songs</SelectItem>
-              <SelectItem value="banger">Bangers</SelectItem>
-              <SelectItem value="ballad">Ballads</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Filter by type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All songs</SelectItem>
+                <SelectItem value="banger">Bangers</SelectItem>
+                <SelectItem value="ballad">Ballads</SelectItem>
+              </SelectContent>
+            </Select>
 
-
-          {selectedSongs.size > 0 && (
             <Button
-              variant="destructive"
+              variant="outline-destructive"
               size="sm"
               onClick={() => setShowDeleteDialog(true)}
-              disabled={isDeleting}
+              disabled={isDeleting || selectedSongs.size === 0}
             >
               <TrashIcon className="h-4 w-4 mr-2" />
-              Delete {selectedSongs.size} selected
+              {isDeleting ? 'Deleting...' : selectedSongs.size === 0 ? 'Delete' : `Delete ${selectedSongs.size} selected`}
             </Button>
-          )}
+          </div>
         </div>
       </div>
 
@@ -202,7 +208,7 @@ export default function SongsPage() {
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                   isSelected={selectedSongs.has(song._id)}
-                  onSelectionChange={(checked, event) => toggleSelection(song._id, index, event)}
+                  onSelectionChange={(checked, event) => toggleSelection(song._id, index)}
                   hideType={filterType !== 'all'}
                 />
               </li>
@@ -211,26 +217,16 @@ export default function SongsPage() {
         </ul>
       </div>
 
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Songs</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete {selectedSongs.size} songs? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteSelected}
-              disabled={isDeleting}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              {isDeleting ? 'Deleting...' : 'Delete Songs'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleDeleteSelected}
+        title="Delete Songs"
+        description={`Are you sure you want to delete ${selectedSongs.size} songs? This action cannot be undone.`}
+        confirmText={isDeleting ? 'Deleting...' : 'Delete Songs'}
+        cancelText="Cancel"
+        disabled={isDeleting}
+      />
     </div>
   );
 } 

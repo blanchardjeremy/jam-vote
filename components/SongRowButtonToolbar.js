@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import SongRowButton from "@/components/SongRowButton";
 import CaptainSignupButton from "@/components/CaptainSignupButton";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { cn } from "@/lib/utils";
 
 export default function SongRowButtonToolbar({ 
@@ -21,6 +22,8 @@ export default function SongRowButtonToolbar({
   onRemove
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const touchStartPos = useRef(null);
   
   const handleTouchStart = (e) => {
@@ -40,54 +43,80 @@ export default function SongRowButtonToolbar({
     touchStartPos.current = null;
   };
 
+  const handleRemove = async () => {
+    setIsRemoving(true);
+    try {
+      await onRemove?.();
+      setShowRemoveDialog(false);
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
   return (
-    <div className="flex items-center gap-1">
-      {song.chordChart && (
+    <>
+      <div className="flex items-center gap-1">
+        {song.chordChart && (
+          <SongRowButton
+            icon={MusicalNoteIcon}
+            href={song.chordChart}
+            tooltip="View chord chart"
+          />
+        )}
+        <CaptainSignupButton jamSong={jamSong} />
         <SongRowButton
-          icon={MusicalNoteIcon}
-          href={song.chordChart}
-          tooltip="View chord chart"
+          icon={jamSong.played ? CheckCircleSolid : CheckCircleIcon}
+          onClick={handleTogglePlayed}
+          variant="success"
+          tooltip={jamSong.played ? 'Mark as not played' : 'Mark as played'}
+          className={jamSong.played 
+            ? 'text-success hover:text-success hover:bg-success-muted' 
+            : 'hover:text-success hover:bg-success-muted'
+          }
         />
-      )}
-      <CaptainSignupButton jamSong={jamSong} />
-      <SongRowButton
-        icon={jamSong.played ? CheckCircleSolid : CheckCircleIcon}
-        onClick={handleTogglePlayed}
-        variant="success"
-        tooltip={jamSong.played ? 'Mark as not played' : 'Mark as played'}
-        className={jamSong.played 
-          ? 'text-success hover:text-success hover:bg-success-muted' 
-          : 'hover:text-success hover:bg-success-muted'
-        }
+
+        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+          <DropdownMenuTrigger asChild>
+            <button 
+              className="p-0.5 md:p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-150 ease-in-out touch-none"
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
+              <EllipsisHorizontalIcon className="h-4 w-4 md:h-5 md:w-5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => setIsEditModalOpen(true)}
+              className="text-foreground hover:text-foreground"
+            >
+              <PencilIcon className="h-4 w-4 mr-2" />
+              <span>Edit song</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                setIsOpen(false);
+                setShowRemoveDialog(true);
+              }}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <TrashIcon className="h-4 w-4 mr-2" />
+              <span>Remove from jam</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <ConfirmDialog
+        isOpen={showRemoveDialog}
+        onClose={() => setShowRemoveDialog(false)}
+        onConfirm={handleRemove}
+        title="Remove Song"
+        description={`Are you sure you want to remove "${song.title}" by ${song.artist} from this jam?`}
+        confirmText="Remove"
+        isLoading={isRemoving}
+        confirmLoadingText="Removing..."
       />
-      
-      <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-        <DropdownMenuTrigger asChild>
-          <button 
-            className="p-0.5 md:p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-150 ease-in-out touch-none"
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-          >
-            <EllipsisHorizontalIcon className="h-4 w-4 md:h-5 md:w-5" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onClick={() => setIsEditModalOpen(true)}
-            className="text-foreground hover:text-foreground"
-          >
-            <PencilIcon className="h-4 w-4 mr-2" />
-            <span>Edit song</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={onRemove}
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-          >
-            <TrashIcon className="h-4 w-4 mr-2" />
-            <span>Remove from jam</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+    </>
   );
 } 

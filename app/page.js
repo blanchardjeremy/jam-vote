@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useRouter } from 'next/navigation';
 import CreateJamModal from "@/components/CreateJamModal";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function Home() {
   const router = useRouter();
@@ -11,6 +12,8 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [jamToDelete, setJamToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchJams = async () => {
     try {
@@ -36,6 +39,29 @@ export default function Home() {
   const handleCreateJam = async (newJam) => {
     setIsModalOpen(false);
     router.push(`/jams/${newJam._id}`);
+  };
+
+  const handleDeleteJam = async () => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/jams/${jamToDelete._id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to delete jam');
+      }
+      
+      // Remove the jam from the local state
+      setJams(jams.filter(jam => jam._id !== jamToDelete._id));
+      setJamToDelete(null);
+    } catch (e) {
+      setError(e.message);
+      console.error('Error deleting jam:', e);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (error) {
@@ -73,12 +99,14 @@ export default function Home() {
           {jams.map((jam) => (
             <li 
               key={jam._id} 
-              className="hover:bg-gray-50 cursor-pointer"
-              onClick={() => router.push(`/jams/${jam._id}`)}
+              className="hover:bg-gray-50"
             >
               <div className="px-4 py-4 sm:px-6">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div 
+                    className="flex-grow cursor-pointer"
+                    onClick={() => router.push(`/jams/${jam._id}`)}
+                  >
                     <h2 className="text-lg font-semibold text-gray-900">
                       {jam.name}
                     </h2>
@@ -91,8 +119,20 @@ export default function Home() {
                       })}
                     </p>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {jam.songs.length} songs
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-gray-500">
+                      {jam.songs.length} songs
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setJamToDelete(jam);
+                      }}
+                    >
+                      Delete
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -100,6 +140,16 @@ export default function Home() {
           ))}
         </ul>
       </div>
+
+      <ConfirmDialog
+        isOpen={!!jamToDelete}
+        onClose={() => setJamToDelete(null)}
+        onConfirm={handleDeleteJam}
+        description={`This will permanently delete the jam session "${jamToDelete?.name}". This action cannot be undone.`}
+        isLoading={isDeleting}
+        confirmText="Delete"
+        confirmLoadingText="Deleting..."
+      />
     </>
   );
 }

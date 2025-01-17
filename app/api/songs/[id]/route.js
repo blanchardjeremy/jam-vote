@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Song from '@/models/Song';
+import Jam from '@/models/Jam';
+import { pusherServer } from '@/lib/pusher';
 
 export async function DELETE(request, context) {
   try {
@@ -14,6 +16,22 @@ export async function DELETE(request, context) {
       );
     }
 
+    // First, find all jams that contain this song
+    const jams = await Jam.find({ 'songs.song': songId });
+
+    // For each jam, remove the song and notify clients
+    for (const jam of jams) {
+      // Remove the song from the jam's songs array
+      jam.songs = jam.songs.filter(s => s.song.toString() !== songId);
+      await jam.save();
+
+      // Notify clients about the song removal
+      await pusherServer.trigger(`jam-${jam._id}`, 'song-removed', {
+        songId: songId
+      });
+    }
+
+    // Finally, delete the song itself
     const song = await Song.findByIdAndDelete(songId);
     
     if (!song) {

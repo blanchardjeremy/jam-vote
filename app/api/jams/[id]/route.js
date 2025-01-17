@@ -3,6 +3,8 @@ import connectDB from '@/lib/mongodb';
 import Jam from '@/models/Jam';
 import Song from '@/models/Song';
 import { pusherServer } from '@/lib/pusher';
+import { connectToDatabase } from '@/lib/db';
+import { ObjectId } from 'mongodb';
 
 export async function GET(request, context) {
   try {
@@ -77,30 +79,28 @@ export async function PATCH(request, context) {
   }
 }
 
-export async function DELETE(request, context) {
+export async function DELETE(request, { params }) {
   try {
-    await connectDB();
-    const { songId } = await request.json();
-    const params = await context.params;
-    const jamId = params.id;
+    const { db } = await connectToDatabase();
+    const { id } = params;
 
-    const jam = await Jam.findById(jamId);
-    if (!jam) {
-      return NextResponse.json({ error: 'Jam not found' }, { status: 404 });
-    }
-
-    // Remove the song from the jam
-    jam.songs = jam.songs.filter(s => s._id.toString() !== songId);
-    await jam.save();
-
-    // Broadcast the update using Pusher
-    await pusherServer.trigger(`jam-${jamId}`, 'song-removed', {
-      songId
+    const result = await db.collection('jams').deleteOne({
+      _id: new ObjectId(id)
     });
+
+    if (result.deletedCount === 0) {
+      return NextResponse.json(
+        { error: 'Jam not found' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error removing song from jam:', error);
-    return NextResponse.json({ error: 'Failed to remove song from jam' }, { status: 500 });
+    console.error('Error deleting jam:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete jam' },
+      { status: 500 }
+    );
   }
 } 
