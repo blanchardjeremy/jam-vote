@@ -12,6 +12,117 @@ import { Spinner } from "@/components/ui/spinner";
 import { EXAMPLE_CSV, processCSV, processImport } from '@/lib/importSongs';
 import { toast } from 'sonner';
 import { createSongsBulk } from '@/lib/services/songs';
+import { PlusIcon } from '@heroicons/react/24/outline';
+
+function DuplicateReview({ 
+  importResults, 
+  fuzzyDuplicateDecisions, 
+  setFuzzyDuplicateDecisions, 
+  onCancel, 
+  onFinalize 
+}) {
+  const handleBulkAction = (action) => {
+    const newDecisions = {};
+    importResults.fuzzyDuplicates.forEach((_, index) => {
+      newDecisions[index] = action;
+    });
+    setFuzzyDuplicateDecisions(newDecisions);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-medium">Review Potential Duplicates</h3>
+          <p className="text-sm text-gray-600">
+            We found some songs that might be duplicates. Please review them before finalizing the import.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleBulkAction('skip')}
+          >
+            Skip All
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleBulkAction('approve')}
+          >
+            <PlusIcon className="h-4 w-4" />
+            Import All
+          </Button>
+        </div>
+      </div>
+      
+      {importResults.fuzzyDuplicates.map((duplicate, index) => (
+        <div key={index} className="border rounded-lg p-4 bg-gray-50">
+          <div className="space-y-4">
+            <div className="flex justify-between items-start gap-4">
+              <div>
+                <div className="text-xl font-semibold">{duplicate.newSong.title}</div>
+                <div className="text-gray-600">{duplicate.newSong.artist}</div>
+              </div>
+              
+              <div className="flex gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  variant={fuzzyDuplicateDecisions[index] === 'approve' ? 'success' : 'outline'}
+                  onClick={() => setFuzzyDuplicateDecisions(prev => ({
+                    ...prev,
+                    [index]: 'approve'
+                  }))}
+                >
+                  <PlusIcon className="h-4 w-4" />
+                  Import Anyway
+                </Button>
+                <Button
+                  size="sm"
+                  variant={fuzzyDuplicateDecisions[index] === 'skip' ? 'secondary' : 'outline'}
+                  onClick={() => setFuzzyDuplicateDecisions(prev => ({
+                    ...prev,
+                    [index]: 'skip'
+                  }))}
+                >
+                  Skip
+                </Button>
+              </div>
+            </div>
+            
+            <div>
+              <div className="text-sm text-gray-500 mb-3">Possible duplicate of:</div>
+              <ul className="space-y-2">
+                {duplicate.possibleDuplicates.map((existing, i) => (
+                  <li key={i} className="bg-white p-2.5 rounded border">
+                    <div className="font-medium">{existing.title}</div>
+                    <div className="text-sm text-gray-600">{existing.artist}</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      ))}
+      
+      <div className="flex justify-end space-x-2 mt-4">
+        <Button
+          variant="outline"
+          onClick={onCancel}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={onFinalize}
+          disabled={Object.values(fuzzyDuplicateDecisions).some(d => d !== 'approve' && d !== 'skip')}
+        >
+          Finalize Import
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs = [] }) {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -91,7 +202,18 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
         });
         setFuzzyDuplicateDecisions(initialDecisions);
         setShowDuplicateReview(true);
-        setImportResults(result);
+        
+        // Separate non-duplicate songs from potential duplicates
+        const nonDuplicateSongs = result.songs.filter(song => 
+          !result.fuzzyDuplicates.some(dup => 
+            dup.newSong.title === song.title && dup.newSong.artist === song.artist
+          )
+        );
+        
+        setImportResults({
+          ...result,
+          songs: nonDuplicateSongs
+        });
       } else {
         // No fuzzy duplicates, proceed with import
         await importSongs(result.songs);
@@ -127,17 +249,49 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
   const handleFinalizeDuplicates = async () => {
     if (!importResults) return;
 
+    setIsProcessing(true);
     const approvedSongs = [...importResults.songs];
+    let approvedDuplicates = 0;
+    let skippedDuplicates = 0;
 
-    // Add songs that were approved in the fuzzy duplicate review
+    // Count approved and skipped duplicates
     importResults.fuzzyDuplicates.forEach((duplicate, index) => {
       if (fuzzyDuplicateDecisions[index] === 'approve') {
         approvedSongs.push(duplicate.newSong);
+        approvedDuplicates++;
+      } else if (fuzzyDuplicateDecisions[index] === 'skip') {
+        skippedDuplicates++;
       }
     });
 
-    await importSongs(approvedSongs);
-    setShowDuplicateReview(false);
+    try {
+      const { results, errors } = await createSongsBulk(approvedSongs);
+      
+      if (errors.length > 0) {
+        console.error('Some songs failed to import:', errors);
+        setError(`${errors.length} songs failed to import`);
+      }
+      
+      setShowDuplicateReview(false);
+      setImportResults({
+        ...importResults,
+        totalProcessed: approvedSongs.length,
+        added: importResults.songs.length,
+        approvedDuplicates,
+        skippedDuplicates,
+        errors: errors.length
+      });
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (e) {
+      console.error('Error importing songs:', e);
+      setError('Failed to import songs');
+      throw e;
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleDownloadExample = () => {
@@ -156,70 +310,13 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
     if (!showDuplicateReview || !importResults) return null;
 
     return (
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Review Potential Duplicates</h3>
-        <p className="text-sm text-gray-600">
-          We found some songs that might be duplicates. Please review them before finalizing the import.
-        </p>
-        
-        {importResults.fuzzyDuplicates.map((duplicate, index) => (
-          <div key={index} className="border rounded-lg p-4 space-y-2">
-            <div className="flex justify-between items-start">
-              <div>
-                <h4 className="font-medium">New Song</h4>
-                <p>{duplicate.newSong.title} - {duplicate.newSong.artist}</p>
-                
-                <h4 className="font-medium mt-2">Possible Duplicates</h4>
-                <ul className="list-disc list-inside">
-                  {duplicate.possibleDuplicates.map((existing, i) => (
-                    <li key={i} className="text-sm text-gray-600">
-                      {existing.title} - {existing.artist}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              
-              <div className="space-x-2">
-                <Button
-                  size="sm"
-                  variant={fuzzyDuplicateDecisions[index] === 'approve' ? 'default' : 'outline'}
-                  onClick={() => setFuzzyDuplicateDecisions(prev => ({
-                    ...prev,
-                    [index]: 'approve'
-                  }))}
-                >
-                  Import Anyway
-                </Button>
-                <Button
-                  size="sm"
-                  variant={fuzzyDuplicateDecisions[index] === 'skip' ? 'default' : 'outline'}
-                  onClick={() => setFuzzyDuplicateDecisions(prev => ({
-                    ...prev,
-                    [index]: 'skip'
-                  }))}
-                >
-                  Skip
-                </Button>
-              </div>
-            </div>
-          </div>
-        ))}
-        
-        <div className="flex justify-end space-x-2 mt-4">
-          <Button
-            variant="outline"
-            onClick={() => setShowDuplicateReview(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleFinalizeDuplicates}
-            disabled={Object.values(fuzzyDuplicateDecisions).some(d => d === 'undecided')}
-          >
-            Finalize Import
-          </Button>
-        </div>
-      </div>
+      <DuplicateReview
+        importResults={importResults}
+        fuzzyDuplicateDecisions={fuzzyDuplicateDecisions}
+        setFuzzyDuplicateDecisions={setFuzzyDuplicateDecisions}
+        onCancel={() => setShowDuplicateReview(false)}
+        onFinalize={handleFinalizeDuplicates}
+      />
     );
   };
 
@@ -229,7 +326,7 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
         onClose();
       }
     }}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Import Songs from CSV</DialogTitle>
           <DialogDescription>
@@ -372,7 +469,7 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
               </Alert>
             )}
 
-            {importResults && !importResults.fuzzyDuplicates.length && (
+            {!isProcessing && importResults && !showDuplicateReview && (
               <Alert className="bg-green-50 border-green-200">
                 <div className="space-y-2">
                   <h4 className="font-medium text-green-800">Import Complete!</h4>
@@ -380,11 +477,14 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
                     <p>Successfully processed {importResults.totalProcessed} songs:</p>
                     <ul className="list-disc list-inside mt-2">
                       <li>{importResults.added} songs were added</li>
-                      {importResults.skipped > 0 && (
-                        <li>{importResults.skipped} exact duplicates were skipped</li>
+                      {importResults.approvedDuplicates > 0 && (
+                        <li>{importResults.approvedDuplicates} duplicates were imported</li>
                       )}
-                      {importResults.invalid > 0 && (
-                        <li>{importResults.invalid} invalid songs were skipped</li>
+                      {importResults.skippedDuplicates > 0 && (
+                        <li>{importResults.skippedDuplicates} duplicates were skipped</li>
+                      )}
+                      {importResults.errors > 0 && (
+                        <li className="text-red-600">{importResults.errors} songs failed to import</li>
                       )}
                     </ul>
                   </div>
