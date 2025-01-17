@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
+import { Progress } from "@/components/ui/progress";
 import { EXAMPLE_CSV, processCSV, processImport } from '@/lib/importSongs';
 import { toast } from 'sonner';
 import { createSongsBulk } from '@/lib/services/songs';
@@ -19,7 +20,8 @@ function DuplicateReview({
   fuzzyDuplicateDecisions, 
   setFuzzyDuplicateDecisions, 
   onCancel, 
-  onFinalize 
+  onFinalize,
+  isProcessing 
 }) {
   const handleBulkAction = (action) => {
     const newDecisions = {};
@@ -43,6 +45,7 @@ function DuplicateReview({
             size="sm"
             variant="outline"
             onClick={() => handleBulkAction('skip')}
+            disabled={isProcessing}
           >
             Skip All
           </Button>
@@ -50,6 +53,7 @@ function DuplicateReview({
             size="sm"
             variant="outline"
             onClick={() => handleBulkAction('approve')}
+            disabled={isProcessing}
           >
             <PlusIcon className="h-4 w-4" />
             Import All
@@ -74,6 +78,7 @@ function DuplicateReview({
                     ...prev,
                     [index]: 'approve'
                   }))}
+                  disabled={isProcessing}
                 >
                   <PlusIcon className="h-4 w-4" />
                   Import Anyway
@@ -85,6 +90,7 @@ function DuplicateReview({
                     ...prev,
                     [index]: 'skip'
                   }))}
+                  disabled={isProcessing}
                 >
                   Skip
                 </Button>
@@ -110,14 +116,15 @@ function DuplicateReview({
         <Button
           variant="outline"
           onClick={onCancel}
+          disabled={isProcessing}
         >
           Cancel
         </Button>
         <Button
           onClick={onFinalize}
-          disabled={Object.values(fuzzyDuplicateDecisions).some(d => d !== 'approve' && d !== 'skip')}
+          disabled={isProcessing || Object.values(fuzzyDuplicateDecisions).some(d => d !== 'approve' && d !== 'skip')}
         >
-          Finalize Import
+          {isProcessing ? 'Importing...' : 'Finalize Import'}
         </Button>
       </div>
     </div>
@@ -133,6 +140,7 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
   const [importResults, setImportResults] = useState(null);
   const [fuzzyDuplicateDecisions, setFuzzyDuplicateDecisions] = useState({});
   const [showDuplicateReview, setShowDuplicateReview] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const processFile = async (file) => {
     if (!file) return;
@@ -185,6 +193,7 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
   const handleImport = async () => {
     setIsProcessing(true);
     setError(null);
+    setProgress(0);
 
     try {
       if (!currentFile) {
@@ -192,9 +201,20 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
         return;
       }
 
+      // Start progress animation
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 90) return prev; // Cap at 90% until complete
+          return prev + 10;
+        });
+      }, 500);
+
       const result = await processImport(currentFile, allSongs);
       
       if (result.fuzzyDuplicates.length > 0) {
+        clearInterval(progressInterval);
+        setProgress(0);
+        
         // Initialize decisions for each fuzzy duplicate
         const initialDecisions = {};
         result.fuzzyDuplicates.forEach((duplicate, index) => {
@@ -217,6 +237,8 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
       } else {
         // No fuzzy duplicates, proceed with import
         await importSongs(result.songs);
+        clearInterval(progressInterval);
+        setProgress(100);
         setImportResults(result);
       }
     } catch (err) {
@@ -250,9 +272,20 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
     if (!importResults) return;
 
     setIsProcessing(true);
+    setShowDuplicateReview(false);
+    setProgress(0);
+    
     const approvedSongs = [...importResults.songs];
     let approvedDuplicates = 0;
     let skippedDuplicates = 0;
+
+    // Start progress animation
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 90) return prev; // Cap at 90% until complete
+        return prev + 10;
+      });
+    }, 500);
 
     // Count approved and skipped duplicates
     importResults.fuzzyDuplicates.forEach((duplicate, index) => {
@@ -272,7 +305,6 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
         setError(`${errors.length} songs failed to import`);
       }
       
-      setShowDuplicateReview(false);
       setImportResults({
         ...importResults,
         totalProcessed: approvedSongs.length,
@@ -281,6 +313,9 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
         skippedDuplicates,
         errors: errors.length
       });
+      
+      clearInterval(progressInterval);
+      setProgress(100);
       
       if (onSuccess) {
         onSuccess();
@@ -316,6 +351,7 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
         setFuzzyDuplicateDecisions={setFuzzyDuplicateDecisions}
         onCancel={() => setShowDuplicateReview(false)}
         onFinalize={handleFinalizeDuplicates}
+        isProcessing={isProcessing}
       />
     );
   };
@@ -358,140 +394,143 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
           </div>
         </DialogHeader>
 
-        {showDuplicateReview ? (
-          renderDuplicateReview()
-        ) : (
-          <div className="space-y-4">
-            {!importResults && !isProcessing && (
-              <>
-                <div 
-                  className="flex items-center justify-center w-full"
-                  onDragEnter={handleDragEnter}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  <label 
-                    className={`flex flex-col items-center justify-center w-full h-32 border-2 ${
-                      isDragging 
-                        ? 'border-indigo-500 bg-indigo-50' 
-                        : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
-                    } border-dashed rounded-lg cursor-pointer transition-colors duration-150`}
-                    onDragEnter={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsDragging(true);
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsDragging(true);
-                    }}
-                    onDragLeave={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const x = e.clientX;
-                      const y = e.clientY;
-                      
-                      // Only set isDragging to false if we've actually left the bounds of the element
-                      if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
-                        setIsDragging(false);
-                      }
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
+        <div className="space-y-4">
+          {!importResults && !isProcessing && (
+            <>
+              <div 
+                className="flex items-center justify-center w-full"
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <label 
+                  className={`flex flex-col items-center justify-center w-full h-32 border-2 ${
+                    isDragging 
+                      ? 'border-indigo-500 bg-indigo-50' 
+                      : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
+                  } border-dashed rounded-lg cursor-pointer transition-colors duration-150`}
+                  onDragEnter={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDragging(true);
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = e.clientX;
+                    const y = e.clientY;
+                    
+                    // Only set isDragging to false if we've actually left the bounds of the element
+                    if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
                       setIsDragging(false);
-                      const file = e.dataTransfer.files[0];
-                      processFile(file);
-                    }}
-                  >
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <svg className={`w-8 h-8 mb-4 ${isDragging ? 'text-indigo-500' : 'text-gray-500'}`} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                        <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
-                      </svg>
-                      <p className={`mb-2 text-sm ${isDragging ? 'text-indigo-600' : 'text-gray-500'}`}>
-                        <span className="font-semibold">Click to upload</span> or drag and drop
-                      </p>
-                      <p className={`text-xs ${isDragging ? 'text-indigo-500' : 'text-gray-500'}`}>CSV files only</p>
-                    </div>
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      accept=".csv" 
-                      onChange={handleFileSelect}
-                      disabled={isProcessing}
-                    />
-                  </label>
-                </div>
-
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription className="whitespace-pre-line">{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                {preview && (
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Preview ({preview.totalRows} songs found)</h4>
-                    <div className="text-sm text-gray-600">
-                      {preview.sampleRows.map((row, i) => (
-                        <div key={i} className="py-1">
-                          {row.title} - {row.artist} ({row.type || 'ballad'})
-                          {row.tags && <span className="text-gray-400"> • {row.tags}</span>}
-                          {row.chordUrl && (
-                            <span className="text-gray-400">
-                              {' '}• <a href={row.chordUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">chords</a>
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                      {preview.totalRows > 3 && (
-                        <div className="text-gray-400 italic">
-                          ...and {preview.totalRows - 3} more
-                        </div>
-                      )}
-                    </div>
+                    }
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDragging(false);
+                    const file = e.dataTransfer.files[0];
+                    processFile(file);
+                  }}
+                >
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <svg className={`w-8 h-8 mb-4 ${isDragging ? 'text-indigo-500' : 'text-gray-500'}`} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                      <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                    </svg>
+                    <p className={`mb-2 text-sm ${isDragging ? 'text-indigo-600' : 'text-gray-500'}`}>
+                      <span className="font-semibold">Click to upload</span> or drag and drop
+                    </p>
+                    <p className={`text-xs ${isDragging ? 'text-indigo-500' : 'text-gray-500'}`}>CSV files only</p>
                   </div>
-                )}
-              </>
-            )}
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept=".csv" 
+                    onChange={handleFileSelect}
+                    disabled={isProcessing}
+                  />
+                </label>
+              </div>
 
-            {isProcessing && (
-              <Alert className="bg-blue-50 border-blue-200">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription className="whitespace-pre-line">{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {preview && (
+                <div className="space-y-2">
+                  <h4 className="font-medium">Preview ({preview.totalRows} songs found)</h4>
+                  <div className="text-sm text-gray-600">
+                    {preview.sampleRows.map((row, i) => (
+                      <div key={i} className="py-1">
+                        {row.title} - {row.artist} ({row.type || 'ballad'})
+                        {row.tags && <span className="text-gray-400"> • {row.tags}</span>}
+                        {row.chordUrl && (
+                          <span className="text-gray-400">
+                            {' '}• <a href={row.chordUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">chords</a>
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                    {preview.totalRows > 3 && (
+                      <div className="text-gray-400 italic">
+                        ...and {preview.totalRows - 3} more
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {isProcessing && (
+            <Alert className="bg-blue-50 border-blue-200">
+              <div className="space-y-3">
                 <div className="flex items-center space-x-3">
                   <Spinner className="text-indigo-500" />
                   <p className="text-indigo-800">
                     Importing songs... Please do not close this window. This may take a few moments.
                   </p>
                 </div>
-              </Alert>
-            )}
+                <Progress value={progress} className="w-full" />
+              </div>
+            </Alert>
+          )}
 
-            {!isProcessing && importResults && !showDuplicateReview && (
-              <Alert className="bg-green-50 border-green-200">
-                <div className="space-y-2">
-                  <h4 className="font-medium text-green-800">Import Complete!</h4>
-                  <div className="text-green-700">
-                    <p>Successfully processed {importResults.totalProcessed} songs:</p>
-                    <ul className="list-disc list-inside mt-2">
-                      <li>{importResults.added} songs were added</li>
-                      {importResults.approvedDuplicates > 0 && (
-                        <li>{importResults.approvedDuplicates} duplicates were imported</li>
-                      )}
-                      {importResults.skippedDuplicates > 0 && (
-                        <li>{importResults.skippedDuplicates} duplicates were skipped</li>
-                      )}
-                      {importResults.errors > 0 && (
-                        <li className="text-red-600">{importResults.errors} songs failed to import</li>
-                      )}
-                    </ul>
-                  </div>
+          {!isProcessing && importResults && !showDuplicateReview && (
+            <Alert className="bg-green-50 border-green-200">
+              <div className="space-y-2">
+                <h4 className="font-medium text-green-800">Import Complete!</h4>
+                <div className="text-green-700">
+                  <p>Successfully processed {importResults.totalProcessed} songs:</p>
+                  <ul className="list-disc list-inside mt-2">
+                    <li>{importResults.added} songs were added</li>
+                    {importResults.approvedDuplicates > 0 && (
+                      <li>{importResults.approvedDuplicates} duplicates were imported</li>
+                    )}
+                    {importResults.skippedDuplicates > 0 && (
+                      <li>{importResults.skippedDuplicates} duplicates were skipped</li>
+                    )}
+                    {importResults.errors > 0 && (
+                      <li className="text-red-600">{importResults.errors} songs failed to import</li>
+                    )}
+                  </ul>
                 </div>
-              </Alert>
-            )}
+              </div>
+            </Alert>
+          )}
 
+          {showDuplicateReview ? (
+            renderDuplicateReview()
+          ) : (
             <div className="flex justify-end gap-3">
               {!importResults ? (
                 <>
@@ -513,8 +552,8 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
                 <Button onClick={onClose}>Close</Button>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
