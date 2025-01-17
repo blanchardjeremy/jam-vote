@@ -14,8 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TrashIcon } from "@heroicons/react/24/outline";
 import ConfirmDialog from "@/components/ConfirmDialog";
-import { fetchSongs, useSongOperations } from '@/lib/services/songs';
+import { fetchSongs, useSongOperations, createSong } from '@/lib/services/songs';
 import ImportSongsModal from "@/components/ImportSongsModal";
+import SongAutocomplete from "@/components/SongAutocomplete";
 
 export default function SongsPage() {
   const [songs, setSongs] = useState([]);
@@ -127,6 +128,16 @@ export default function SongsPage() {
     setLastClickedIndex(null);
   };
 
+  const handleAddNewSong = async (songData) => {
+    try {
+      const newSong = await createSong(songData);
+      setSongs(prev => [...prev, newSong]);
+    } catch (error) {
+      console.error('Error adding song:', error);
+      // You might want to show a toast notification here
+    }
+  };
+
   if (error) {
     return (
       <div className="rounded-md bg-red-50 p-4 mb-6">
@@ -160,9 +171,21 @@ export default function SongsPage() {
         </p>
       </div>
 
+      {/* Song Search and Add */}
+      <div className="mb-6 max-w-2xl">
+        <h2 className="text-lg font-semibold text-gray-700 mb-2">Add a Song</h2>
+        <SongAutocomplete
+          onSelect={(song) => handleAddNewSong(song)}
+          onAddNew={(title) => handleAddNewSong({ title, type: 'banger' })}
+          currentSongs={songs}
+          maxWidth="max-w-xl"
+          placeholder="Check if song exists before adding..."
+        />
+      </div>
+
       {/* Toolbar */}
       <div className="sticky top-0 z-10">
-        <div className="mb-4 flex items-center justify-between bg-white/80 backdrop-blur-sm shadow-sm rounded-lg p-3 border border-gray-200">
+        <div className="mb-4 flex items-center justify-between bg-background shadow-sm rounded-lg p-3 border border-gray-200">
           <div className="flex items-center gap-4">
             <Checkbox
               checked={selectedSongs.size === filteredSongs.length && filteredSongs.length > 0}

@@ -23,14 +23,13 @@ export default function Modal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className={cn(
         // Base styles
-        'w-full overflow-hidden',
+        'w-full overflow-hidden p-6',
         // Width
         `max-w-${maxWidth}`,
         // Height and scroll
         'max-h-[calc(100vh-4rem)] overflow-y-auto',
       )}>
-
-        <DialogHeader className="sticky top-0 bg-background z-10 pb-4">
+        <DialogHeader className="bg-background pb-4">
           {title && <DialogTitle>{title}</DialogTitle>}
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
@@ -42,7 +41,7 @@ export default function Modal({
 
         {/* Actions */}
         {actions && (
-          <div className="sticky bottom-0 bg-background pt-4 mt-6 flex flex-col-reverse gap-3 sm:flex-row-reverse sm:mt-4">
+          <div className="bg-background pt-4 mt-6 flex flex-col-reverse gap-3 sm:flex-row-reverse sm:mt-4">
             {actions}
           </div>
         )}

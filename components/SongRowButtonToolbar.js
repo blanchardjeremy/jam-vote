@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { MusicalNoteIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
-import { TrashIcon, PencilIcon, EllipsisHorizontalIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, PencilIcon, EllipsisVerticalIcon } from "@heroicons/react/24/outline";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,7 +82,7 @@ export default function SongRowButtonToolbar({
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
             >
-              <EllipsisHorizontalIcon className="h-4 w-4 md:h-5 md:w-5" />
+              <EllipsisVerticalIcon className="h-4 w-4 md:h-5 md:w-5" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
