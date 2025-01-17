@@ -30,6 +30,7 @@ import Loading from "@/app/loading";
 import { toast } from 'sonner';
 import { useJamSongOperations, addSongToJam } from '@/lib/services/jamSongs';
 import { fetchSongs } from '@/lib/services/songs';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 // Helper component for rendering song lists
 function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit, hideTypeBadge, emptyMessage, groupingEnabled }) {
@@ -64,8 +65,6 @@ export default function JamPage() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [duplicateSong, setDuplicateSong] = useState(null);
   const [groupingEnabled, setGroupingEnabled] = useState(true);
   const [sortMethod, setSortMethod] = useState('votes');
   const songAutocompleteRef = useRef(null);
@@ -77,7 +76,19 @@ export default function JamPage() {
   const { handleEdit, handleRemove, handleVote, handleTogglePlayed } = useJamSongOperations({
     jamId: params.id,
     songs: jam?.songs || [],
-    setSongs: (newSongs) => setJam(prev => ({ ...prev, songs: newSongs })),
+    setSongs: (newSongs) => {
+      if (typeof newSongs === 'function') {
+        setJam(prev => ({
+          ...prev,
+          songs: newSongs(prev.songs)
+        }));
+      } else {
+        setJam(prev => ({
+          ...prev,
+          songs: newSongs
+        }));
+      }
+    },
     sortMethod
   });
 
@@ -101,12 +112,6 @@ export default function JamPage() {
 
   const handleSelectExisting = async (song) => {
     try {
-      // Check if song already exists in the jam
-      if (jam.songs.some(existingSong => existingSong.song._id === song._id)) {
-        setDuplicateSong(song);
-        return;
-      }
-
       await handleAddSongToJam(song._id);
     } catch (e) {
       console.error('Error adding song to jam:', e);
@@ -122,7 +127,6 @@ export default function JamPage() {
     try {
       // Check if song already exists in the jam
       if (jam.songs.some(existingSong => existingSong.song._id === newSong._id)) {
-        setDuplicateSong(newSong);
         setIsAddModalOpen(false);
         return;
       }
@@ -135,10 +139,17 @@ export default function JamPage() {
   };
 
   // Function to group songs
-  const getGroupedSongs = (songs = []) => {
-    // Ensure songs is an array
-    const songsArray = Array.isArray(songs) ? songs : [];
-    
+  const getGroupedSongs = (songs) => {
+    if (!Array.isArray(songs)) {
+      console.warn('getGroupedSongs received non-array songs:', songs);
+      return {
+        bangers: [],
+        ballads: [],
+        ungrouped: [],
+        nextSongId: null
+      };
+    }
+
     // Helper function to sort within groups
     const sortWithinGroup = (songs) => {
       return [...songs].sort((a, b) => {
@@ -150,8 +161,8 @@ export default function JamPage() {
     };
 
     // First split into played and unplayed
-    const playedSongs = songsArray.filter(jamSong => jamSong.played);
-    const unplayedSongs = songsArray.filter(jamSong => !jamSong.played);
+    const playedSongs = songs.filter(song => song.played);
+    const unplayedSongs = songs.filter(song => !song.played);
 
     if (!groupingEnabled) {
       // Even in ungrouped view, we still want played songs at the top
@@ -168,10 +179,10 @@ export default function JamPage() {
     }
 
     // For grouped view, split each played status group into bangers and ballads
-    const playedBangers = sortWithinGroup(playedSongs.filter(jamSong => jamSong.song?.type === 'banger'));
-    const playedBallads = sortWithinGroup(playedSongs.filter(jamSong => jamSong.song?.type === 'ballad'));
-    const unplayedBangers = sortWithinGroup(unplayedSongs.filter(jamSong => jamSong.song?.type === 'banger'));
-    const unplayedBallads = sortWithinGroup(unplayedSongs.filter(jamSong => jamSong.song?.type === 'ballad'));
+    const playedBangers = sortWithinGroup(playedSongs.filter(song => song.song.type === 'banger'));
+    const playedBallads = sortWithinGroup(playedSongs.filter(song => song.song.type === 'ballad'));
+    const unplayedBangers = sortWithinGroup(unplayedSongs.filter(song => song.song.type === 'banger'));
+    const unplayedBallads = sortWithinGroup(unplayedSongs.filter(song => song.song.type === 'ballad'));
 
     // Find next unplayed song - first check bangers, then ballads
     const nextSongId = unplayedBangers[0]?._id || unplayedBallads[0]?._id;
@@ -191,12 +202,9 @@ export default function JamPage() {
         throw new Error(errorData.error || 'Failed to fetch jam');
       }
       const data = await res.json();
-      // Ensure songs is initialized as an array
-      setJam({
-        ...data,
-        songs: data.songs || []
-      });
-      return data;
+      console.log('[Jam Page] Fetched jam data:', data);
+      console.log('[Jam Page] Songs type:', typeof data?.songs, Array.isArray(data?.songs));
+      setJam(data);
     } catch (e) {
       setError(e.message);
       console.error('Error in JamPage component:', e);
@@ -234,35 +242,39 @@ export default function JamPage() {
     channel.bind('vote', (data) => {
       console.log('[Pusher Client] Received vote event:', data);
       setJam(prevJam => {
-        if (!prevJam) {
-          console.log('[Pusher Client] No previous jam state, skipping vote update');
+        console.log('[Pusher Client] Previous jam state:', prevJam);
+        console.log('[Pusher Client] Songs type:', typeof prevJam?.songs, Array.isArray(prevJam?.songs));
+        
+        if (!prevJam?.songs) {
+          console.log('[Pusher Client] No previous jam state or songs, skipping vote update');
           return prevJam;
         }
-        
-        // Ensure songs is an array
-        const songs = Array.isArray(prevJam.songs) ? prevJam.songs : [];
+
+        if (!Array.isArray(prevJam.songs)) {
+          console.log('[Pusher Client] Songs is not an array, attempting to fix:', prevJam.songs);
+          // If songs is not an array but is an object with numeric keys, convert it
+          if (typeof prevJam.songs === 'object') {
+            const songsArray = Object.values(prevJam.songs);
+            if (Array.isArray(songsArray)) {
+              prevJam = { ...prevJam, songs: songsArray };
+            }
+          }
+          // If we still don't have an array, return unchanged
+          if (!Array.isArray(prevJam.songs)) {
+            return prevJam;
+          }
+        }
         
         // Only update if the vote count is different to avoid unnecessary re-renders
-        const songToUpdate = songs.find(jamSong => jamSong._id.toString() === data.songId.toString());
+        const songToUpdate = prevJam.songs.find(s => s._id.toString() === data.songId);
+        console.log('[Pusher Client] Found song to update:', songToUpdate);
+        
         if (!songToUpdate || songToUpdate.votes === data.votes) {
-          console.log('[Pusher Client] No song to update or votes unchanged', { 
-            songId: data.songId, 
-            currentVotes: songToUpdate?.votes,
-            newVotes: data.votes 
-          });
           return prevJam;
         }
         
-        console.log('[Pusher Client] Updating votes', {
-          songId: data.songId,
-          oldVotes: songToUpdate.votes,
-          newVotes: data.votes
-        });
-        
-        const updatedSongs = songs.map(jamSong => 
-          jamSong._id.toString() === data.songId.toString() 
-            ? { ...jamSong, votes: data.votes }
-            : jamSong
+        const updatedSongs = prevJam.songs.map(s => 
+          s._id.toString() === data.songId ? { ...s, votes: data.votes } : s
         );
         
         // Only sort if we're using vote-based sorting
@@ -531,42 +543,17 @@ export default function JamPage() {
         jamId={params.id}
       />
 
-      <AlertDialog open={!!songToDelete} onOpenChange={(open) => !open && setSongToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove Song</AlertDialogTitle>
-            <AlertDialogDescription>
-              {songToDelete && `Are you sure you want to remove "${songToDelete.song.title}" by ${songToDelete.song.artist} from this jam? This action cannot be undone.`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isRemoving}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => songToDelete && handleRemove(songToDelete._id)}
-              disabled={isRemoving}
-              className="bg-destructive hover:bg-destructive/80 focus:ring-destructive"
-            >
-              {isRemoving ? 'Removing...' : 'Remove Song'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        isOpen={!!songToDelete}
+        onClose={() => setSongToDelete(null)}
+        onConfirm={() => songToDelete && handleRemove(songToDelete._id)}
+        title="Remove Song"
+        description={songToDelete && `Are you sure you want to remove "${songToDelete.song.title}" by ${songToDelete.song.artist} from this jam? This action cannot be undone.`}
+        confirmText="Remove Song"
+        confirmLoadingText="Removing..."
+        isLoading={isRemoving}
+      />
 
-      <AlertDialog open={!!duplicateSong} onOpenChange={(open) => !open && setDuplicateSong(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Song Already Added</AlertDialogTitle>
-            <AlertDialogDescription>
-              {duplicateSong && `"${duplicateSong.title}" by ${duplicateSong.artist} is already in this jam's playlist.`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setDuplicateSong(null)}>
-              Got it
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 } 
