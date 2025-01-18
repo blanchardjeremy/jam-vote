@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import SongRowButton from "@/components/SongRowButton";
 import CaptainSignupButton from "@/components/CaptainSignupButton";
-import ConfirmDialog from "@/components/ConfirmDialog";
 import SongChordsButton from "@/components/SongChordsButton";
 import { cn } from "@/lib/utils";
 
@@ -22,8 +21,6 @@ export default function SongRowButtonToolbar({
   onRemove
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
-  const [isRemoving, setIsRemoving] = useState(false);
   const touchStartPos = useRef(null);
   
   const handleTouchStart = (e) => {
@@ -41,16 +38,6 @@ export default function SongRowButtonToolbar({
       setIsOpen(true);
     }
     touchStartPos.current = null;
-  };
-
-  const handleRemove = async () => {
-    setIsRemoving(true);
-    try {
-      await onRemove?.();
-      setShowRemoveDialog(false);
-    } finally {
-      setIsRemoving(false);
-    }
   };
 
   return (
@@ -93,7 +80,7 @@ export default function SongRowButtonToolbar({
             <DropdownMenuItem
               onClick={() => {
                 setIsOpen(false);
-                setShowRemoveDialog(true);
+                onRemove(jamSong);
               }}
               className="text-destructive hover:text-destructive hover:bg-destructive/10"
             >
@@ -103,17 +90,6 @@ export default function SongRowButtonToolbar({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-
-      <ConfirmDialog
-        isOpen={showRemoveDialog}
-        onClose={() => setShowRemoveDialog(false)}
-        onConfirm={handleRemove}
-        title="Remove Song"
-        description={`Are you sure you want to remove "${song.title}" by ${song.artist} from this jam?`}
-        confirmText="Remove"
-        isLoading={isRemoving}
-        confirmLoadingText="Removing..."
-      />
     </>
   );
 } 

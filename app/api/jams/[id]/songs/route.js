@@ -80,4 +80,65 @@ export async function POST(request, context) {
       { status: 500 }
     );
   }
+}
+
+export async function DELETE(request, context) {
+  try {
+    console.log('[Songs API] Received delete song request');
+    await connectDB();
+    const { songId } = await request.json();
+    const params = await context.params;
+    const jamId = params.id;
+
+    console.log('[Songs API] Request details:', { jamId, songId });
+
+    if (!songId) {
+      console.log('[Songs API] Invalid request: songId is required');
+      return NextResponse.json(
+        { error: 'Invalid request: songId is required' },
+        { status: 400 }
+      );
+    }
+
+    // Get the jam and populate existing songs
+    const jam = await Jam.findById(jamId).populate('songs.song');
+    if (!jam) {
+      console.log('[Songs API] Jam not found:', jamId);
+      return NextResponse.json(
+        { error: 'Jam not found' },
+        { status: 404 }
+      );
+    }
+
+    // Find and remove the song
+    const songIndex = jam.songs.findIndex(song => song.song._id.toString() === songId);
+    if (songIndex === -1) {
+      console.log('[Songs API] Song not found in jam:', songId);
+      return NextResponse.json(
+        { error: 'Song not found in jam' },
+        { status: 404 }
+      );
+    }
+
+    // Remove the song
+    const removedSong = jam.songs.splice(songIndex, 1)[0];
+    await jam.save();
+    console.log('[Songs API] Removed song successfully:', removedSong);
+
+    // Trigger Pusher event for song removal
+    await pusherServer.trigger(`jam-${jamId}`, 'song-removed', {
+      songId: songId
+    });
+
+    return NextResponse.json({
+      success: true,
+      removedSong: removedSong
+    });
+  } catch (error) {
+    console.error('[Songs API] Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to remove song from jam' },
+      { status: 500 }
+    );
+  }
 } 

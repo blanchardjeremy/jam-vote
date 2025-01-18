@@ -544,10 +544,20 @@ export default function JamPage() {
       <ConfirmDialog
         isOpen={!!songToDelete}
         onClose={() => setSongToDelete(null)}
-        onConfirm={() => songToDelete && handleRemove(songToDelete._id)}
+        onConfirm={async () => {
+          if (songToDelete) {
+            setIsRemoving(true);
+            try {
+              await handleRemove(songToDelete.song._id);
+              setSongToDelete(null);
+            } finally {
+              setIsRemoving(false);
+            }
+          }
+        }}
         title="Remove Song"
-        description={songToDelete && `Are you sure you want to remove "${songToDelete.song.title}" by ${songToDelete.song.artist} from this jam? This action cannot be undone.`}
-        confirmText="Remove Song"
+        description={songToDelete && `Are you sure you want to remove "${songToDelete.song.title}" by ${songToDelete.song.artist}" from this jam?`}
+        confirmText="Remove"
         confirmLoadingText="Removing..."
         isLoading={isRemoving}
       />
