@@ -8,7 +8,7 @@ export async function DELETE(request, context) {
   try {
     await connectDB();
     
-    const songId = context.params.id;
+    const songId = await context.params.id;
     if (!songId) {
       return NextResponse.json(
         { error: 'Song ID is required' },

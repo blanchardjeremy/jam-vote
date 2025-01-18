@@ -1,9 +1,6 @@
-import { useState } from "react";
-import SongFormModal from "@/components/CreateSongModal";
 import { Checkbox } from "@/components/ui/checkbox";
 import SongRowButton from "@/components/SongRowButton";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
-import ConfirmDialog from "@/components/ConfirmDialog";
 import BaseSongRow from "@/components/SongRowBase";
 
 function SongRowActions({ onEdit, onDelete, isSelected }) {
@@ -50,25 +47,6 @@ export default function SongListRow({
   onSelectionChange,
   hideType 
 }) {
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  
-  const handleEdit = async (updatedSong) => {
-    onEdit?.(song._id, updatedSong);
-    setIsEditModalOpen(false);
-  };
-
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      await onDelete?.(song._id);
-      setShowDeleteDialog(false);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
   const handleCheckboxClick = (e) => {
     e.stopPropagation();
     onSelectionChange?.(!isSelected);
@@ -83,46 +61,25 @@ export default function SongListRow({
   };
   
   return (
-    <>
-      <BaseSongRow
-        song={song}
-        isSelected={isSelected}
-        hideType={hideType}
-        className="cursor-pointer select-none group"
-        onClick={handleRowClick}
-        leftControl={
-          <Checkbox
-            checked={isSelected}
-            onClick={handleCheckboxClick}
-          />
-        }
-        rightActions={
-          <SongRowActions
-            onEdit={() => setIsEditModalOpen(true)}
-            onDelete={() => setShowDeleteDialog(true)}
-            isSelected={isSelected}
-          />
-        }
-      />
-
-      {/* Modals */}
-      <SongFormModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSubmit={handleEdit}
-        initialData={song}
-        mode="edit"
-      />
-
-      <ConfirmDialog
-        isOpen={showDeleteDialog}
-        onClose={() => setShowDeleteDialog(false)}
-        onConfirm={handleDelete}
-        title="Delete Song"
-        description={`Are you sure you want to delete "${song.title}" by ${song.artist}? This action cannot be undone.`}
-        isLoading={isDeleting}
-        confirmLoadingText="Deleting..."
-      />
-    </>
+    <BaseSongRow
+      song={song}
+      isSelected={isSelected}
+      hideType={hideType}
+      className="cursor-pointer select-none group"
+      onClick={handleRowClick}
+      leftControl={
+        <Checkbox
+          checked={isSelected}
+          onClick={handleCheckboxClick}
+        />
+      }
+      rightActions={
+        <SongRowActions
+          onEdit={() => onEdit?.(song)}
+          onDelete={() => onDelete?.(song)}
+          isSelected={isSelected}
+        />
+      }
+    />
   );
 } 

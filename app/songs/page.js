@@ -22,6 +22,7 @@ import CreateSongButton from "@/components/CreateSongButton";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SongListRow from "@/components/SongRowList";
 import LoadingBlock from "@/components/LoadingBlock";
+import SongModals from "@/components/SongModals";
 
 function FilterBar({ filters, onChange }) {
   return (
@@ -134,6 +135,8 @@ export default function SongsPage() {
     type: 'all',
     query: '',
   });
+  const [editModalState, setEditModalState] = useState({ isOpen: false, song: null });
+  const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, song: null });
 
   // Debounce the search query
   const debouncedFilters = useDebounce(filters, 300);
@@ -309,6 +312,33 @@ export default function SongsPage() {
     }
   };
 
+  const handleEditSong = (song) => {
+    if (!song) return;
+    setEditModalState({ isOpen: true, song });
+  };
+
+  const handleEditSubmit = async (updatedSong) => {
+    if (!editModalState.song) return;
+    await handleEdit(editModalState.song._id, updatedSong);
+    setEditModalState({ isOpen: false, song: null });
+  };
+
+  const handleDeleteSong = (song) => {
+    if (!song) return;
+    setDeleteModalState({ isOpen: true, song });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteModalState.song) return;
+    setIsDeleting(true);
+    try {
+      await handleDelete(deleteModalState.song._id);
+      setDeleteModalState({ isOpen: false, song: null });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (error) {
     return (
       <div className="rounded-md bg-red-50 p-4 mb-6">
@@ -396,10 +426,10 @@ export default function SongsPage() {
               >
                 <SongListRow 
                   song={song}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
+                  onEdit={handleEditSong}
+                  onDelete={handleDeleteSong}
                   isSelected={selectedSongs.has(song._id)}
-                  onSelectionChange={(checked, event) => toggleSelection(song._id, index)}
+                  onSelectionChange={(checked) => toggleSelection(song._id, index)}
                   hideType={filters.type !== 'all'}
                 />
               </li>
@@ -428,6 +458,17 @@ export default function SongsPage() {
         confirmText={isDeleting ? 'Deleting...' : `Delete ${selectedSongs.size} Songs`}
         cancelText="Cancel"
         disabled={isDeleting}
+      />
+
+      {/* Modals */}
+      <SongModals
+        editModalState={editModalState}
+        onEditClose={() => setEditModalState({ isOpen: false, song: null })}
+        onEditSubmit={handleEditSubmit}
+        deleteModalState={deleteModalState}
+        onDeleteClose={() => setDeleteModalState({ isOpen: false, song: null })}
+        onDeleteConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
       />
 
       <ImportSongsModal
