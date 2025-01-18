@@ -76,24 +76,6 @@ export async function POST(request, context) {
       await originalSong.save();
     }
 
-    // Update the jam atomically
-    console.log('[Played API] Attempting MongoDB update:', {
-      query: { 
-        _id: jamId,
-        'songs._id': songId 
-      },
-      update: { 
-        $set: { 
-          'songs.$.played': newPlayedStatus,
-          'songs.$.playedAt': newPlayedStatus ? new Date() : null
-        } 
-      },
-      options: { 
-        new: true,
-        runValidators: true
-      }
-    });
-
     // First update the specific song
     const updatedJam = await Jam.findOneAndUpdate(
       { 
@@ -125,28 +107,6 @@ export async function POST(request, context) {
         );
       }
     }
-
-    console.log('[Played API] MongoDB update result:', {
-      success: !!updatedJam,
-      updatedJamId: updatedJam?._id?.toString(),
-      songBeforeUpdate: {
-        _id: jamSong._id.toString(),
-        played: jamSong.played,
-        playedAt: jamSong.playedAt
-      },
-      songAfterUpdate: updatedJam?.songs?.find(s => s._id.toString() === songId)
-        ? {
-            _id: updatedJam.songs.find(s => s._id.toString() === songId)._id.toString(),
-            played: updatedJam.songs.find(s => s._id.toString() === songId).played,
-            playedAt: updatedJam.songs.find(s => s._id.toString() === songId).playedAt
-          }
-        : null,
-      allSongsAfterUpdate: updatedJam?.songs?.map(s => ({
-        _id: s._id.toString(),
-        played: s.played,
-        playedAt: s.playedAt
-      }))
-    });
 
     if (!updatedJam) {
       throw new Error('Failed to update jam');
