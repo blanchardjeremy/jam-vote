@@ -28,7 +28,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import LoadingBlock from "@/components/LoadingBlock";
 import { toast } from 'sonner';
-import { useJamSongOperations, addSongToJam } from '@/lib/services/jamSongs';
+import { useJamSongOperations, addSongToJam, handlePositionHighlight } from '@/lib/services/jamSongs';
 import { fetchSongs } from '@/lib/services/songs';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
@@ -43,7 +43,8 @@ function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit,
   }
 
   return songs.map((jamSong, index) => {
-    const willHighlight = jamSong._id === lastAddedSongId;
+    // Use lastAddedSongId highlight or the song's own highlight from vote changes
+    const willHighlight = jamSong._id === lastAddedSongId ? 'success' : jamSong.highlight;
     return (
       <li key={`${jamSong.song._id}-${index}`} className="hover:bg-gray-50">
         <SongRow 
@@ -55,7 +56,7 @@ function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit,
           isNext={jamSong._id === nextSongId}
           hideType={hideTypeBadge}
           groupingEnabled={groupingEnabled}
-          highlight={willHighlight ? 'success' : null}
+          highlight={willHighlight}
         />
       </li>
     );
@@ -77,6 +78,34 @@ export default function JamPage() {
   const [isRemoving, setIsRemoving] = useState(false);
   const [lastAddedSongId, setLastAddedSongId] = useState(null);
   const lastToastId = useRef(null);
+  const highlightTimeouts = useRef({});
+
+  // Clear timeouts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(highlightTimeouts.current).forEach(timeout => clearTimeout(timeout));
+    };
+  }, []);
+
+  const clearHighlightAfterDelay = (songId) => {
+    // Clear any existing timeout for this song
+    if (highlightTimeouts.current[songId]) {
+      clearTimeout(highlightTimeouts.current[songId]);
+    }
+
+    // Set new timeout
+    highlightTimeouts.current[songId] = setTimeout(() => {
+      setJam(prev => ({
+        ...prev,
+        songs: prev.songs.map(s => 
+          s._id === songId 
+            ? { ...s, highlight: null }
+            : s
+        )
+      }));
+      delete highlightTimeouts.current[songId];
+    }, 15000);
+  };
 
   // Get jam song operations from our service
   const { handleEdit, handleRemove, handleVote, handleTogglePlayed } = useJamSongOperations({
@@ -95,7 +124,8 @@ export default function JamPage() {
         }));
       }
     },
-    sortMethod
+    sortMethod,
+    clearHighlightAfterDelay
   });
 
   // Helper function to add a song to the jam
@@ -275,39 +305,70 @@ export default function JamPage() {
 
     // Handle vote updates
     channel.bind('vote', (data) => {
+      console.log('[Vote Debug] Starting vote handler with data:', data);
+      
       setJam(prevJam => {
+        console.log('[Vote Debug] Previous jam state:', {
+          songCount: prevJam?.songs?.length,
+          sortMethod
+        });
+        
         if (!prevJam?.songs) {
+          console.log('[Vote Debug] No songs found in jam');
           return prevJam;
         }
 
-        if (!Array.isArray(prevJam.songs)) {
-          // If songs is not an array but is an object with numeric keys, convert it
-          if (typeof prevJam.songs === 'object') {
-            const songsArray = Object.values(prevJam.songs);
-            if (Array.isArray(songsArray)) {
-              prevJam = { ...prevJam, songs: songsArray };
-            }
-          }
-          // If we still don't have an array, return unchanged
-          if (!Array.isArray(prevJam.songs)) {
-            return prevJam;
-          }
-        }
+        const songIndex = prevJam.songs.findIndex(s => s._id.toString() === data.songId);
+        const songToUpdate = prevJam.songs[songIndex];
         
-        // Only update if the vote count is different to avoid unnecessary re-renders
-        const songToUpdate = prevJam.songs.find(s => s._id.toString() === data.songId);
+        console.log('[Vote Debug] Found song:', {
+          songIndex,
+          currentVotes: songToUpdate?.votes,
+          newVotes: data.votes
+        });
         
         if (!songToUpdate || songToUpdate.votes === data.votes) {
+          console.log('[Vote Debug] No update needed');
           return prevJam;
         }
-        
-        const updatedSongs = prevJam.songs.map(s => 
-          s._id.toString() === data.songId ? { ...s, votes: data.votes } : s
-        );
+
+        // Create a copy of songs for sorting
+        let updatedSongs = [...prevJam.songs];
         
         // Only sort if we're using vote-based sorting
         if (sortMethod === 'votes') {
+          // Get current position before updating votes
+          const oldPosition = songIndex;
+          
+          // Update votes in the copy
+          updatedSongs[songIndex] = { ...songToUpdate, votes: data.votes };
+          
+          // Sort to find new position
           updatedSongs.sort((a, b) => b.votes - a.votes);
+          const newPosition = updatedSongs.findIndex(s => s._id.toString() === data.songId);
+          
+          console.log('[Vote Debug] Position change:', {
+            songId: data.songId,
+            oldPosition,
+            newPosition,
+            oldVotes: songToUpdate.votes,
+            newVotes: data.votes
+          });
+          
+          // Apply highlight if position changed
+          if (newPosition !== oldPosition) {
+            updatedSongs = handlePositionHighlight(
+              updatedSongs, 
+              data.songId, 
+              oldPosition, 
+              newPosition, 
+              setJam,
+              clearHighlightAfterDelay
+            );
+          }
+        } else {
+          // If not sorting by votes, just update the votes
+          updatedSongs[songIndex] = { ...songToUpdate, votes: data.votes };
         }
         
         return {
