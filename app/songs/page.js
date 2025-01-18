@@ -371,7 +371,7 @@ export default function SongsPage() {
           <div className="flex items-center gap-3">
             <CreateSongButton 
               onSongCreated={loadSongs} 
-              variant="primary" 
+              variant="outline" 
               onDuplicateSelect={handleDuplicateSongSelect}
             />
             <Button
@@ -439,8 +439,12 @@ export default function SongsPage() {
         
         {/* Bottom create button */}
         {filteredSongs.length > 0 && (
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-center">
+          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-center">
+            <span className="text-sm text-gray-500 mr-4">
+              Can't find the song you're looking for?
+            </span>
             <CreateSongButton 
+              label="Create a New Song"
               onSongCreated={loadSongs}
               onDuplicateSelect={handleDuplicateSongSelect}
               variant="primary"

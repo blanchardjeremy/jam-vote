@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import { MusicalNoteIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import { TrashIcon, PencilIcon, EllipsisVerticalIcon } from "@heroicons/react/24/outline";
@@ -12,6 +11,7 @@ import {
 import SongRowButton from "@/components/SongRowButton";
 import CaptainSignupButton from "@/components/CaptainSignupButton";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import SongChordsButton from "@/components/SongChordsButton";
 import { cn } from "@/lib/utils";
 
 export default function SongRowButtonToolbar({ 
@@ -56,13 +56,7 @@ export default function SongRowButtonToolbar({
   return (
     <>
       <div className="flex items-center gap-1">
-        {song.chordChart && (
-          <SongRowButton
-            icon={MusicalNoteIcon}
-            href={song.chordChart}
-            tooltip="View chord chart"
-          />
-        )}
+        <SongChordsButton song={song} />
         <CaptainSignupButton jamSong={jamSong} />
         <SongRowButton
           icon={jamSong.played ? CheckCircleSolid : CheckCircleIcon}

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import { DocumentPlusIcon } from "@heroicons/react/24/outline";
 import CreateSongModal from "@/components/CreateSongModal";
 
 export default function CreateSongButton({ 
+  label = "Create Song",
   className = "", 
   initialTitle = "", 
   onSongCreated,
@@ -27,8 +28,8 @@ export default function CreateSongButton({
         onClick={() => setIsModalOpen(true)}
         className={`flex items-center gap-2 ${className}`}
       >
-        <PlusIcon className="h-4 w-4" />
-        <span>Create Song</span>
+        <DocumentPlusIcon className="h-4 w-4" />
+        <span>{label}</span>
       </Button>
 
       <CreateSongModal

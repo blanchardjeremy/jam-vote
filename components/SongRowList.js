@@ -2,40 +2,25 @@ import { Checkbox } from "@/components/ui/checkbox";
 import SongRowButton from "@/components/SongRowButton";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import BaseSongRow from "@/components/SongRowBase";
+import HoverActionButtons from "@/components/ui/hover-action-buttons";
+import SongChordsButton from "@/components/SongChordsButton";
 
-function SongRowActions({ onEdit, onDelete, isSelected }) {
+function SongRowActions({ song, onEdit, onDelete }) {
   return (
-    <div>
-      {/* Desktop/Mouse view - show on hover */}
-      <div className="hidden [@media(hover:hover)]:flex [@media(hover:hover)]:opacity-0 group-hover:opacity-100 items-center gap-1 md:gap-2">
-        <SongRowButton
-          icon={PencilIcon}
-          onClick={onEdit}
-          tooltip="Edit song"
-        />
-        <SongRowButton
-          icon={TrashIcon}
-          onClick={onDelete}
-          tooltip="Delete song"
-          variant="danger"
-        />
-      </div>
-
-      {/* Touch device view - always show */}
-      <div className="[@media(hover:hover)]:hidden flex items-center gap-1 md:gap-2">
-        <SongRowButton
-          icon={PencilIcon}
-          onClick={onEdit}
-          tooltip="Edit song"
-        />
-        <SongRowButton
-          icon={TrashIcon}
-          onClick={onDelete}
-          tooltip="Delete song"
-          variant="danger"
-        />
-      </div>
-    </div>
+    <HoverActionButtons>
+      <SongChordsButton song={song} />
+      <SongRowButton
+        icon={PencilIcon}
+        onClick={onEdit}
+        tooltip="Edit song"
+      />
+      <SongRowButton
+        icon={TrashIcon}
+        onClick={onDelete}
+        tooltip="Delete song"
+        variant="danger"
+      />
+    </HoverActionButtons>
   );
 }
 
@@ -75,6 +60,7 @@ export default function SongListRow({
       }
       rightActions={
         <SongRowActions
+          song={song}
           onEdit={() => onEdit?.(song)}
           onDelete={() => onDelete?.(song)}
           isSelected={isSelected}
