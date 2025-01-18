@@ -36,7 +36,7 @@ export function Navigation() {
   }
 
   return (
-    <div className="border-b">
+    <div className="border-b bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
@@ -74,7 +74,7 @@ export function Navigation() {
             <div className="hidden md:block">
               <Button
                 onClick={() => setIsCreateModalOpen(true)}
-                variant="secondary"
+                variant="outline"
                 size="sm"
               >
                 <PlusIcon className="w-4 h-4 mr-2" />
