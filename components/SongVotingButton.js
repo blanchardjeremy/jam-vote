@@ -12,6 +12,22 @@ export default function SongVotingButton({ jamSong, onVote }) {
   const [isVoting, setIsVoting] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [showRainbow, setShowRainbow] = useState(jamSong.showRainbowHeart);
+
+  useEffect(() => {
+    setShowRainbow(jamSong.showRainbowHeart);
+  }, [jamSong.showRainbowHeart]);
+
+  useEffect(() => {
+    const handleClearRainbow = (e) => {
+      if (e.detail.songId === jamSong._id) {
+        setShowRainbow(false);
+      }
+    };
+
+    window.addEventListener('clearRainbowHeart', handleClearRainbow);
+    return () => window.removeEventListener('clearRainbowHeart', handleClearRainbow);
+  }, [jamSong._id]);
 
   useEffect(() => {
     // Check localStorage on mount and when jamSong changes
@@ -30,8 +46,10 @@ export default function SongVotingButton({ jamSong, onVote }) {
     // Update localStorage optimistically
     if (newVoteState) {
       localStorage.setItem(`vote-${jamSong._id}`, 'true');
+      setShowRainbow(true);
     } else {
       localStorage.removeItem(`vote-${jamSong._id}`);
+      setShowRainbow(false);
     }
     
     try {
@@ -40,6 +58,7 @@ export default function SongVotingButton({ jamSong, onVote }) {
     } catch (error) {
       // Revert optimistic updates on error
       setHasVoted(!newVoteState);
+      setShowRainbow(false);
       // Revert localStorage
       if (!newVoteState) {
         localStorage.setItem(`vote-${jamSong._id}`, 'true');
@@ -50,55 +69,45 @@ export default function SongVotingButton({ jamSong, onVote }) {
     } finally {
       setIsVoting(false);
     }
-  }, [isVoting, hasVoted, jamSong._id, onVote]);
-
-  // Determine which icon to show based on state
-  const VoteIcon = hasVoted ? HeartSolid : HeartOutline;
-  
-  function getVoteButtonStyles() {
-    if (jamSong.played) {
-      return 'text-primary/60 pointer-events-none';
-    }
-    
-    if (hasVoted) {
-      return 'text-primary hover:text-primary/80 hover:bg-primary/5';
-    }
-    
-    return 'text-primary/60 hover:text-primary hover:bg-primary/5';
-  }
-  
-  function getVoteIconStyles() {
-    if (jamSong.played) {
-      return 'text-primary/60';
-    }
-    
-    if (hasVoted) {
-      return isHovered ? 'text-primary/80' : 'text-primary';
-    }
-    
-    return isHovered ? 'text-primary' : 'text-primary/60';
-  }
+  }, [hasVoted, isVoting, jamSong._id, onVote]);
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          onClick={handleVote}
-          disabled={isVoting}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          className={cn(
-            'flex flex-col items-center p-0 px-2 rounded-lg transition-all duration-150 ease-in-out',
-            getVoteButtonStyles()
-          )}
-        >
-          <VoteIcon className={cn('h-6 w-6 md:h-7 md:w-7', getVoteIconStyles())} />
-          <span className="text-xs md:text-sm font-medium text-primary">{jamSong.votes}</span>
-        </button>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>{hasVoted ? 'Remove vote' : 'Vote for this song'}</p>
-      </TooltipContent>
-    </Tooltip>
+    <div className="flex items-center gap-2">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={handleVote}
+            className={cn(
+              "transition-colors",
+              hasVoted ? "text-red-500" : "text-gray-400 hover:text-red-500"
+            )}
+            disabled={isVoting}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          >
+            {showRainbow ? (
+              <HeartSolid 
+                className={cn(
+                  "h-5 w-5 relative z-10",
+                  "animate-rainbow-shift"
+                )} 
+              />
+            ) : hasVoted ? (
+              <HeartSolid 
+                className="h-5 w-5 relative z-10 text-red-500"
+              />
+            ) : (
+              <HeartOutline 
+                className="h-5 w-5"
+              />
+            )}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{hasVoted ? 'Remove vote' : 'Vote for this song'}</p>
+        </TooltipContent>
+      </Tooltip>
+      <span className="min-w-[2ch] text-sm">{jamSong.votes}</span>
+    </div>
   );
 } 

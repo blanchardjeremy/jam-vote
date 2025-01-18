@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import SongAutocomplete from "@/components/SongAutocomplete";
 import CreateSongModal from "@/components/CreateSongModal";
 import { useParams } from 'next/navigation';
@@ -87,25 +87,22 @@ export default function JamPage() {
     };
   }, []);
 
-  const clearHighlightAfterDelay = (songId) => {
-    // Clear any existing timeout for this song
-    if (highlightTimeouts.current[songId]) {
-      clearTimeout(highlightTimeouts.current[songId]);
-    }
-
-    // Set new timeout
-    highlightTimeouts.current[songId] = setTimeout(() => {
-      setJam(prev => ({
-        ...prev,
-        songs: prev.songs.map(s => 
-          s._id === songId 
-            ? { ...s, highlight: null }
-            : s
-        )
-      }));
-      delete highlightTimeouts.current[songId];
-    }, 15000);
-  };
+  const clearHighlightAfterDelay = useCallback((songId, type = 'highlight') => {
+    setTimeout(() => {
+      setJam(prevJam => {
+        if (!prevJam?.songs) return prevJam;
+        
+        return {
+          ...prevJam,
+          songs: prevJam.songs.map(s => 
+            s._id === songId 
+              ? { ...s, [type]: undefined }
+              : s
+          )
+        };
+      });
+    }, type === 'highlight' ? 2000 : 10000);
+  }, []);
 
   // Get jam song operations from our service
   const { handleEdit, handleRemove, handleVote, handleTogglePlayed } = useJamSongOperations({
@@ -335,14 +332,36 @@ export default function JamPage() {
         // Create a copy of songs for sorting
         let updatedSongs = [...prevJam.songs];
         
+        // Get current position before updating votes
+        const oldPosition = songIndex;
+        
+        // Determine if this is an upvote or downvote
+        // Consider both cases: votes increasing OR going from 0 to 1
+        const isUpvote = data.votes > songToUpdate.votes || (songToUpdate.votes === 0 && data.votes === 1);
+        
+        // Update votes in the copy
+        updatedSongs[songIndex] = { 
+          ...songToUpdate, 
+          votes: data.votes,
+          showRainbowHeart: isUpvote // Only show rainbow on upvote
+        };
+        
+        // Clear rainbow heart after 10 seconds if it was an upvote
+        if (isUpvote) {
+          setTimeout(() => {
+            setJam(prevJam => ({
+              ...prevJam,
+              songs: prevJam.songs.map(s => 
+                s._id === data.songId 
+                  ? { ...s, showRainbowHeart: false }
+                  : s
+              )
+            }));
+          }, 10000);
+        }
+        
         // Only sort if we're using vote-based sorting
         if (sortMethod === 'votes') {
-          // Get current position before updating votes
-          const oldPosition = songIndex;
-          
-          // Update votes in the copy
-          updatedSongs[songIndex] = { ...songToUpdate, votes: data.votes };
-          
           // Sort to find new position
           updatedSongs.sort((a, b) => b.votes - a.votes);
           const newPosition = updatedSongs.findIndex(s => s._id.toString() === data.songId);
@@ -355,7 +374,8 @@ export default function JamPage() {
             newVotes: data.votes
           });
           
-          // Apply highlight if position changed
+          // Apply position highlight if position changed
+          // Note: This won't affect the rainbow heart animation
           if (newPosition !== oldPosition) {
             updatedSongs = handlePositionHighlight(
               updatedSongs, 
@@ -366,9 +386,6 @@ export default function JamPage() {
               clearHighlightAfterDelay
             );
           }
-        } else {
-          // If not sorting by votes, just update the votes
-          updatedSongs[songIndex] = { ...songToUpdate, votes: data.votes };
         }
         
         return {

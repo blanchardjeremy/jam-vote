@@ -8,6 +8,40 @@ export default {
   ],
   theme: {
     extend: {
+      keyframes: {
+        'rainbow-shift': {
+          '0%, 100%': {
+            color: '#f472b6',
+            transform: 'scale(2.0)'
+          },
+          '16.67%': {
+            color: '#c084fc',
+            transform: 'scale(1.8)'
+          },
+          '33.33%': {
+            color: '#60a5fa',
+            transform: 'scale(1.6)'
+          },
+          '50%': {
+            color: '#4ade80',
+            transform: 'scale(1.4)'
+          },
+          '66.67%': {
+            color: '#facc15',
+            transform: 'scale(1.2)'
+          },
+          '83.33%': {
+            color: '#fb923c',
+            transform: 'scale(1.1)'
+          },
+          '100%': {
+            transform: 'scale(1)'
+          }
+        }
+      },
+      animation: {
+        'rainbow-shift': 'rainbow-shift 8s ease-out forwards'
+      },
       fontFamily: {
         sans: ['var(--font-inter)', ...require('tailwindcss/defaultTheme').fontFamily.sans],
       },
