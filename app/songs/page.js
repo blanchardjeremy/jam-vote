@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import SongListRow from "@/components/SongRowList";
 import Loading from "@/app/loading";
 import {
@@ -19,20 +19,34 @@ import { addSongsToJam } from '@/lib/services/jams';
 import ImportSongsModal from "@/components/ImportSongsModal";
 import { SearchInput } from "@/components/ui/search-input";
 import AddSongToTargetJamButton from "@/components/AddSongToTargetJamButton";
+import { fuzzySearchSong } from '@/lib/utils/fuzzyMatch';
+import { useDebounce } from '@/lib/hooks/useDebounce';
 
-// New SongTypeFilter component
-function SongTypeFilter({ value, onChange }) {
+
+function FilterBar({ filters, onChange }) {
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-[140px]">
-        <SelectValue placeholder="Filter by type" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All songs</SelectItem>
-        <SelectItem value="banger">Bangers</SelectItem>
-        <SelectItem value="ballad">Ballads</SelectItem>
-      </SelectContent>
-    </Select>
+    <div className="flex flex-wrap gap-3">
+      <Select 
+        value={filters.type} 
+        onValueChange={(value) => onChange({ ...filters, type: value })}
+      >
+        <SelectTrigger className="w-[140px]">
+          <SelectValue placeholder="Filter by type" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All types</SelectItem>
+          <SelectItem value="banger">Bangers</SelectItem>
+          <SelectItem value="ballad">Ballads</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <SearchInput
+        placeholder="Search title, artist, tags..."
+        value={filters.query}
+        onChange={(e) => onChange({ ...filters, query: e.target.value })}
+        className="w-full sm:w-auto flex-1"
+      />
+    </div>
   );
 }
 
@@ -43,8 +57,8 @@ function SongsToolbar({
   onSelectAll, 
   onDelete, 
   isDeleting, 
-  filterType, 
-  onFilterChange,
+  filters,
+  onFiltersChange,
   onAddToJam,
   targetJam,
   onChangeTargetJam
@@ -78,10 +92,6 @@ function SongsToolbar({
               onJamSelected={onAddToJam}
               targetJam={targetJam}
             />
-          </div>
-
-          {/* Right group - action buttons and filter */}
-          <div className="flex items-center gap-3">
             <Button
               variant="outline-destructive"
               size="sm"
@@ -94,7 +104,14 @@ function SongsToolbar({
                 {isDeleting ? 'Deleting...' : 'Delete'}
               </span>
             </Button>
-            <SongTypeFilter value={filterType} onChange={onFilterChange} />
+          </div>
+
+          {/* Right group - action buttons and filter */}
+          <div className="flex items-center gap-3">
+            <FilterBar
+              filters={filters}
+              onChange={onFiltersChange}
+            />
           </div>
         </div>
       </div>
@@ -106,8 +123,6 @@ export default function SongsPage() {
   const [songs, setSongs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filterType, setFilterType] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedSongs, setSelectedSongs] = useState(new Set());
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -115,6 +130,30 @@ export default function SongsPage() {
   const [isShiftPressed, setIsShiftPressed] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [targetJam, setTargetJam] = useState(null);
+  const [filters, setFilters] = useState({
+    type: 'all',
+    query: '',
+  });
+
+  // Debounce the search query
+  const debouncedFilters = useDebounce(filters, 300);
+
+  // Memoize the filtered songs to prevent unnecessary recalculations
+  const filteredSongs = useMemo(() => {
+    return songs.filter(song => {
+      // Type filter
+      if (debouncedFilters.type !== 'all' && song.type !== debouncedFilters.type) {
+        return false;
+      }
+
+      // Fuzzy search across title, artist, and tags
+      if (debouncedFilters.query) {
+        return fuzzySearchSong(song, debouncedFilters.query, ['title', 'artist', 'tags']);
+      }
+
+      return true;
+    });
+  }, [songs, debouncedFilters]);
 
   // Track shift key state
   useEffect(() => {
@@ -259,13 +298,6 @@ export default function SongsPage() {
     return <Loading />;
   }
 
-  // Filter songs based on type and search query
-  const filteredSongs = songs.filter(song => {
-    const matchesType = filterType === 'all' ? true : song.type === filterType;
-    const matchesSearch = song.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesType && matchesSearch;
-  });
-
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -287,18 +319,6 @@ export default function SongsPage() {
         </div>
       </div>
 
-      {/* Search and Filter Bar */}
-      <div className="mb-6 space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4 max-w-lg">
-          <div className="flex-1">
-            <SearchInput
-              placeholder="Filter songs..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-      </div>
 
       {/* Toolbar */}
       <SongsToolbar
@@ -307,8 +327,8 @@ export default function SongsPage() {
         onSelectAll={toggleAllSelection}
         onDelete={() => setShowDeleteDialog(true)}
         isDeleting={isDeleting}
-        filterType={filterType}
-        onFilterChange={setFilterType}
+        filters={filters}
+        onFiltersChange={setFilters}
         onAddToJam={handleAddToJam}
         targetJam={targetJam}
         onChangeTargetJam={handleChangeTargetJam}
@@ -330,7 +350,7 @@ export default function SongsPage() {
                   onDelete={handleDelete}
                   isSelected={selectedSongs.has(song._id)}
                   onSelectionChange={(checked, event) => toggleSelection(song._id, index)}
-                  hideType={filterType !== 'all'}
+                  hideType={filters.type !== 'all'}
                 />
               </li>
             ))
