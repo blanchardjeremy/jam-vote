@@ -77,7 +77,7 @@ const BaseSongRow = forwardRef(({
                 <div className="flex items-center justify-end gap-2 md:gap-4 mt-1">
                   {additionalInfo}
                   {song.timesPlayed > 0 && (
-                    <div className="items-center text-xs md:text-sm text-gray-500 space-x-2 md:space-x-4">
+                    <div className="items-center text-xs text-gray-500 space-x-2 md:space-x-4">
                       <span className="hidden sm:inline">
                         <span className="text-foreground">{song.timesPlayed} plays</span>
                       </span>

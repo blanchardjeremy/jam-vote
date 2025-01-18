@@ -18,6 +18,7 @@ import {
 import { pusherClient } from "@/lib/pusher";
 import { SelectSeparator } from '@/components/ui/select';
 import { FireIcon, MusicalNoteIcon } from '@heroicons/react/24/solid';
+import { ArrowDownNarrowWide } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -218,6 +219,16 @@ export default function JamPage() {
       return [...songs].sort((a, b) => {
         if (sortMethod === 'votes') {
           return b.votes - a.votes;
+        }
+        if (sortMethod === 'least-played') {
+          // First by played status (unplayed first)
+          if (a.played !== b.played) {
+            return a.played ? 1 : -1;
+          }
+          // Then by times played in song history
+          const aPlays = a.song.timesPlayed || 0;
+          const bPlays = b.song.timesPlayed || 0;
+          return aPlays - bPlays;
         }
         return a.order - b.order;
       });
@@ -547,6 +558,17 @@ export default function JamPage() {
         </div>
 
         <div className="flex items-center space-x-4 ml-4">
+          <Select value={sortMethod} onValueChange={setSortMethod}>
+            <SelectTrigger className="w-auto border-none text-gray-500 focus:text-gray-900 text-sm focus:ring-0">
+              <ArrowDownNarrowWide className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="votes">Sort by votes</SelectItem>
+              <SelectItem value="least-played">Sort by least played</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Select value={groupingEnabled ? 'type' : 'none'} onValueChange={(value) => setGroupingEnabled(value === 'type')}>
             <SelectTrigger className="w-auto border-none text-gray-500 focus:text-gray-900 text-sm focus:ring-0">
               <SelectValue />

@@ -10,7 +10,15 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { 
+  TrashIcon, 
+  XMarkIcon,
+  CalendarDaysIcon,
+  HashtagIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+  ArrowsUpDownIcon
+} from "@heroicons/react/24/outline";
 import { fetchSongs, useSongOperations } from '@/lib/services/songs';
 import { addSongsToJam } from '@/lib/services/jams';
 import { SearchInput } from "@/components/ui/search-input";
@@ -23,10 +31,59 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import SongListRow from "@/components/SongRowList";
 import LoadingBlock from "@/components/LoadingBlock";
 import SongModals from "@/components/SongModals";
+import { ArrowDownNarrowWide } from 'lucide-react';
+import { applySongFilters } from '@/lib/utils/songFilters';
+
+const SONG_TYPE_OPTIONS = [
+  { value: 'all', label: 'All types' },
+  { value: 'banger', label: 'Bangers' },
+  { value: 'ballad', label: 'Ballads' },
+];
+
+const SORT_OPTIONS = [
+  { 
+    value: 'dateAdded_desc',
+    label: 'Added recently',
+    icon: CalendarDaysIcon,
+  },
+  { 
+    value: 'dateAdded_asc',
+    label: 'Added long ago',
+    icon: CalendarDaysIcon,
+  },
+  { 
+    value: 'count_desc',
+    label: 'Most played',
+    icon: HashtagIcon,
+  },
+  { 
+    value: 'count_asc',
+    label: 'Least played',
+    icon: HashtagIcon,
+  },
+  { 
+    value: 'lastPlayed_desc',
+    label: 'Recently played',
+    icon: CalendarDaysIcon,
+  },
+  { 
+    value: 'lastPlayed_asc',
+    label: 'Not recently played',
+    icon: CalendarDaysIcon,
+  },
+];
 
 function FilterBar({ filters, onChange }) {
   return (
     <div className="flex flex-wrap gap-3">
+
+      <SearchInput
+        placeholder="Search songs..."
+        value={filters.query}
+        onChange={(e) => onChange({ ...filters, query: e.target.value })}
+        className="w-full sm:w-auto flex-1"
+      />
+
       <Select 
         value={filters.type} 
         onValueChange={(value) => onChange({ ...filters, type: value })}
@@ -35,18 +92,48 @@ function FilterBar({ filters, onChange }) {
           <SelectValue placeholder="Filter by type" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All types</SelectItem>
-          <SelectItem value="banger">Bangers</SelectItem>
-          <SelectItem value="ballad">Ballads</SelectItem>
+          {SONG_TYPE_OPTIONS.map(option => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 
-      <SearchInput
-        placeholder="Search..."
-        value={filters.query}
-        onChange={(e) => onChange({ ...filters, query: e.target.value })}
-        className="w-full sm:w-auto flex-1"
-      />
+      <Select 
+        value={filters.sort} 
+        onValueChange={(value) => onChange({ ...filters, sort: value })}
+      >
+        <SelectTrigger className="w-[200px]">
+          <SelectValue>
+            {(() => {
+              const selectedOption = SORT_OPTIONS.find(opt => opt.value === filters.sort);
+              if (!selectedOption?.icon) return null;
+              const IconComponent = selectedOption.icon;
+              return (
+                <div className="flex items-center gap-2">
+                  <ArrowDownNarrowWide className="h-5 w-5 text-muted-foreground" />
+                  {selectedOption.label}
+                </div>
+              );
+            })()}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {SORT_OPTIONS.map(option => {
+            const IconComponent = option.icon;
+            return (
+              <SelectItem key={option.value} value={option.value}>
+                <div className="flex items-center gap-2">
+                  <IconComponent className="h-4 w-4" />
+                  <span>{option.label}</span>
+                </div>
+              </SelectItem>
+            );
+          })}
+        </SelectContent>
+      </Select>
+
     </div>
   );
 }
@@ -94,16 +181,13 @@ function SongsToolbar({
               targetJam={targetJam}
             />
             <Button
-              variant="outline-destructive"
+              variant="ghost"
               size="sm"
               onClick={onDelete}
               disabled={isDeleting || selectedCount === 0}
               className="flex-shrink-0"
             >
               <TrashIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">
-                {isDeleting ? 'Deleting...' : 'Delete'}
-              </span>
             </Button>
           </div>
 
@@ -134,6 +218,7 @@ export default function SongsPage() {
   const [filters, setFilters] = useState({
     type: 'all',
     query: '',
+    sort: 'dateAdded_desc'
   });
   const [editModalState, setEditModalState] = useState({ isOpen: false, song: null });
   const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, song: null });
@@ -143,19 +228,7 @@ export default function SongsPage() {
 
   // Memoize the filtered songs to prevent unnecessary recalculations
   const filteredSongs = useMemo(() => {
-    return songs.filter(song => {
-      // Type filter
-      if (debouncedFilters.type !== 'all' && song.type !== debouncedFilters.type) {
-        return false;
-      }
-
-      // Fuzzy search across title, artist, and tags
-      if (debouncedFilters.query) {
-        return fuzzySearchSong(song, debouncedFilters.query, ['title', 'artist', 'tags']);
-      }
-
-      return true;
-    });
+    return applySongFilters(songs, debouncedFilters);
   }, [songs, debouncedFilters]);
 
   // Track shift key state
