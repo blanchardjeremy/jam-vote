@@ -9,6 +9,7 @@ import { SongResults } from '@/components/SongResults';
 import { searchSongs } from '@/lib/services/songs';
 import { ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function SongFormModal({ 
   isOpen, 
@@ -222,18 +223,27 @@ export default function SongFormModal({
                 name="type"
                 rules={{ required: "Type is required" }}
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="space-y-3">
                     <FormLabel>Type</FormLabel>
                     <FormControl>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="banger">Banger</SelectItem>
-                          <SelectItem value="ballad">Ballad</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-col space-y-1"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="banger" id="banger" />
+                          <label htmlFor="banger" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                            Banger
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="ballad" id="ballad" />
+                          <label htmlFor="ballad" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                            Ballad
+                          </label>
+                        </div>
+                      </RadioGroup>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
