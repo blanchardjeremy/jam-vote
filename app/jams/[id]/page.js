@@ -95,7 +95,11 @@ export default function JamPage() {
   // Helper function to add a song to the jam
   const handleAddSongToJam = async (songId) => {
     try {
+      console.log('[JamPage] handleAddSongToJam called with songId:', songId);
       const { jam: updatedJam, addedSongId } = await addSongToJam(params.id, songId);
+      console.log('[JamPage] Got response from addSongToJam:', { updatedJam, addedSongId });
+      
+      // Update local state immediately
       setJam(updatedJam);
       
       // Set localStorage to mark the song as voted by this user
@@ -105,36 +109,45 @@ export default function JamPage() {
 
       return updatedJam;
     } catch (e) {
-      console.error('Error adding song to jam:', e);
-      toast.error(e.message);
+      console.error('[JamPage] Error in handleAddSongToJam:', e);
+      toast.error(e.message || 'Failed to add song to jam');
+      throw e;
     }
   };
 
   const handleSelectExisting = async (song) => {
     try {
+      console.log('[JamPage] handleSelectExisting called with song:', song);
       await handleAddSongToJam(song._id);
+      console.log('[JamPage] Song added successfully');
     } catch (e) {
-      console.error('Error adding song to jam:', e);
+      console.error('[JamPage] Error adding song to jam:', e);
+      toast.error('Failed to add song');
     }
   };
 
   const handleAddNew = (title) => {
+    console.log('[JamPage] handleAddNew called with title:', title);
     setNewSongTitle(title);
     setIsAddModalOpen(true);
   };
 
   const handleAddSong = async (newSong) => {
     try {
+      console.log('[JamPage] handleAddSong called with newSong:', newSong);
       // Check if song already exists in the jam
       if (jam.songs.some(existingSong => existingSong.song._id === newSong._id)) {
+        console.log('[JamPage] Song already exists in jam');
         setIsAddModalOpen(false);
         return;
       }
 
       await handleAddSongToJam(newSong._id);
+      console.log('[JamPage] New song added successfully');
       setIsAddModalOpen(false);
     } catch (e) {
-      console.error('Error adding new song to jam:', e);
+      console.error('[JamPage] Error adding new song to jam:', e);
+      toast.error('Failed to add song');
     }
   };
 
@@ -321,16 +334,21 @@ export default function JamPage() {
 
     // Handle song additions
     channel.bind('song-added', (data) => {
-      console.log('[Pusher Client] Received songAdded event:', data);
+      console.log('[Pusher Client] Received song-added event:', data);
       setJam(prevJam => {
         if (!prevJam) return prevJam;
         
-        // The song data is nested one level deeper than expected
-        const newSong = data.song;
+        // Add the new song to the jam's songs array
         const newState = {
           ...prevJam,
-          songs: [...prevJam.songs, newSong].sort((a, b) => b.votes - a.votes)
+          songs: [...prevJam.songs, data.song]
         };
+        
+        // Sort by votes if that's the current sort method
+        if (sortMethod === 'votes') {
+          newState.songs.sort((a, b) => b.votes - a.votes);
+        }
+        
         return newState;
       });
     });

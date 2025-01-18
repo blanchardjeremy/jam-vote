@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Jam from '@/models/Jam';
+import Song from '@/models/Song';
+import { pusherServer } from '@/lib/pusher';
 
 export async function POST(request, context) {
   try {
@@ -20,7 +22,8 @@ export async function POST(request, context) {
       );
     }
 
-    const jam = await Jam.findById(jamId);
+    // Get the jam and populate existing songs
+    const jam = await Jam.findById(jamId).populate('songs.song');
     if (!jam) {
       console.log('[Songs API] Jam not found:', jamId);
       return NextResponse.json(
@@ -34,9 +37,14 @@ export async function POST(request, context) {
     const duplicateSongs = songIds.filter(id => existingSongIds.includes(id.toString()));
     const newSongIds = songIds.filter(id => !existingSongIds.includes(id.toString()));
 
-    // Create song entries with just the required song reference for non-duplicate songs
-    const newSongs = newSongIds.map(songId => ({
-      song: songId
+    // Get full song data for new songs
+    const newSongDocs = await Song.find({ _id: { $in: newSongIds } });
+    
+    // Create song entries with song references
+    const newSongs = newSongDocs.map(songDoc => ({
+      song: songDoc._id,
+      votes: 0,
+      played: false
     }));
 
     // Add only the new songs to the jam
@@ -44,8 +52,23 @@ export async function POST(request, context) {
     await jam.save();
     console.log('[Songs API] Saved jam successfully');
 
+    // Get the fully populated jam to return and for Pusher events
+    const updatedJam = await Jam.findById(jamId).populate('songs.song');
+
+    // Trigger Pusher events for each new song
+    for (const songId of newSongIds) {
+      const newJamSong = updatedJam.songs.find(s => s.song._id.toString() === songId);
+      if (newJamSong) {
+        console.log('[Songs API] Triggering Pusher event for song:', newJamSong);
+        await pusherServer.trigger(`jam-${jamId}`, 'song-added', {
+          song: newJamSong
+        });
+      }
+    }
+
     return NextResponse.json({
       success: true,
+      jam: updatedJam,
       addedSongs: newSongIds,
       skippedSongs: duplicateSongs,
       message: duplicateSongs.length > 0 ? `${duplicateSongs.length} duplicate songs were skipped` : undefined

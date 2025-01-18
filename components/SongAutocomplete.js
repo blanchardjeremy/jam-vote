@@ -29,7 +29,10 @@ const SongAutocomplete = forwardRef(({
         
         // Transform the data to match AutoComplete's expected format
         const options = data.map(song => {
-          const isDuplicate = currentSongs.some(existingSong => existingSong._id === song._id);
+          const isDuplicate = currentSongs.some(existingSong => 
+            existingSong._id === song._id || // Check direct match
+            existingSong.song?._id === song._id // Check nested song match
+          );
           return {
             value: song._id,
             label: `${song.title} - ${song.artist}`, // Generic label for base component
@@ -91,10 +94,13 @@ const SongAutocomplete = forwardRef(({
 
   const handleValueChange = (option) => {
     if (option) {
+      console.log('[SongAutocomplete] handleValueChange called with option:', option);
       if (option.isAddNew) {
+        console.log('[SongAutocomplete] Calling onAddNew with query:', option.query);
         onAddNew(option.query);
         setQuery('');
       } else if (!option.isDuplicate) {
+        console.log('[SongAutocomplete] Calling onSelect with song:', option);
         onSelect(option);
         setQuery('');
       }
@@ -125,7 +131,10 @@ const SongAutocomplete = forwardRef(({
         options={allOptions}
         value={null}
         onValueChange={handleValueChange}
-        onInputChange={setQuery}
+        onInputChange={(newQuery) => {
+          console.log('[SongAutocomplete] Input changed to:', newQuery);
+          setQuery(newQuery);
+        }}
         inputValue={query}
         placeholder={placeholder}
         emptyMessage={isLoading ? "Searching..." : "Type to start searching"}
