@@ -77,13 +77,12 @@ const BaseSongRow = forwardRef(({
                 <div className="flex items-center justify-end gap-2 md:gap-4 mt-1">
                   {additionalInfo}
                   {song.timesPlayed > 0 && (
-                    <div className="hidden sm:flex items-center text-xs md:text-sm text-muted-foreground space-x-2 md:space-x-4">
-                      <span>
-                        <span className="ml-1">Played{' '}</span>
-                        <span className="text-foreground">{song.timesPlayed} times</span>
+                    <div className="items-center text-xs md:text-sm text-gray-500 space-x-2 md:space-x-4">
+                      <span className="hidden sm:inline">
+                        <span className="text-foreground">{song.timesPlayed} plays</span>
                       </span>
                       <span>
-                        <span className="ml-1">Last played on{' '}</span>
+                        <span className="ml-1">Last played: {' '}</span>
                         <span className="text-foreground">
                           {new Date(song.lastPlayed).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </span>
