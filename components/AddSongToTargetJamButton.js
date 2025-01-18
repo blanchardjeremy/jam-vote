@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import SelectJamModal from './SelectJamModal';
-import { ArrowRightIcon } from "@heroicons/react/24/outline";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 
 export default function AddSongToTargetJamButton({ onJamSelected, selectedCount = 0, targetJam }) {
@@ -67,6 +67,7 @@ export default function AddSongToTargetJamButton({ onJamSelected, selectedCount 
         disabled={selectedCount === 0}
         className="flex items-center gap-2"
       >
+        <PlusIcon className="h-4 w-4" />
         <span>
           {selectedCount === 0 
             ? "Add to Jam" 

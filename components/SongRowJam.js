@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import SongFormModal from "@/components/AddSongModal";
+import SongFormModal from "@/components/CreateSongModal";
 import { useParams } from 'next/navigation';
 import SongRowButtonToolbar from "@/components/SongRowButtonToolbar";
 import SongVotingButton from "@/components/SongVotingButton";

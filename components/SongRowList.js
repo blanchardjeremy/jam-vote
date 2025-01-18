@@ -1,5 +1,5 @@
 import { useState } from "react";
-import SongFormModal from "@/components/AddSongModal";
+import SongFormModal from "@/components/CreateSongModal";
 import { Checkbox } from "@/components/ui/checkbox";
 import SongRowButton from "@/components/SongRowButton";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";

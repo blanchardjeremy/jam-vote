@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import SongAutocomplete from "@/components/SongAutocomplete";
-import AddSongModal from "@/components/AddSongModal";
+import CreateSongModal from "@/components/CreateSongModal";
 import { useParams } from 'next/navigation';
 import SongRow from "@/components/SongRowJam";
 import {
@@ -535,7 +535,7 @@ export default function JamPage() {
         />
       </div>
 
-      <AddSongModal
+      <CreateSongModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         initialTitle={newSongTitle}

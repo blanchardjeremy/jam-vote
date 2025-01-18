@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import SongListRow from "@/components/SongRowList";
-import Loading from "@/app/loading";
 import {
   Select,
   SelectContent,
@@ -13,15 +11,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import ConfirmDialog from "@/components/ConfirmDialog";
-import { fetchSongs, useSongOperations, createSong } from '@/lib/services/songs';
+import { fetchSongs, useSongOperations } from '@/lib/services/songs';
 import { addSongsToJam } from '@/lib/services/jams';
-import ImportSongsModal from "@/components/ImportSongsModal";
 import { SearchInput } from "@/components/ui/search-input";
-import AddSongToTargetJamButton from "@/components/AddSongToTargetJamButton";
 import { fuzzySearchSong } from '@/lib/utils/fuzzyMatch';
 import { useDebounce } from '@/lib/hooks/useDebounce';
-
+import ImportSongsModal from "@/components/ImportSongsModal";
+import AddSongToTargetJamButton from "@/components/AddSongToTargetJamButton";
+import CreateSongButton from "@/components/CreateSongButton";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import SongListRow from "@/components/SongRowList";
+import Loading from "@/app/loading";
 
 function FilterBar({ filters, onChange }) {
   return (
@@ -41,7 +41,7 @@ function FilterBar({ filters, onChange }) {
       </Select>
 
       <SearchInput
-        placeholder="Search title, artist, tags..."
+        placeholder="Search..."
         value={filters.query}
         onChange={(e) => onChange({ ...filters, query: e.target.value })}
         className="w-full sm:w-auto flex-1"
@@ -308,14 +308,17 @@ export default function SongsPage() {
               {songs.length} songs in the library
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsImportModalOpen(true)}
-            className="flex-shrink-0"
-          >
-            Import Songs
-          </Button>
+          <div className="flex items-center gap-3">
+            <CreateSongButton onSongCreated={loadSongs} variant="primary" />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsImportModalOpen(true)}
+              className="flex-shrink-0"
+            >
+              Import Songs
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -338,8 +341,16 @@ export default function SongsPage() {
       <div className="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
         <ul className="divide-y divide-gray-200">
           {filteredSongs.length === 0 ? (
-            <li className="px-4 py-3 text-sm text-gray-500 italic">
-              No songs found
+            <li className="px-6 py-8 text-center">
+              <p className="text-sm text-gray-500 mb-4">
+                No songs found matching your search
+              </p>
+              <CreateSongButton 
+                initialTitle={filters.query} 
+                className="mx-auto"
+                onSongCreated={loadSongs}
+                variant="primary"
+              />
             </li>
           ) : (
             filteredSongs.map((song, index) => (
@@ -356,6 +367,16 @@ export default function SongsPage() {
             ))
           )}
         </ul>
+        
+        {/* Bottom create button */}
+        {filteredSongs.length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-center">
+            <CreateSongButton 
+              onSongCreated={loadSongs}
+              variant="primary"
+            />
+          </div>
+        )}
       </div>
 
       <ConfirmDialog
