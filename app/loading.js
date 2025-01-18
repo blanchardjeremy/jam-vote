@@ -1,9 +1,7 @@
-import { Spinner } from "@/components/ui/spinner"
+import LoadingBlock from "@/components/LoadingBlock"
 
-export default function Loading() {
+export default function LoadingPage() {
   return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <Spinner className="h-8 w-8 text-primary" />
-    </div>
+    <LoadingBlock />
   )
 } 

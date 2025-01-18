@@ -7,9 +7,17 @@ export default function CreateSongButton({
   className = "", 
   initialTitle = "", 
   onSongCreated,
+  onDuplicateSelect,
   variant = "outline" 
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleModalClose = (duplicateSong) => {
+    setIsModalOpen(false);
+    if (duplicateSong) {
+      onDuplicateSelect?.(duplicateSong);
+    }
+  };
 
   return (
     <>
@@ -25,7 +33,7 @@ export default function CreateSongButton({
 
       <CreateSongModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleModalClose}
         initialTitle={initialTitle}
         onSubmit={(song) => {
           onSongCreated?.(song);

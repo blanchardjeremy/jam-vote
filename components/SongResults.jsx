@@ -1,39 +1,28 @@
 import { cn } from "@/lib/utils";
+import LoadingBlock from "@/components/LoadingBlock";
 
 export function SongResults({
   results = [],
   isLoading = false,
   onSelect,
   className,
-  mode = 'inline', // 'inline' or 'popover'
+  maxResults = 5,
   emptyMessage = "No songs found",
-  headerMessage = "Does this song already exist? If so, don't re-add it!",
-  isHighlightable = false
+  header,
+  isHighlightable = true
 }) {
   if (!results.length && !isLoading) return null;
 
-  const containerClasses = cn(
-    "w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
-    "animate-in fade-in-0 zoom-in-95",
-    "max-h-[300px] overflow-y-auto",
-    mode === 'popover' && "absolute z-50",
-    mode === 'inline' && "mt-1",
-    className
-  );
-
   return (
-    <div className={containerClasses}>
+    <div className={cn(
+      "w-full",
+      "max-h-[300px] overflow-y-auto",
+      className
+    )}>
       <div className="p-1">
-        {headerMessage && (
-          <div className="py-2 px-3 text-sm font-medium text-orange-600">
-            {headerMessage}
-          </div>
-        )}
+        {header}
         {isLoading ? (
-          <div className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-3 py-2.5 text-sm outline-none text-muted-foreground">
-            <div className="h-2 w-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
-            Loading...
-          </div>
+          <LoadingBlock />
         ) : results.length === 0 ? (
           <div className="relative flex cursor-default select-none items-center rounded-sm px-3 py-2.5 text-sm outline-none text-muted-foreground">
             {emptyMessage}

@@ -21,7 +21,7 @@ import AddSongToTargetJamButton from "@/components/AddSongToTargetJamButton";
 import CreateSongButton from "@/components/CreateSongButton";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SongListRow from "@/components/SongRowList";
-import Loading from "@/app/loading";
+import LoadingBlock from "@/components/LoadingBlock";
 
 function FilterBar({ filters, onChange }) {
   return (
@@ -279,6 +279,36 @@ export default function SongsPage() {
     setTargetJam(null);
   };
 
+  const handleDuplicateSongSelect = (song) => {
+    // Clear any filters and search
+    setFilters({
+      type: 'all',
+      query: '',
+    });
+
+    console.log("Scroll to song:", song._id);
+
+    // Find the index of the song in the unfiltered list
+    const songIndex = songs.findIndex(s => s._id === song._id);
+    if (songIndex !== -1) {
+      // Select the song
+      setSelectedSongs(new Set([song._id]));
+      setLastClickedIndex(songIndex);
+
+      // Scroll to the song after a short delay to allow filters to update
+      setTimeout(() => {
+        const element = document.getElementById(`song-${song._id}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.classList.add('bg-yellow-50');
+          setTimeout(() => {
+            element.classList.remove('bg-yellow-50');
+          }, 2000);
+        }
+      }, 100);
+    }
+  };
+
   if (error) {
     return (
       <div className="rounded-md bg-red-50 p-4 mb-6">
@@ -295,7 +325,7 @@ export default function SongsPage() {
   }
 
   if (isLoading) {
-    return <Loading />;
+    return <LoadingBlock />;
   }
 
   return (
@@ -309,7 +339,11 @@ export default function SongsPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <CreateSongButton onSongCreated={loadSongs} variant="primary" />
+            <CreateSongButton 
+              onSongCreated={loadSongs} 
+              variant="primary" 
+              onDuplicateSelect={handleDuplicateSongSelect}
+            />
             <Button
               variant="outline"
               size="sm"
@@ -349,12 +383,17 @@ export default function SongsPage() {
                 initialTitle={filters.query} 
                 className="mx-auto"
                 onSongCreated={loadSongs}
+                onDuplicateSelect={handleDuplicateSongSelect}
                 variant="primary"
               />
             </li>
           ) : (
             filteredSongs.map((song, index) => (
-              <li key={song._id} className="hover:bg-gray-50">
+              <li 
+                key={song._id} 
+                id={`song-${song._id}`}
+                className="hover:bg-gray-50 transition-colors duration-200"
+              >
                 <SongListRow 
                   song={song}
                   onEdit={handleEdit}
@@ -373,6 +412,7 @@ export default function SongsPage() {
           <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-center">
             <CreateSongButton 
               onSongCreated={loadSongs}
+              onDuplicateSelect={handleDuplicateSongSelect}
               variant="primary"
             />
           </div>

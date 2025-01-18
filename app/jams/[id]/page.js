@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import Loading from "@/app/loading";
+import LoadingBlock from "@/components/LoadingBlock";
 import { toast } from 'sonner';
 import { useJamSongOperations, addSongToJam } from '@/lib/services/jamSongs';
 import { fetchSongs } from '@/lib/services/songs';
@@ -408,7 +408,7 @@ export default function JamPage() {
 
   if (isLoading || !jam) {
     return (
-      <Loading />
+      <LoadingBlock />
     );
   }
 

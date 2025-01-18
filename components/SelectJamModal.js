@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
-import Loading from "@/app/loading";
+import LoadingBlock from "@/components/LoadingBlock";
 import { fetchJams } from '@/lib/services/jams';
 
 export default function SelectJamModal({ isOpen, onClose, onSelect }) {
@@ -62,7 +62,7 @@ export default function SelectJamModal({ isOpen, onClose, onSelect }) {
             <p className="text-sm text-red-800">{error}</p>
           </div>
         ) : isLoading ? (
-          <Loading />
+          <LoadingBlock />
         ) : (
           <div className="space-y-2 max-h-[60vh] overflow-y-auto">
             {filteredJams.length === 0 ? (

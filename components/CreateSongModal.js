@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from 'react';
 import { useDebounce } from '@/lib/hooks/useDebounce';
-import { SongResults } from '@/components/ui/song-results';
+import { SongResults } from '@/components/SongResults';
+import { searchSongs } from '@/lib/services/songs';
 
 export default function SongFormModal({ 
   isOpen, 
@@ -41,7 +42,7 @@ export default function SongFormModal({
       return;
     }
 
-    const searchSongs = async () => {
+    const performSearch = async () => {
       if (debouncedTitle.length < 3) {
         setSearchResults([]);
         return;
@@ -49,10 +50,9 @@ export default function SongFormModal({
 
       setIsSearching(true);
       try {
-        const res = await fetch(`/api/songs/search?q=${encodeURIComponent(debouncedTitle)}`);
-        if (!res.ok) throw new Error('Search failed');
-        const data = await res.json();
-        setSearchResults(data);
+        const results = await searchSongs(debouncedTitle);
+        const MAX_RESULTS = 3;
+        setSearchResults(results.slice(0, MAX_RESULTS));
       } catch (error) {
         console.error('Search error:', error);
         setSearchResults([]);
@@ -61,7 +61,7 @@ export default function SongFormModal({
       }
     };
 
-    searchSongs();
+    performSearch();
   }, [debouncedTitle, mode, isOpen]);
 
   // Clear results when modal closes
@@ -73,6 +73,13 @@ export default function SongFormModal({
   }, [isOpen]);
 
   const handleSongSelect = (song) => {
+    if (mode === 'add') {
+      // Pass the full song data to onClose for handling in the parent
+      onClose(song);
+      return;
+    }
+    
+    // Original behavior for edit mode
     form.setValue('title', song.title);
     form.setValue('artist', song.artist);
     form.setValue('type', song.type);
@@ -156,7 +163,7 @@ export default function SongFormModal({
       <Form {...form}>
         <form id="song-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 sm:space-y-6">
           <div className="grid grid-cols-1 gap-y-4 sm:gap-y-6 gap-x-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 relative">
               <FormField
                 control={form.control}
                 name="title"
@@ -165,7 +172,9 @@ export default function SongFormModal({
                   <FormItem>
                     <FormLabel>Song Title</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input 
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                     {mode === 'add' && (
@@ -173,7 +182,14 @@ export default function SongFormModal({
                         results={searchResults}
                         isLoading={isSearching}
                         onSelect={handleSongSelect}
+                        maxResults={3}
                         mode="inline"
+                        className="w-full bg-muted/40 text-muted-foreground shadow-sm rounded-b-lg border border-t-0 !mt-0"
+                        header={
+                          <div className="py-2 px-3 text-sm font-bold text-red-700">
+                            This song might already exist! Please click below to choose it!
+                          </div>
+                        }
                       />
                     )}
                   </FormItem>
