@@ -76,6 +76,7 @@ export default function JamPage() {
   const [songToDelete, setSongToDelete] = useState(null);
   const [isRemoving, setIsRemoving] = useState(false);
   const [lastAddedSongId, setLastAddedSongId] = useState(null);
+  const lastToastId = useRef(null);
 
   // Get jam song operations from our service
   const { handleEdit, handleRemove, handleVote, handleTogglePlayed } = useJamSongOperations({
@@ -118,6 +119,7 @@ export default function JamPage() {
 
       return updatedJam;
     } catch (e) {
+      // Only show error toast, success toast will come through Pusher
       toast.error(e.message || 'Failed to add song to jam');
       throw e;
     }
@@ -242,12 +244,34 @@ export default function JamPage() {
 
   // Set up Pusher connection in a separate useEffect
   useEffect(() => {
-    console.log('[Pusher Client] Setting up connection');
+    console.log('[Pusher Debug] Setting up connection for jam:', params.id);
     const channelName = `jam-${params.id}`;
+    console.log('[Pusher Debug] Subscribing to channel:', channelName);
     const channel = pusherClient.subscribe(channelName);
     
     // Clean up any existing bindings first
+    console.log('[Pusher Debug] Cleaning up existing bindings');
     channel.unbind_all();
+
+    // Handle song additions
+    channel.bind('song-added', (data) => {
+      console.log('[Pusher Debug] Received song-added event:', data);
+      
+      // Only show toast if we haven't shown it for this song
+      if (lastToastId.current !== data.song._id) {
+        console.log('[Pusher Debug] Showing toast for:', data.song.song.title);
+        toast.success(`"${data.song.song.title}" by ${data.song.song.artist} was added to the jam`);
+        lastToastId.current = data.song._id;
+      }
+      
+      setJam(prevJam => {
+        if (!prevJam) return prevJam;
+        return {
+          ...prevJam,
+          songs: [...prevJam.songs, data.song]
+        };
+      });
+    });
 
     // Handle vote updates
     channel.bind('vote', (data) => {
@@ -321,42 +345,14 @@ export default function JamPage() {
       });
     });
 
-    // Handle song additions
-    channel.bind('song-added', (data) => {
-      setJam(prevJam => {
-        if (!prevJam) return prevJam;
-        
-        // Add the new song to the jam's songs array
-        const newState = {
-          ...prevJam,
-          songs: [...prevJam.songs, data.song]
-        };
-        
-        // Sort by votes if that's the current sort method
-        if (sortMethod === 'votes') {
-          newState.songs.sort((a, b) => b.votes - a.votes);
-        }
-
-        // Set the lastAddedSongId to trigger highlight
-        if (data.song._id) {
-          setLastAddedSongId(data.song._id);
-          setTimeout(() => {
-            setLastAddedSongId(null);
-          }, 3000);
-        }
-        
-        return newState;
-      });
-    });
-
     // Handle song removals
     channel.bind('song-removed', (data) => {
       toast.error(`"${data.songTitle}" by ${data.songArtist} was removed from the jam`, {
-        style: {
-          background: '#fef2f2',
-          border: '1px solid #fee2e2',
-          color: '#991b1b'
-        }
+        // style: {
+        //   background: '#fef2f2',
+        //   border: '1px solid #fee2e2',
+        //   color: '#991b1b'
+        // }
       });
 
       setJam(prevJam => {
@@ -397,14 +393,19 @@ export default function JamPage() {
 
     // Handle connection state changes
     const connectionHandler = (states) => {
-      console.log('[Pusher Client] Connection state changed:', states.current);
+      console.log('[Pusher Debug] Connection state changed:', states.current);
     };
     pusherClient.connection.bind('state_change', connectionHandler);
 
     // Clean up on unmount
     return () => {
-      console.log('[Pusher Client] Cleaning up Pusher connection');
-      channel.unbind_all();
+      console.log('[Pusher Debug] Cleaning up - unsubscribing from:', channelName);
+      channel.unbind('song-added');
+      channel.unbind('vote');
+      channel.unbind('captain-added');
+      channel.unbind('song-played');
+      channel.unbind('song-removed');
+      channel.unbind('song-edited');
       pusherClient.unsubscribe(channelName);
       pusherClient.connection.unbind('state_change', connectionHandler);
     };
