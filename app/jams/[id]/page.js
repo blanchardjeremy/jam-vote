@@ -95,6 +95,7 @@ export default function JamPage() {
   const [isRemoving, setIsRemoving] = useState(false);
   const [lastAddedSongId, setLastAddedSongId] = useState(null);
   const lastToastId = useRef(null);
+  const lastVoteToastId = useRef(null);
   const highlightTimeouts = useRef({});
 
   // Clear timeouts on unmount
@@ -291,22 +292,17 @@ export default function JamPage() {
 
   // Set up Pusher connection in a separate useEffect
   useEffect(() => {
-    console.log('[Pusher Debug] Setting up connection for jam:', params.id);
     const channelName = `jam-${params.id}`;
-    console.log('[Pusher Debug] Subscribing to channel:', channelName);
     const channel = pusherClient.subscribe(channelName);
     
     // Clean up any existing bindings first
-    console.log('[Pusher Debug] Cleaning up existing bindings');
     channel.unbind_all();
 
     // Handle song additions
     channel.bind('song-added', (data) => {
-      console.log('[Pusher Debug] Received song-added event:', data);
       
       // Only show toast if we haven't shown it for this song
       if (lastToastId.current !== data.song._id) {
-        console.log('[Pusher Debug] Showing toast for:', data.song.song.title);
         toast.success(`"${data.song.song.title}" by ${data.song.song.artist} was added to the jam`);
         lastToastId.current = data.song._id;
       }
@@ -347,6 +343,18 @@ export default function JamPage() {
         if (!songToUpdate || songToUpdate.votes === data.votes) {
           console.log('[Vote Debug] No update needed');
           return prevJam;
+        }
+
+        // Show toast for vote change only if we haven't shown it for this vote update
+        const toastId = `${data.songId}-${data.votes}`;
+        if (lastVoteToastId.current !== toastId) {
+          const voteChange = data.votes - songToUpdate.votes;
+          if (voteChange > 0) {
+            toast.success(`Vote added for "${songToUpdate.song.title}" by ${songToUpdate.song.artist}`);
+          } else {
+            toast.info(`Vote removed for "${songToUpdate.song.title}" by ${songToUpdate.song.artist}`);
+          }
+          lastVoteToastId.current = toastId;
         }
 
         // Create a copy of songs for sorting
