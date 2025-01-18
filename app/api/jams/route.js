@@ -34,7 +34,7 @@ export async function GET() {
   try {
     await connectDB();
     const jams = await Jam.find({})
-      .sort({ createdAt: -1 })
+      .sort({ jamDate: -1, createdAt: -1 })
       .populate('songs.song');
 
     return NextResponse.json(jams);

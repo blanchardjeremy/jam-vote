@@ -25,15 +25,17 @@ const jamSongSchema = new mongoose.Schema({
   },
   order: {
     type: Number,
-    required: true
+    required: false
   },
   votes: {
     type: Number,
-    default: 0
+    default: 0,
+    required: false
   },
   played: {
     type: Boolean,
-    default: false
+    default: false,
+    required: false
   },
   captains: [captainSchema]
 });

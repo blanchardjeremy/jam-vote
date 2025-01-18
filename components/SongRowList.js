@@ -2,15 +2,9 @@ import { useState } from "react";
 import SongFormModal from "@/components/AddSongModal";
 import { Checkbox } from "@/components/ui/checkbox";
 import SongRowButton from "@/components/SongRowButton";
-import { PencilIcon, TrashIcon, EllipsisVerticalIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import BaseSongRow from "@/components/SongRowBase";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 function SongRowActions({ onEdit, onDelete, isSelected }) {
   return (
@@ -97,15 +91,10 @@ export default function SongListRow({
         className="cursor-pointer select-none group"
         onClick={handleRowClick}
         leftControl={
-          <div 
-            className="py-2 px-3 pb-1.5"
+          <Checkbox
+            checked={isSelected}
             onClick={handleCheckboxClick}
-          >
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={() => {}}
-            />
-          </div>
+          />
         }
         rightActions={
           <SongRowActions

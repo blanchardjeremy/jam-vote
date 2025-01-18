@@ -77,7 +77,7 @@ export default function SongRowButtonToolbar({
 
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
           <DropdownMenuTrigger asChild>
-            <button 
+            <div 
               className="inline-flex"
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
@@ -86,7 +86,7 @@ export default function SongRowButtonToolbar({
                 icon={EllipsisVerticalIcon}
                 tooltip="More options"
               />
-            </button>
+            </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem

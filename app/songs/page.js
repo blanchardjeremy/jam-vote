@@ -15,8 +15,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TrashIcon } from "@heroicons/react/24/outline";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { fetchSongs, useSongOperations, createSong } from '@/lib/services/songs';
+import { addSongsToJam } from '@/lib/services/jams';
 import ImportSongsModal from "@/components/ImportSongsModal";
-import SongAutocomplete from "@/components/SongAutocomplete";
+import { SearchInput } from "@/components/ui/search-input";
+import AddSongToTargetJamButton from "@/components/AddSongToTargetJamButton";
 
 // New SongTypeFilter component
 function SongTypeFilter({ value, onChange }) {
@@ -34,11 +36,64 @@ function SongTypeFilter({ value, onChange }) {
   );
 }
 
+// Toolbar component
+function SongsToolbar({ 
+  selectedCount, 
+  totalCount, 
+  onSelectAll, 
+  onDelete, 
+  isDeleting, 
+  filterType, 
+  onFilterChange,
+  onAddToJam
+}) {
+  return (
+    <div className="sticky top-0 z-10">
+      <div className="mb-4 bg-background shadow-sm rounded-lg p-3 pl-4 border border-gray-200">
+        {/* Mobile-optimized layout */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          {/* Left group - always visible */}
+          <div className="flex items-center gap-3">
+            <Checkbox
+              checked={selectedCount === totalCount && totalCount > 0}
+              onCheckedChange={onSelectAll}
+              aria-label="Select all songs"
+              className="mr-4"
+            />
+            <AddSongToTargetJamButton
+              selectedCount={selectedCount}
+              onJamSelected={onAddToJam}
+            />
+          </div>
+
+          {/* Right group - action buttons and filter */}
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline-destructive"
+              size="sm"
+              onClick={onDelete}
+              disabled={isDeleting || selectedCount === 0}
+              className="flex-shrink-0"
+            >
+              <TrashIcon className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">
+                {isDeleting ? 'Deleting...' : selectedCount === 0 ? 'Delete' : `Delete ${selectedCount}`}
+              </span>
+            </Button>
+            <SongTypeFilter value={filterType} onChange={onFilterChange} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SongsPage() {
   const [songs, setSongs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterType, setFilterType] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedSongs, setSelectedSongs] = useState(new Set());
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -144,13 +199,19 @@ export default function SongsPage() {
     setLastClickedIndex(null);
   };
 
-  const handleAddNewSong = async (songData) => {
+  const handleAddToJam = async (targetJam) => {
     try {
-      const newSong = await createSong(songData);
-      setSongs(prev => [...prev, newSong]);
+      const selectedSongIds = Array.from(selectedSongs);
+      const response = await addSongsToJam(targetJam._id, selectedSongIds);
+
+      // Clear selection after successful add
+      setSelectedSongs(new Set());
+      setLastClickedIndex(null);
+      
+      return response;  // Return the API response
     } catch (error) {
-      console.error('Error adding song:', error);
-      // You might want to show a toast notification here
+      console.error('Error adding songs to jam:', error);
+      throw error;  // Re-throw the error to be caught by the error handler
     }
   };
 
@@ -173,10 +234,12 @@ export default function SongsPage() {
     return <Loading />;
   }
 
-  // Filter songs based on type
-  const filteredSongs = songs.filter(song => 
-    filterType === 'all' ? true : song.type === filterType
-  );
+  // Filter songs based on type and search query
+  const filteredSongs = songs.filter(song => {
+    const matchesType = filterType === 'all' ? true : song.type === filterType;
+    const matchesSearch = song.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesType && matchesSearch;
+  });
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -194,56 +257,35 @@ export default function SongsPage() {
             onClick={() => setIsImportModalOpen(true)}
             className="flex-shrink-0"
           >
-            Import CSV
+            Import Songs
           </Button>
         </div>
       </div>
 
-      {/* Song Search and Add */}
-      <div className="mb-6 max-w-2xl">
-        <h2 className="text-lg font-semibold text-gray-700 mb-2">Add a Song</h2>
-        <SongAutocomplete
-          onSelect={(song) => handleAddNewSong(song)}
-          onAddNew={(title) => handleAddNewSong({ title, type: 'banger' })}
-          currentSongs={songs}
-          maxWidth="max-w-xl"
-          placeholder="Check if song exists before adding..."
-        />
-      </div>
-
-      {/* Toolbar */}
-      <div className="sticky top-0 z-10">
-        <div className="mb-4 bg-background shadow-sm rounded-lg p-3 pl-7 border border-gray-200">
-          {/* Mobile-optimized layout */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            {/* Left group - always visible */}
-            <div className="flex items-center gap-3">
-              <Checkbox
-                checked={selectedSongs.size === filteredSongs.length && filteredSongs.length > 0}
-                onCheckedChange={toggleAllSelection}
-                aria-label="Select all songs"
-              />
-            </div>
-
-            {/* Right group - action buttons and filter */}
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline-destructive"
-                size="sm"
-                onClick={() => setShowDeleteDialog(true)}
-                disabled={isDeleting || selectedSongs.size === 0}
-                className="flex-shrink-0"
-              >
-                <TrashIcon className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">
-                  {isDeleting ? 'Deleting...' : selectedSongs.size === 0 ? 'Delete' : `Delete ${selectedSongs.size}`}
-                </span>
-              </Button>
-              <SongTypeFilter value={filterType} onChange={setFilterType} />
-            </div>
+      {/* Search and Filter Bar */}
+      <div className="mb-6 space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4 max-w-2xl">
+          <div className="flex-1">
+            <SearchInput
+              placeholder="Filter songs..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
       </div>
+
+      {/* Toolbar */}
+      <SongsToolbar
+        selectedCount={selectedSongs.size}
+        totalCount={filteredSongs.length}
+        onSelectAll={toggleAllSelection}
+        onDelete={() => setShowDeleteDialog(true)}
+        isDeleting={isDeleting}
+        filterType={filterType}
+        onFilterChange={setFilterType}
+        onAddToJam={handleAddToJam}
+      />
 
       {/* Songs list */}
       <div className="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">

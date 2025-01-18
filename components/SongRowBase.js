@@ -34,7 +34,7 @@ export default function BaseSongRow({
         role="button"
         tabIndex={0}
       >
-        <div className="flex items-start gap-2 md:gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           {/* Left Control (Heart/Checkbox) */}
           {leftControl}
 
