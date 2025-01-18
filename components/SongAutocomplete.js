@@ -3,7 +3,13 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import { XCircle } from 'lucide-react';
 import { AutoComplete } from "@/components/ui/autocomplete";
 
-const SongAutocomplete = forwardRef(({ onSelect, onAddNew, currentSongs = [] }, ref) => {
+const SongAutocomplete = forwardRef(({ 
+  onSelect, 
+  onAddNew, 
+  placeholder = "Search for a song to add...", 
+  currentSongs = [],
+  maxWidth = "max-w-md"
+}, ref) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +29,7 @@ const SongAutocomplete = forwardRef(({ onSelect, onAddNew, currentSongs = [] }, 
         
         // Transform the data to match AutoComplete's expected format
         const options = data.map(song => {
-          const isDuplicate = currentSongs.some(existingSong => existingSong.song._id === song._id);
+          const isDuplicate = currentSongs.some(existingSong => existingSong._id === song._id);
           return {
             value: song._id,
             label: `${song.title} - ${song.artist}`, // Generic label for base component
@@ -121,14 +127,14 @@ const SongAutocomplete = forwardRef(({ onSelect, onAddNew, currentSongs = [] }, 
         onValueChange={handleValueChange}
         onInputChange={setQuery}
         inputValue={query}
-        placeholder="Search for a song to add..."
+        placeholder={placeholder}
         emptyMessage={isLoading ? "Searching..." : "Type to start searching"}
         isLoading={isLoading}
         renderOption={renderOption}
         className="rounded-lg border shadow-md"
         inputClassName="h-12"
         disabledText="Already added"
-        maxWidth="max-w-md"
+        maxWidth={maxWidth}
         position="auto"
         align="start"
         side="top"

@@ -2,9 +2,8 @@ import { useCombobox } from "downshift";
 import { cn } from "@/lib/utils";
 import { Check, Search, XCircle } from "lucide-react";
 import { Input } from "./input";
-import { forwardRef } from "react";
 
-export const AutoComplete = forwardRef(({
+export function AutoComplete({
   value,
   onValueChange,
   inputValue,
@@ -18,7 +17,7 @@ export const AutoComplete = forwardRef(({
   inputClassName,
   disabledText = "Disabled",
   maxWidth = "max-w-full",
-}, forwardedRef) => {
+}) {
   const {
     isOpen,
     getMenuProps,
@@ -40,24 +39,14 @@ export const AutoComplete = forwardRef(({
     itemToString: (item) => item?.label || "",
   });
 
-  const { ref: downshiftRef, ...inputProps } = getInputProps();
-
-  // Merge the refs
-  const mergedRef = (el) => {
-    downshiftRef(el);
-    if (typeof forwardedRef === 'function') {
-      forwardedRef(el);
-    } else if (forwardedRef) {
-      forwardedRef.current = el;
-    }
-  };
+  const { ref, ...inputProps } = getInputProps();
 
   return (
     <div className={cn("relative w-full", maxWidth, className)}>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
         <Input
-          ref={mergedRef}
+          ref={ref}
           {...inputProps}
           className={cn("pl-9", inputClassName)}
           placeholder={placeholder}
@@ -125,6 +114,4 @@ export const AutoComplete = forwardRef(({
       </ul>
     </div>
   );
-});
-
-AutoComplete.displayName = "AutoComplete";
+}

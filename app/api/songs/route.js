@@ -4,18 +4,13 @@ import Song from '@/models/Song';
 
 export async function GET() {
   try {
-    console.log('Connecting to MongoDB...');
     await connectDB();
-    console.log('Connected successfully, fetching songs...');
-    
-    const songs = await Song.find({}).sort({ voteCount: -1 });
-    console.log(`Found ${songs.length} songs`);
-    
+    const songs = await Song.find({});
     return NextResponse.json(songs);
   } catch (error) {
     console.error('Error in GET /api/songs:', error);
     return NextResponse.json(
-      { error: error.message, details: error.toString() }, 
+      { error: 'Failed to fetch songs' },
       { status: 500 }
     );
   }

@@ -120,8 +120,8 @@ export default function CaptainSignupButton({ jamSong }) {
   return (
     <>
       <DropdownMenu 
-        open={captainDropdownOpen} 
-        onOpenChange={setCaptainDropdownOpen}
+        open={captainDropdownOpen && !jamSong.played} 
+        onOpenChange={(open) => !jamSong.played && setCaptainDropdownOpen(open)}
       >
         <DropdownMenuTrigger asChild>
           <div>
