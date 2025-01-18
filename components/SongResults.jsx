@@ -13,6 +13,8 @@ export function SongResults({
 }) {
   if (!results.length && !isLoading) return null;
 
+  if (isLoading) return null;
+
   return (
     <div className={cn(
       "w-full",
@@ -21,9 +23,7 @@ export function SongResults({
     )}>
       <div className="p-1">
         {header}
-        {isLoading ? (
-          <LoadingBlock />
-        ) : results.length === 0 ? (
+        {results.length === 0 ? (
           <div className="relative flex cursor-default select-none items-center rounded-sm px-3 py-2.5 text-sm outline-none text-muted-foreground">
             {emptyMessage}
           </div>
