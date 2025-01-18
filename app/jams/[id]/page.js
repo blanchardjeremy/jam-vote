@@ -447,26 +447,18 @@ export default function JamPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="mb-4 flex items-center justify-between bg-white shadow-sm rounded-lg p-3 border border-gray-200">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => {
-              window.scrollTo({
-                top: document.documentElement.scrollHeight,
-                behavior: 'smooth',
-              });
-              // Focus the input after scrolling
-              setTimeout(() => {
-                songAutocompleteRef.current?.focus();
-              }, 500);
-            }}
-            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Add Song
-          </button>
+      <div className="sticky top-0 z-10 mb-4 flex items-center justify-between bg-white shadow-sm rounded-lg p-3 border border-gray-200">
+        <div className="flex-1 max-w-xl">
+          <SongAutocomplete 
+            ref={songAutocompleteRef}
+            onSelect={handleSelectExisting} 
+            onAddNew={handleAddNew}
+            currentSongs={jam.songs}
+            maxWidth="w-full"
+          />
         </div>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4 ml-4">
           <Select value={groupingEnabled ? 'type' : 'none'} onValueChange={(value) => setGroupingEnabled(value === 'type')}>
             <SelectTrigger className="w-auto border-none text-gray-500 focus:text-gray-900 text-sm focus:ring-0">
               <SelectValue />
@@ -542,15 +534,6 @@ export default function JamPage() {
             />
           </ul>
         )}
-      </div>
-
-      <div className="mt-6">
-        <SongAutocomplete 
-          ref={songAutocompleteRef}
-          onSelect={handleSelectExisting} 
-          onAddNew={handleAddNew}
-          currentSongs={jam.songs}
-        />
       </div>
 
       <CreateSongModal

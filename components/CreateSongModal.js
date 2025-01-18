@@ -95,7 +95,7 @@ export default function SongFormModal({
     try {
       // First create/update the song
       const endpoint = mode === 'edit' 
-        ? `/api/songs/${initialData._id}` 
+        ? `/api/songs/${initialData._id || initialData.song?._id}` 
         : '/api/songs';
 
       const response = await fetch(endpoint, {
@@ -105,7 +105,7 @@ export default function SongFormModal({
         },
         body: JSON.stringify({
           ...formData,
-          _id: mode === 'edit' ? initialData._id : undefined
+          _id: mode === 'edit' ? (initialData._id || initialData.song?._id) : undefined
         }),
       });
 

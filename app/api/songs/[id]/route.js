@@ -55,8 +55,8 @@ export async function DELETE(request, context) {
 export async function PUT(request, context) {
   try {
     await connectDB();
-    
-    const songId = await context.params.id;
+    const params = await context.params;
+    const songId = params.id;
     if (!songId) {
       return NextResponse.json(
         { error: 'Song ID is required' },
