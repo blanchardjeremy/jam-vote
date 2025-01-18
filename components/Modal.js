@@ -35,13 +35,13 @@ export default function Modal({
         </DialogHeader>
 
         {/* Content */}
-        <div className="mt-4">
+        <div className="">
           {children}
         </div>
 
         {/* Actions */}
         {actions && (
-          <div className="bg-background pt-4 mt-6 flex flex-col-reverse gap-3 sm:flex-row-reverse sm:mt-4">
+          <div className="bg-background pt-4 mt-0 flex flex-col-reverse gap-3 sm:flex-row-reverse sm:mt-0">
             {actions}
           </div>
         )}

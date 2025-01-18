@@ -3,6 +3,9 @@ import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState, useEffect } from 'react';
+import { useDebounce } from '@/lib/hooks/useDebounce';
+import { SongResults } from '@/components/ui/song-results';
 
 export default function SongFormModal({ 
   isOpen, 
@@ -18,6 +21,8 @@ export default function SongFormModal({
   onSubmit,
   jamId
 }) {
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
   const form = useForm({
     defaultValues: {
       title: mode === 'add' ? initialTitle : initialData.title,
@@ -26,6 +31,56 @@ export default function SongFormModal({
       chordChart: initialData.chordChart
     }
   });
+
+  const debouncedTitle = useDebounce(form.watch('title'), 300);
+
+  useEffect(() => {
+    // Only search in add mode and when modal is open
+    if (mode !== 'add' || !isOpen) {
+      setSearchResults([]);
+      return;
+    }
+
+    const searchSongs = async () => {
+      if (debouncedTitle.length < 3) {
+        setSearchResults([]);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const res = await fetch(`/api/songs/search?q=${encodeURIComponent(debouncedTitle)}`);
+        if (!res.ok) throw new Error('Search failed');
+        const data = await res.json();
+        setSearchResults(data);
+      } catch (error) {
+        console.error('Search error:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    searchSongs();
+  }, [debouncedTitle, mode, isOpen]);
+
+  // Clear results when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchResults([]);
+      setIsSearching(false);
+    }
+  }, [isOpen]);
+
+  const handleSongSelect = (song) => {
+    form.setValue('title', song.title);
+    form.setValue('artist', song.artist);
+    form.setValue('type', song.type);
+    if (song.chordChart) {
+      form.setValue('chordChart', song.chordChart);
+    }
+    setSearchResults([]);
+  };
 
   const handleSubmit = async (formData) => {
     try {
@@ -99,7 +154,7 @@ export default function SongFormModal({
       }
     >
       <Form {...form}>
-        <form id="song-form" onSubmit={form.handleSubmit(handleSubmit)} className="mt-4 space-y-4 sm:space-y-6">
+        <form id="song-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 sm:space-y-6">
           <div className="grid grid-cols-1 gap-y-4 sm:gap-y-6 gap-x-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <FormField
@@ -113,6 +168,14 @@ export default function SongFormModal({
                       <Input {...field} />
                     </FormControl>
                     <FormMessage />
+                    {mode === 'add' && (
+                      <SongResults
+                        results={searchResults}
+                        isLoading={isSearching}
+                        onSelect={handleSongSelect}
+                        mode="inline"
+                      />
+                    )}
                   </FormItem>
                 )}
               />
