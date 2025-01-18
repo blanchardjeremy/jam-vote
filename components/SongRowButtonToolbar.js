@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
-import { CheckCircleIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon, MinusCircleIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
-import { TrashIcon, PencilIcon, EllipsisVerticalIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, EllipsisVerticalIcon } from "@heroicons/react/24/outline";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,7 +84,7 @@ export default function SongRowButtonToolbar({
               }}
               className="text-destructive hover:text-destructive hover:bg-destructive/10"
             >
-              <TrashIcon className="h-4 w-4 mr-2" />
+              <MinusCircleIcon className="h-4 w-4 mr-2" />
               <span>Remove from jam</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
