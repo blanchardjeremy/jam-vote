@@ -289,7 +289,7 @@ export default function SongsPage() {
 
       {/* Search and Filter Bar */}
       <div className="mb-6 space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4 max-w-2xl">
+        <div className="flex flex-col sm:flex-row gap-4 max-w-lg">
           <div className="flex-1">
             <SearchInput
               placeholder="Filter songs..."
