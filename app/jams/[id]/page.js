@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import SongAutocomplete from "@/components/SongAutocomplete";
 import AddSongModal from "@/components/AddSongModal";
 import { useParams } from 'next/navigation';
-import SongRow from "@/components/SongRow";
+import SongRow from "@/components/SongRowJam";
 import {
   AlertDialog,
   AlertDialogAction,

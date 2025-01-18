@@ -78,11 +78,14 @@ export default function SongRowButtonToolbar({
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
           <DropdownMenuTrigger asChild>
             <button 
-              className="p-0.5 md:p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-150 ease-in-out touch-none"
+              className="inline-flex"
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
             >
-              <EllipsisVerticalIcon className="h-3 w-3 md:h-5 md:w-5" />
+              <SongRowButton
+                icon={EllipsisVerticalIcon}
+                tooltip="More options"
+              />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

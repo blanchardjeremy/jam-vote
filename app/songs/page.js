@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import SongListRow from "@/components/SongListRow";
+import SongListRow from "@/components/SongRowList";
 import Loading from "@/app/loading";
 import {
   Select,
@@ -17,6 +17,22 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import { fetchSongs, useSongOperations, createSong } from '@/lib/services/songs';
 import ImportSongsModal from "@/components/ImportSongsModal";
 import SongAutocomplete from "@/components/SongAutocomplete";
+
+// New SongTypeFilter component
+function SongTypeFilter({ value, onChange }) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="w-[140px]">
+        <SelectValue placeholder="Filter by type" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All songs</SelectItem>
+        <SelectItem value="banger">Bangers</SelectItem>
+        <SelectItem value="ballad">Ballads</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+}
 
 export default function SongsPage() {
   const [songs, setSongs] = useState([]);
@@ -165,10 +181,22 @@ export default function SongsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">All Songs</h1>
-        <p className="text-gray-600 mt-2">
-          {songs.length} songs in the library
-        </p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">All Songs</h1>
+            <p className="text-gray-600 mt-2">
+              {songs.length} songs in the library
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsImportModalOpen(true)}
+            className="flex-shrink-0"
+          >
+            Import CSV
+          </Button>
+        </div>
       </div>
 
       {/* Song Search and Add */}
@@ -185,7 +213,7 @@ export default function SongsPage() {
 
       {/* Toolbar */}
       <div className="sticky top-0 z-10">
-        <div className="mb-4 bg-background shadow-sm rounded-lg p-3 border border-gray-200">
+        <div className="mb-4 bg-background shadow-sm rounded-lg p-3 pl-7 border border-gray-200">
           {/* Mobile-optimized layout */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             {/* Left group - always visible */}
@@ -195,43 +223,23 @@ export default function SongsPage() {
                 onCheckedChange={toggleAllSelection}
                 aria-label="Select all songs"
               />
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Filter by type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All songs</SelectItem>
-                  <SelectItem value="banger">Bangers</SelectItem>
-                  <SelectItem value="ballad">Ballads</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
-            {/* Right group - action buttons */}
+            {/* Right group - action buttons and filter */}
             <div className="flex items-center gap-3">
-              {selectedSongs.size > 0 && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setShowDeleteDialog(true)}
-                  disabled={isDeleting}
-                  className="flex-shrink-0"
-                >
-                  <TrashIcon className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">
-                    {isDeleting ? 'Deleting...' : `Delete ${selectedSongs.size}`}
-                  </span>
-                </Button>
-              )}
-
               <Button
-                variant="outline"
+                variant="outline-destructive"
                 size="sm"
-                onClick={() => setIsImportModalOpen(true)}
+                onClick={() => setShowDeleteDialog(true)}
+                disabled={isDeleting || selectedSongs.size === 0}
                 className="flex-shrink-0"
               >
-                Import CSV
+                <TrashIcon className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">
+                  {isDeleting ? 'Deleting...' : selectedSongs.size === 0 ? 'Delete' : `Delete ${selectedSongs.size}`}
+                </span>
               </Button>
+              <SongTypeFilter value={filterType} onChange={setFilterType} />
             </div>
           </div>
         </div>
@@ -267,7 +275,7 @@ export default function SongsPage() {
         onConfirm={handleDeleteSelected}
         title="Delete Songs"
         description={`Are you sure you want to delete ${selectedSongs.size} songs? This action cannot be undone.`}
-        confirmText={isDeleting ? 'Deleting...' : 'Delete Songs'}
+        confirmText={isDeleting ? 'Deleting...' : `Delete ${selectedSongs.size} Songs`}
         cancelText="Cancel"
         disabled={isDeleting}
       />

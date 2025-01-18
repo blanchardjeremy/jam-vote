@@ -124,7 +124,7 @@ export default function CaptainSignupButton({ jamSong }) {
         onOpenChange={(open) => !jamSong.played && setCaptainDropdownOpen(open)}
       >
         <DropdownMenuTrigger asChild>
-          <div>
+          <div className="inline-flex">
             <SongRowButton
               icon={isCaptain ? UserIconSolid : UserIconOutline}
               onClick={() => setCaptainDropdownOpen(true)}

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import SongFormModal from "@/components/AddSongModal";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
+import SongRowButton from "@/components/SongRowButton";
 import { PencilIcon, TrashIcon, EllipsisVerticalIcon } from "@heroicons/react/24/outline";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import BaseSongRow from "@/components/SongRowBase";
@@ -14,51 +14,37 @@ import {
 
 function SongRowActions({ onEdit, onDelete, isSelected }) {
   return (
-    <>
-      {/* Desktop view */}
-      <div className="hidden md:flex items-center gap-1 md:gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
+    <div>
+      {/* Desktop/Mouse view - show on hover */}
+      <div className="hidden [@media(hover:hover)]:flex [@media(hover:hover)]:opacity-0 group-hover:opacity-100 items-center gap-1 md:gap-2">
+        <SongRowButton
+          icon={PencilIcon}
           onClick={onEdit}
-        >
-          <PencilIcon className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
+          tooltip="Edit song"
+        />
+        <SongRowButton
+          icon={TrashIcon}
           onClick={onDelete}
-        >
-          <TrashIcon className="h-4 w-4" />
-        </Button>
+          tooltip="Delete song"
+          variant="danger"
+        />
       </div>
 
-      {/* Mobile view */}
-      <div className="md:hidden">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
-              <EllipsisVerticalIcon className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onEdit}>
-              <PencilIcon className="h-4 w-4 mr-2" />
-              Edit
-            </DropdownMenuItem>
-            {!isSelected && (
-              <DropdownMenuItem 
-                onClick={onDelete}
-                className="text-destructive"
-              >
-                <TrashIcon className="h-4 w-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+      {/* Touch device view - always show */}
+      <div className="[@media(hover:hover)]:hidden flex items-center gap-1 md:gap-2">
+        <SongRowButton
+          icon={PencilIcon}
+          onClick={onEdit}
+          tooltip="Edit song"
+        />
+        <SongRowButton
+          icon={TrashIcon}
+          onClick={onDelete}
+          tooltip="Delete song"
+          variant="danger"
+        />
       </div>
-    </>
+    </div>
   );
 }
 
@@ -89,8 +75,17 @@ export default function SongListRow({
     }
   };
 
-  const handleCheckboxChange = (checked) => {
-    onSelectionChange?.(checked);
+  const handleCheckboxClick = (e) => {
+    e.stopPropagation();
+    onSelectionChange?.(!isSelected);
+  };
+
+  const handleRowClick = (e) => {
+    // Don't trigger selection if clicking on buttons or dropdown
+    if (e.target.closest('button') || e.target.closest('[role="menuitem"]')) {
+      return;
+    }
+    onSelectionChange?.(!isSelected);
   };
   
   return (
@@ -99,15 +94,16 @@ export default function SongListRow({
         song={song}
         isSelected={isSelected}
         hideType={hideType}
+        className="cursor-pointer select-none group"
+        onClick={handleRowClick}
         leftControl={
-          <div
-            onClick={() => handleCheckboxChange(!isSelected)}
-            className="p-2 -m-2 hover:bg-accent rounded-md transition-colors cursor-pointer"
-            role="presentation"
+          <div 
+            className="py-2 px-3 pb-1.5"
+            onClick={handleCheckboxClick}
           >
             <Checkbox
               checked={isSelected}
-              className="pointer-events-none"
+              onCheckedChange={() => {}}
             />
           </div>
         }

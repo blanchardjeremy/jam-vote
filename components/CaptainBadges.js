@@ -52,7 +52,7 @@ export default function CaptainBadges({ jamSong, isNext }) {
         <Badge 
           key={`${captain.name}-${index}`}
           variant={isNext ? 'default' : 'secondary'}
-          className="text-xs"
+          className="text-[10px] md:text-xs px-1.5 py-0 md:px-2 md:py-0.5"
         >
           {captain.name} {captain.type === 'piano' ? '🎹' : '🎤'}
         </Badge>

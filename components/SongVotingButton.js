@@ -80,27 +80,25 @@ export default function SongVotingButton({ jamSong, onVote }) {
   }
 
   return (
-    <div className="flex flex-col items-center pt-1">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            onClick={handleVote}
-            disabled={isVoting}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            className={cn(
-              'p-0.5 md:p-1 rounded-lg transition-all duration-150 ease-in-out',
-              getVoteButtonStyles()
-            )}
-          >
-            <VoteIcon className={cn('h-6 w-6 md:h-7 md:w-7', getVoteIconStyles())} />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{hasVoted ? 'Remove vote' : 'Vote for this song'}</p>
-        </TooltipContent>
-      </Tooltip>
-      <span className="text-xs md:text-sm font-medium text-primary">{jamSong.votes}</span>
-    </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={handleVote}
+          disabled={isVoting}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          className={cn(
+            'flex flex-col items-center p-0 px-2 rounded-lg transition-all duration-150 ease-in-out',
+            getVoteButtonStyles()
+          )}
+        >
+          <VoteIcon className={cn('h-6 w-6 md:h-7 md:w-7', getVoteIconStyles())} />
+          <span className="text-xs md:text-sm font-medium text-primary">{jamSong.votes}</span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{hasVoted ? 'Remove vote' : 'Vote for this song'}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 } 
