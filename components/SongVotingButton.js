@@ -88,7 +88,7 @@ export default function SongVotingButton({ jamSong, onVote }) {
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           className={cn(
-            'flex flex-col items-center p-0 px-2 rounded-lg transition-all duration-150 ease-in-out',
+            'flex flex-col items-center p-0 px-2 rounded-lg transition-all duration-150 ease-in-out z-0',
             getVoteButtonStyles()
           )}
         >
