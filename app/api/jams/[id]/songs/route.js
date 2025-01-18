@@ -32,10 +32,20 @@ export async function POST(request, context) {
       );
     }
 
-    // Check for duplicate songs
-    const existingSongIds = jam.songs.map(song => song.song.toString());
-    const duplicateSongs = songIds.filter(id => existingSongIds.includes(id.toString()));
-    const newSongIds = songIds.filter(id => !existingSongIds.includes(id.toString()));
+    // Ensure consistent string comparison by converting all IDs to strings
+    const existingSongIds = new Set(jam.songs.map(song => song.song._id.toString()));
+    const songIdsAsStrings = songIds.map(id => id.toString());
+    
+    // Check for duplicates using Set for O(1) lookup
+    const duplicateSongs = songIdsAsStrings.filter(id => existingSongIds.has(id));
+    const newSongIds = songIdsAsStrings.filter(id => !existingSongIds.has(id));
+
+    console.log('[Songs API] Duplicate detection:', { 
+      existingSongIds: Array.from(existingSongIds),
+      songIdsAsStrings,
+      duplicateSongs,
+      newSongIds 
+    });
 
     // Get full song data for new songs
     const newSongDocs = await Song.find({ _id: { $in: newSongIds } });
