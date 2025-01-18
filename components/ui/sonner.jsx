@@ -13,6 +13,7 @@ const Toaster = ({
       expand={true}
       richColors
       position="bottom-center"
+      duration={8000}
       toastOptions={{
         classNames: {
           toast:

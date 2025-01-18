@@ -127,12 +127,14 @@ export async function DELETE(request, context) {
 
     // Trigger Pusher event for song removal
     await pusherServer.trigger(`jam-${jamId}`, 'song-removed', {
-      songId: songId
+      songId: removedSong.song._id,
+      songTitle: removedSong.song.title,
+      songArtist: removedSong.song.artist
     });
 
     return NextResponse.json({
       success: true,
-      removedSong: removedSong
+      removedSong
     });
   } catch (error) {
     console.error('[Songs API] Error:', error);

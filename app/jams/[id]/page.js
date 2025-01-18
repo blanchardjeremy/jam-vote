@@ -351,12 +351,19 @@ export default function JamPage() {
 
     // Handle song removals
     channel.bind('song-removed', (data) => {
+      toast.error(`"${data.songTitle}" by ${data.songArtist} was removed from the jam`, {
+        style: {
+          background: '#fef2f2',
+          border: '1px solid #fee2e2',
+          color: '#991b1b'
+        }
+      });
+
       setJam(prevJam => {
         if (!prevJam) return prevJam;
-
         const newState = {
           ...prevJam,
-          songs: prevJam.songs.filter(s => s._id !== data.songId)
+          songs: prevJam.songs.filter(s => s.song._id.toString() !== data.songId.toString())
         };
         return newState;
       });
