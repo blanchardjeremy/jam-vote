@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { TrashIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { fetchSongs, useSongOperations, createSong } from '@/lib/services/songs';
 import { addSongsToJam } from '@/lib/services/jams';
@@ -45,14 +45,14 @@ function SongsToolbar({
   isDeleting, 
   filterType, 
   onFilterChange,
-  onAddToJam
+  onAddToJam,
+  targetJam,
+  onChangeTargetJam
 }) {
   return (
     <div className="sticky top-0 z-10">
       <div className="mb-4 bg-background shadow-sm rounded-lg p-3 pl-4 border border-gray-200">
-        {/* Mobile-optimized layout */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          {/* Left group - always visible */}
           <div className="flex items-center gap-3">
             <Checkbox
               checked={selectedCount === totalCount && totalCount > 0}
@@ -60,9 +60,23 @@ function SongsToolbar({
               aria-label="Select all songs"
               className="mr-4"
             />
+            {targetJam && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>Target: {targetJam.name}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onChangeTargetJam}
+                  className="h-6 w-6"
+                >
+                  <XMarkIcon className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
             <AddSongToTargetJamButton
               selectedCount={selectedCount}
               onJamSelected={onAddToJam}
+              targetJam={targetJam}
             />
           </div>
 
@@ -75,9 +89,9 @@ function SongsToolbar({
               disabled={isDeleting || selectedCount === 0}
               className="flex-shrink-0"
             >
-              <TrashIcon className="h-4 w-4 sm:mr-2" />
+              <TrashIcon className="h-4 w-4" />
               <span className="hidden sm:inline">
-                {isDeleting ? 'Deleting...' : selectedCount === 0 ? 'Delete' : `Delete ${selectedCount}`}
+                {isDeleting ? 'Deleting...' : 'Delete'}
               </span>
             </Button>
             <SongTypeFilter value={filterType} onChange={onFilterChange} />
@@ -100,6 +114,7 @@ export default function SongsPage() {
   const [lastClickedIndex, setLastClickedIndex] = useState(null);
   const [isShiftPressed, setIsShiftPressed] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [targetJam, setTargetJam] = useState(null);
 
   // Track shift key state
   useEffect(() => {
@@ -199,20 +214,30 @@ export default function SongsPage() {
     setLastClickedIndex(null);
   };
 
-  const handleAddToJam = async (targetJam) => {
+  const handleAddToJam = async (jam) => {
     try {
       const selectedSongIds = Array.from(selectedSongs);
-      const response = await addSongsToJam(targetJam._id, selectedSongIds);
+      const response = await addSongsToJam(jam._id, selectedSongIds);
+
+      // Set the target jam if not already set
+      if (!targetJam) {
+        setTargetJam(jam);
+      }
 
       // Clear selection after successful add
       setSelectedSongs(new Set());
       setLastClickedIndex(null);
       
-      return response;  // Return the API response
+      return response;
     } catch (error) {
       console.error('Error adding songs to jam:', error);
-      throw error;  // Re-throw the error to be caught by the error handler
+      throw error;
     }
+  };
+
+  // Add handler for changing target jam
+  const handleChangeTargetJam = () => {
+    setTargetJam(null);
   };
 
   if (error) {
@@ -285,6 +310,8 @@ export default function SongsPage() {
         filterType={filterType}
         onFilterChange={setFilterType}
         onAddToJam={handleAddToJam}
+        targetJam={targetJam}
+        onChangeTargetJam={handleChangeTargetJam}
       />
 
       {/* Songs list */}

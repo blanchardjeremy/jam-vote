@@ -4,8 +4,18 @@ import SelectJamModal from './SelectJamModal';
 import { ArrowRightIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 
-export default function AddSongToTargetJamButton({ onJamSelected, selectedCount = 0 }) {
+export default function AddSongToTargetJamButton({ onJamSelected, selectedCount = 0, targetJam }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleClick = async () => {
+    if (targetJam) {
+      // If we have a target jam, add directly to it
+      await handleJamSelected(targetJam);
+    } else {
+      // Otherwise open modal to select jam
+      setIsModalOpen(true);
+    }
+  };
 
   const handleJamSelected = async (jam) => {
     try {
@@ -31,7 +41,7 @@ export default function AddSongToTargetJamButton({ onJamSelected, selectedCount 
       }
       
       if (result.skippedSongs?.length > 0) {
-        toast.info(`${result.skippedSongs.length} ${result.skippedSongs.length === 1 ? 'song was' : 'songs were'} already in the jam`);
+        toast.warning(`${result.skippedSongs.length} ${result.skippedSongs.length === 1 ? 'song was' : 'songs were'} already in the jam`);
       }
       
       if (!result.addedSongs?.length && !result.skippedSongs?.length) {
@@ -53,7 +63,7 @@ export default function AddSongToTargetJamButton({ onJamSelected, selectedCount 
       <Button
         variant="primary"
         size="sm"
-        onClick={() => setIsModalOpen(true)}
+        onClick={handleClick}
         disabled={selectedCount === 0}
         className="flex items-center gap-2"
       >
@@ -62,7 +72,6 @@ export default function AddSongToTargetJamButton({ onJamSelected, selectedCount 
             ? "Add to Jam" 
             : `Add ${selectedCount} to Jam`}
         </span>
-        <ArrowRightIcon className="h-4 w-4" />
       </Button>
 
       <SelectJamModal
