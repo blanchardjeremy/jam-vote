@@ -19,12 +19,6 @@ export default function SongRow({
   const { song } = jamSong;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
-  console.log('[SongRowJam] Rendering with props:', {
-    songId: jamSong._id,
-    songTitle: song.title,
-    highlight
-  });
-  
   const handleTogglePlayed = useCallback(async () => {
     await onTogglePlayed(jamSong._id);
   }, [jamSong._id, jamSong.played, onTogglePlayed]);

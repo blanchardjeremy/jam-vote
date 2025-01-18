@@ -14,8 +14,6 @@ const BaseSongRow = forwardRef(({
   onClick,
   highlight
 }, ref) => {
-  console.log('[BaseSongRow] Rendering with highlight:', { highlight, songId: song._id });
-
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -24,7 +22,6 @@ const BaseSongRow = forwardRef(({
   };
 
   const style = highlight ? { '--highlight-color': highlight } : {};
-  console.log('[BaseSongRow] Computed style:', style);
 
   return (
     <TooltipProvider delayDuration={200}>

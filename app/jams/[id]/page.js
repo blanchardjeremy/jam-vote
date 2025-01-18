@@ -34,12 +34,6 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 
 // Helper component for rendering song lists
 function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit, hideTypeBadge, emptyMessage, groupingEnabled, lastAddedSongId }) {
-  console.log('[SongList] Rendering with props:', {
-    songsCount: songs?.length,
-    lastAddedSongId,
-    songIds: songs?.map(s => s._id)
-  });
-
   if (songs.length === 0) {
     return (
       <li className="px-4 py-3 text-sm text-gray-500 italic">
@@ -50,14 +44,6 @@ function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit,
 
   return songs.map((jamSong, index) => {
     const willHighlight = jamSong._id === lastAddedSongId;
-    console.log('[SongList] Rendering song:', {
-      songId: jamSong._id,
-      songDbId: jamSong.song._id,
-      lastAddedSongId,
-      willHighlight,
-      songTitle: jamSong.song.title
-    });
-    
     return (
       <li key={`${jamSong.song._id}-${index}`} className="hover:bg-gray-50">
         <SongRow 
@@ -114,9 +100,7 @@ export default function JamPage() {
   // Helper function to add a song to the jam
   const handleAddSongToJam = async (songId) => {
     try {
-      console.log('[JamPage] handleAddSongToJam called with songId:', songId);
       const { jam: updatedJam } = await addSongToJam(params.id, songId);
-      console.log('[JamPage] Got response from addSongToJam:', { updatedJam });
       
       // Update local state immediately
       setJam(updatedJam);
@@ -124,25 +108,16 @@ export default function JamPage() {
       // Find the newly added song (it will be the last one in the array)
       const newJamSong = updatedJam.songs[updatedJam.songs.length - 1];
       if (newJamSong) {
-        console.log('[JamPage] Setting lastAddedSongId:', newJamSong._id);
         localStorage.setItem(`vote-${newJamSong._id}`, 'true');
-        // Set the last added song ID to trigger highlight
         setLastAddedSongId(newJamSong._id);
         
-        // Log the current state after setting
-        console.log('[JamPage] Current jam songs:', updatedJam.songs);
-        console.log('[JamPage] Added song ID:', newJamSong._id);
-        
-        // Clear the highlight after 3 seconds (matching animation duration)
         setTimeout(() => {
-          console.log('[JamPage] Clearing lastAddedSongId');
           setLastAddedSongId(null);
         }, 3000);
       }
 
       return updatedJam;
     } catch (e) {
-      console.error('[JamPage] Error in handleAddSongToJam:', e);
       toast.error(e.message || 'Failed to add song to jam');
       throw e;
     }
@@ -150,36 +125,28 @@ export default function JamPage() {
 
   const handleSelectExisting = async (song) => {
     try {
-      console.log('[JamPage] handleSelectExisting called with song:', song);
       await handleAddSongToJam(song.value);
-      console.log('[JamPage] Song added successfully');
     } catch (e) {
-      console.error('[JamPage] Error adding song to jam:', e);
       toast.error('Failed to add song');
     }
   };
 
   const handleAddNew = (title) => {
-    console.log('[JamPage] handleAddNew called with title:', title);
     setNewSongTitle(title);
     setIsAddModalOpen(true);
   };
 
   const handleAddSong = async (newSong) => {
     try {
-      console.log('[JamPage] handleAddSong called with newSong:', newSong);
       // Check if song already exists in the jam
       if (jam.songs.some(existingSong => existingSong.song._id === newSong._id)) {
-        console.log('[JamPage] Song already exists in jam');
         setIsAddModalOpen(false);
         return;
       }
 
       await handleAddSongToJam(newSong._id);
-      console.log('[JamPage] New song added successfully');
       setIsAddModalOpen(false);
     } catch (e) {
-      console.error('[JamPage] Error adding new song to jam:', e);
       toast.error('Failed to add song');
     }
   };
@@ -248,8 +215,6 @@ export default function JamPage() {
         throw new Error(errorData.error || 'Failed to fetch jam');
       }
       const data = await res.json();
-      console.log('[Jam Page] Fetched jam data:', data);
-      console.log('[Jam Page] Songs type:', typeof data?.songs, Array.isArray(data?.songs));
       setJam(data);
     } catch (e) {
       setError(e.message);
@@ -286,18 +251,12 @@ export default function JamPage() {
 
     // Handle vote updates
     channel.bind('vote', (data) => {
-      console.log('[Pusher Client] Received vote event:', data);
       setJam(prevJam => {
-        console.log('[Pusher Client] Previous jam state:', prevJam);
-        console.log('[Pusher Client] Songs type:', typeof prevJam?.songs, Array.isArray(prevJam?.songs));
-        
         if (!prevJam?.songs) {
-          console.log('[Pusher Client] No previous jam state or songs, skipping vote update');
           return prevJam;
         }
 
         if (!Array.isArray(prevJam.songs)) {
-          console.log('[Pusher Client] Songs is not an array, attempting to fix:', prevJam.songs);
           // If songs is not an array but is an object with numeric keys, convert it
           if (typeof prevJam.songs === 'object') {
             const songsArray = Object.values(prevJam.songs);
@@ -313,7 +272,6 @@ export default function JamPage() {
         
         // Only update if the vote count is different to avoid unnecessary re-renders
         const songToUpdate = prevJam.songs.find(s => s._id.toString() === data.songId);
-        console.log('[Pusher Client] Found song to update:', songToUpdate);
         
         if (!songToUpdate || songToUpdate.votes === data.votes) {
           return prevJam;
@@ -337,7 +295,6 @@ export default function JamPage() {
 
     // Handle captain updates
     channel.bind('captain-added', (data) => {
-      console.log('[Pusher Client] Received captain-added event:', data);
       setJam(prevJam => {
         if (!prevJam) return prevJam;
         
@@ -350,7 +307,6 @@ export default function JamPage() {
 
     // Handle song played status updates
     channel.bind('song-played', (data) => {
-      console.log('[Pusher Client] Received song-played event:', data);
       setJam(prevJam => {
         if (!prevJam) return prevJam;
         
@@ -367,7 +323,6 @@ export default function JamPage() {
 
     // Handle song additions
     channel.bind('song-added', (data) => {
-      console.log('[Pusher Client] Received song-added event:', data);
       setJam(prevJam => {
         if (!prevJam) return prevJam;
         
@@ -384,10 +339,8 @@ export default function JamPage() {
 
         // Set the lastAddedSongId to trigger highlight
         if (data.song._id) {
-          console.log('[Pusher Client] Setting lastAddedSongId from Pusher:', data.song._id);
           setLastAddedSongId(data.song._id);
           setTimeout(() => {
-            console.log('[Pusher Client] Clearing lastAddedSongId from Pusher');
             setLastAddedSongId(null);
           }, 3000);
         }
@@ -398,7 +351,6 @@ export default function JamPage() {
 
     // Handle song removals
     channel.bind('song-removed', (data) => {
-      console.log('[Pusher Client] Received songRemoved event:', data);
       setJam(prevJam => {
         if (!prevJam) return prevJam;
 
@@ -412,7 +364,6 @@ export default function JamPage() {
 
     // Handle song edits
     channel.bind('song-edited', (data) => {
-      console.log('[Pusher Client] Received song-edited event:', data);
       setJam(prevJam => {
         if (!prevJam) return prevJam;
         
