@@ -185,42 +185,54 @@ export default function SongsPage() {
 
       {/* Toolbar */}
       <div className="sticky top-0 z-10">
-        <div className="mb-4 flex items-center justify-between bg-background shadow-sm rounded-lg p-3 border border-gray-200">
-          <div className="flex items-center gap-4">
-            <Checkbox
-              checked={selectedSongs.size === filteredSongs.length && filteredSongs.length > 0}
-              onCheckedChange={toggleAllSelection}
-              aria-label="Select all songs"
-            />
+        <div className="mb-4 bg-background shadow-sm rounded-lg p-3 border border-gray-200">
+          {/* Mobile-optimized layout */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            {/* Left group - always visible */}
+            <div className="flex items-center gap-3">
+              <Checkbox
+                checked={selectedSongs.size === filteredSongs.length && filteredSongs.length > 0}
+                onCheckedChange={toggleAllSelection}
+                aria-label="Select all songs"
+              />
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Filter by type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All songs</SelectItem>
+                  <SelectItem value="banger">Bangers</SelectItem>
+                  <SelectItem value="ballad">Ballads</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Filter by type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All songs</SelectItem>
-                <SelectItem value="banger">Bangers</SelectItem>
-                <SelectItem value="ballad">Ballads</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Right group - action buttons */}
+            <div className="flex items-center gap-3">
+              {selectedSongs.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setShowDeleteDialog(true)}
+                  disabled={isDeleting}
+                  className="flex-shrink-0"
+                >
+                  <TrashIcon className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    {isDeleting ? 'Deleting...' : `Delete ${selectedSongs.size}`}
+                  </span>
+                </Button>
+              )}
 
-            <Button
-              variant={selectedSongs.size === 0 ? "outline-destructive" : "destructive"}
-              size="sm"
-              onClick={() => setShowDeleteDialog(true)}
-              disabled={isDeleting || selectedSongs.size === 0}
-            >
-              <TrashIcon className="h-4 w-4 mr-2" />
-              {isDeleting ? 'Deleting...' : selectedSongs.size === 0 ? 'Delete' : `Delete ${selectedSongs.size} selected`}
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => setIsImportModalOpen(true)}
-              className="ml-4"
-            >
-              Import CSV
-            </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsImportModalOpen(true)}
+                className="flex-shrink-0"
+              >
+                Import CSV
+              </Button>
+            </div>
           </div>
         </div>
       </div>

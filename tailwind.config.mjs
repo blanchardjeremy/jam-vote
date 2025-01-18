@@ -52,6 +52,14 @@ export default {
           foreground: 'hsl(var(--success-foreground))',
           muted: 'hsl(var(--success-muted))'
         },
+        banger: {
+          DEFAULT: 'hsl(var(--banger))',
+          foreground: 'hsl(var(--banger-foreground))'
+        },
+        jam: {
+          DEFAULT: 'hsl(var(--jam))',
+          foreground: 'hsl(var(--jam-foreground))'
+        },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',

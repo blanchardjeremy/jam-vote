@@ -82,7 +82,7 @@ export default function SongRowButtonToolbar({
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
             >
-              <EllipsisVerticalIcon className="h-4 w-4 md:h-5 md:w-5" />
+              <EllipsisVerticalIcon className="h-3 w-3 md:h-5 md:w-5" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
