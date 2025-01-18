@@ -47,6 +47,12 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    
+    /* Highlight variants */
+    --highlight-success: rgba(34, 197, 94, 0.2);
+    --highlight-primary: rgba(59, 130, 246, 0.2);
+    --highlight-warning: rgba(245, 158, 11, 0.2);
+    --highlight-error: rgba(239, 68, 68, 0.2);
   }
   /* .dark {
     --background: 222.2 84% 4.9%;
@@ -101,17 +107,34 @@
   0% {
     background-color: transparent;
   }
-  5% {
-    background-color: var(--highlight-color, rgba(59, 130, 246, 0.2));
+  2% {
+    background-color: var(--highlight-color, var(--highlight-success));
   }
-  80% {
-    background-color: var(--highlight-color, rgba(59, 130, 246, 0.2));
+  85% {
+    background-color: var(--highlight-color, var(--highlight-success));
   }
   100% {
     background-color: transparent;
   }
 }
 
+.highlight-animation[data-variant='success'] {
+  --highlight-color: var(--highlight-success);
+}
+
+.highlight-animation[data-variant='primary'] {
+  --highlight-color: var(--highlight-primary);
+}
+
+.highlight-animation[data-variant='warning'] {
+  --highlight-color: var(--highlight-warning);
+}
+
+.highlight-animation[data-variant='error'] {
+  --highlight-color: var(--highlight-error);
+}
+
 .highlight-animation {
-  animation: highlight 3s ease-in-out;
+  animation: highlight 10s cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: forwards;
 }

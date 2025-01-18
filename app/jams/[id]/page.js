@@ -55,7 +55,7 @@ function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit,
           isNext={jamSong._id === nextSongId}
           hideType={hideTypeBadge}
           groupingEnabled={groupingEnabled}
-          highlight={willHighlight ? 'rgba(59, 130, 246, 0.2)' : null}
+          highlight={willHighlight ? 'success' : null}
         />
       </li>
     );
@@ -114,7 +114,7 @@ export default function JamPage() {
         
         setTimeout(() => {
           setLastAddedSongId(null);
-        }, 3000);
+        }, 15000);
       }
 
       return updatedJam;

@@ -21,8 +21,6 @@ const BaseSongRow = forwardRef(({
     }
   };
 
-  const style = highlight ? { '--highlight-color': highlight } : {};
-
   return (
     <TooltipProvider delayDuration={200}>
       <div 
@@ -38,7 +36,7 @@ const BaseSongRow = forwardRef(({
         onKeyDown={handleKeyDown}
         role="button"
         tabIndex={0}
-        style={style}
+        data-variant={highlight}
       >
         <div className="flex items-center gap-2 md:gap-4">
           {/* Left Control (Heart/Checkbox) */}
