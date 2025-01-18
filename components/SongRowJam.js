@@ -6,9 +6,24 @@ import SongVotingButton from "@/components/SongVotingButton";
 import CaptainBadges from "@/components/CaptainBadges";
 import BaseSongRow from "@/components/SongRowBase";
 
-export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onEdit, isNext, hideType }) {
+export default function SongRow({ 
+  jamSong, 
+  onVote, 
+  onRemove, 
+  onTogglePlayed, 
+  onEdit, 
+  isNext, 
+  hideType,
+  highlight 
+}) {
   const { song } = jamSong;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  
+  console.log('[SongRowJam] Rendering with props:', {
+    songId: jamSong._id,
+    songTitle: song.title,
+    highlight
+  });
   
   const handleTogglePlayed = useCallback(async () => {
     await onTogglePlayed(jamSong._id);
@@ -40,6 +55,7 @@ export default function SongRow({ jamSong, onVote, onRemove, onTogglePlayed, onE
         additionalInfo={
           <CaptainBadges jamSong={jamSong} isNext={isNext} />
         }
+        highlight={highlight}
       />
 
       {/* Modals */}

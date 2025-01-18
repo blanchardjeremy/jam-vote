@@ -33,7 +33,13 @@ import { fetchSongs } from '@/lib/services/songs';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
 // Helper component for rendering song lists
-function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit, hideTypeBadge, emptyMessage, groupingEnabled }) {
+function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit, hideTypeBadge, emptyMessage, groupingEnabled, lastAddedSongId }) {
+  console.log('[SongList] Rendering with props:', {
+    songsCount: songs?.length,
+    lastAddedSongId,
+    songIds: songs?.map(s => s._id)
+  });
+
   if (songs.length === 0) {
     return (
       <li className="px-4 py-3 text-sm text-gray-500 italic">
@@ -42,20 +48,32 @@ function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit,
     );
   }
 
-  return songs.map((jamSong, index) => (
-    <li key={`${jamSong.song._id}-${index}`} className="hover:bg-gray-50">
-      <SongRow 
-        jamSong={jamSong} 
-        onVote={onVote} 
-        onRemove={() => onRemove(jamSong)}
-        onTogglePlayed={onTogglePlayed}
-        onEdit={onEdit}
-        isNext={jamSong._id === nextSongId}
-        hideType={hideTypeBadge}
-        groupingEnabled={groupingEnabled}
-      />
-    </li>
-  ));
+  return songs.map((jamSong, index) => {
+    const willHighlight = jamSong._id === lastAddedSongId;
+    console.log('[SongList] Rendering song:', {
+      songId: jamSong._id,
+      songDbId: jamSong.song._id,
+      lastAddedSongId,
+      willHighlight,
+      songTitle: jamSong.song.title
+    });
+    
+    return (
+      <li key={`${jamSong.song._id}-${index}`} className="hover:bg-gray-50">
+        <SongRow 
+          jamSong={jamSong} 
+          onVote={onVote} 
+          onRemove={() => onRemove(jamSong)}
+          onTogglePlayed={onTogglePlayed}
+          onEdit={onEdit}
+          isNext={jamSong._id === nextSongId}
+          hideType={hideTypeBadge}
+          groupingEnabled={groupingEnabled}
+          highlight={willHighlight ? 'rgba(59, 130, 246, 0.2)' : null}
+        />
+      </li>
+    );
+  });
 }
 
 export default function JamPage() {
@@ -71,6 +89,7 @@ export default function JamPage() {
   const [newSongTitle, setNewSongTitle] = useState('');
   const [songToDelete, setSongToDelete] = useState(null);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [lastAddedSongId, setLastAddedSongId] = useState(null);
 
   // Get jam song operations from our service
   const { handleEdit, handleRemove, handleVote, handleTogglePlayed } = useJamSongOperations({
@@ -96,15 +115,29 @@ export default function JamPage() {
   const handleAddSongToJam = async (songId) => {
     try {
       console.log('[JamPage] handleAddSongToJam called with songId:', songId);
-      const { jam: updatedJam, addedSongId } = await addSongToJam(params.id, songId);
-      console.log('[JamPage] Got response from addSongToJam:', { updatedJam, addedSongId });
+      const { jam: updatedJam } = await addSongToJam(params.id, songId);
+      console.log('[JamPage] Got response from addSongToJam:', { updatedJam });
       
       // Update local state immediately
       setJam(updatedJam);
       
-      // Set localStorage to mark the song as voted by this user
-      if (addedSongId) {
-        localStorage.setItem(`vote-${addedSongId}`, 'true');
+      // Find the newly added song (it will be the last one in the array)
+      const newJamSong = updatedJam.songs[updatedJam.songs.length - 1];
+      if (newJamSong) {
+        console.log('[JamPage] Setting lastAddedSongId:', newJamSong._id);
+        localStorage.setItem(`vote-${newJamSong._id}`, 'true');
+        // Set the last added song ID to trigger highlight
+        setLastAddedSongId(newJamSong._id);
+        
+        // Log the current state after setting
+        console.log('[JamPage] Current jam songs:', updatedJam.songs);
+        console.log('[JamPage] Added song ID:', newJamSong._id);
+        
+        // Clear the highlight after 3 seconds (matching animation duration)
+        setTimeout(() => {
+          console.log('[JamPage] Clearing lastAddedSongId');
+          setLastAddedSongId(null);
+        }, 3000);
       }
 
       return updatedJam;
@@ -118,7 +151,7 @@ export default function JamPage() {
   const handleSelectExisting = async (song) => {
     try {
       console.log('[JamPage] handleSelectExisting called with song:', song);
-      await handleAddSongToJam(song._id);
+      await handleAddSongToJam(song.value);
       console.log('[JamPage] Song added successfully');
     } catch (e) {
       console.error('[JamPage] Error adding song to jam:', e);
@@ -348,6 +381,16 @@ export default function JamPage() {
         if (sortMethod === 'votes') {
           newState.songs.sort((a, b) => b.votes - a.votes);
         }
+
+        // Set the lastAddedSongId to trigger highlight
+        if (data.song._id) {
+          console.log('[Pusher Client] Setting lastAddedSongId from Pusher:', data.song._id);
+          setLastAddedSongId(data.song._id);
+          setTimeout(() => {
+            console.log('[Pusher Client] Clearing lastAddedSongId from Pusher');
+            setLastAddedSongId(null);
+          }, 3000);
+        }
         
         return newState;
       });
@@ -493,6 +536,7 @@ export default function JamPage() {
                   hideTypeBadge={true}
                   emptyMessage="No bangers yet - vote up your favorites!"
                   groupingEnabled={groupingEnabled}
+                  lastAddedSongId={lastAddedSongId}
                 />
               </ul>
             </div>
@@ -515,6 +559,7 @@ export default function JamPage() {
                   hideTypeBadge={true}
                   emptyMessage="No ballads yet - add some chill tunes!"
                   groupingEnabled={groupingEnabled}
+                  lastAddedSongId={lastAddedSongId}
                 />
               </ul>
             </div>
@@ -531,6 +576,7 @@ export default function JamPage() {
               hideTypeBadge={false}
               emptyMessage="No songs yet - add some tunes!"
               groupingEnabled={groupingEnabled}
+              lastAddedSongId={lastAddedSongId}
             />
           </ul>
         )}

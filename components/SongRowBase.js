@@ -1,7 +1,8 @@
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 
-export default function BaseSongRow({
+const BaseSongRow = forwardRef(({
   song,
   leftControl,
   rightActions,
@@ -10,14 +11,20 @@ export default function BaseSongRow({
   hideType,
   additionalInfo,
   className,
-  onClick
-}) {
+  onClick,
+  highlight
+}, ref) => {
+  console.log('[BaseSongRow] Rendering with highlight:', { highlight, songId: song._id });
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       onClick?.(e);
     }
   };
+
+  const style = highlight ? { '--highlight-color': highlight } : {};
+  console.log('[BaseSongRow] Computed style:', style);
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -27,12 +34,14 @@ export default function BaseSongRow({
           isNext && "border-primary/70 bg-primary/5",
           isSelected && "bg-primary/5",
           "hover:bg-accent/50",
+          highlight && "highlight-animation",
           className
         )}
         onClick={onClick}
         onKeyDown={handleKeyDown}
         role="button"
         tabIndex={0}
+        style={style}
       >
         <div className="flex items-center gap-2 md:gap-4">
           {/* Left Control (Heart/Checkbox) */}
@@ -94,4 +103,6 @@ export default function BaseSongRow({
       </div>
     </TooltipProvider>
   );
-} 
+});
+
+export default BaseSongRow; 

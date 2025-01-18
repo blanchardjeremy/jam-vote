@@ -96,3 +96,22 @@
     width: 100%;
   }
 }
+
+@keyframes highlight {
+  0% {
+    background-color: transparent;
+  }
+  5% {
+    background-color: var(--highlight-color, rgba(59, 130, 246, 0.2));
+  }
+  80% {
+    background-color: var(--highlight-color, rgba(59, 130, 246, 0.2));
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.highlight-animation {
+  animation: highlight 3s ease-in-out;
+}
