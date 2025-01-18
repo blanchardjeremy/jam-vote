@@ -19,9 +19,6 @@ export const metadata = {
   description: "A platform for musicians to jam together",
   keywords: ["music", "jam", "guitar", "piano", "drums", "vocals"],
   authors: [{ name: "Music Jam" }],
-  viewport: "width=device-width, initial-scale=1",
-  themeColor: "#000000",
-  manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",

@@ -217,22 +217,17 @@ export default function JamPage() {
     }
 
     // Helper function to sort within groups
-    const sortWithinGroup = (songs) => {
+    const sortWithinGroup = (songs, isPlayed = false) => {
       return [...songs].sort((a, b) => {
-        if (sortMethod === 'votes') {
+        if (isPlayed) {
+          // For played songs, sort by playedAt timestamp (oldest first)
+          const aTime = a.playedAt ? new Date(a.playedAt).getTime() : 0;
+          const bTime = b.playedAt ? new Date(b.playedAt).getTime() : 0;
+          return aTime - bTime;
+        } else {
+          // For unplayed songs, sort by votes
           return b.votes - a.votes;
         }
-        if (sortMethod === 'least-played') {
-          // First by played status (unplayed first)
-          if (a.played !== b.played) {
-            return a.played ? 1 : -1;
-          }
-          // Then by times played in song history
-          const aPlays = a.song.timesPlayed || 0;
-          const bPlays = b.song.timesPlayed || 0;
-          return aPlays - bPlays;
-        }
-        return a.order - b.order;
       });
     };
 
@@ -242,8 +237,8 @@ export default function JamPage() {
 
     if (!groupingEnabled) {
       // Even in ungrouped view, we still want played songs at the top
-      const sortedPlayed = sortWithinGroup(playedSongs);
-      const sortedUnplayed = sortWithinGroup(unplayedSongs);
+      const sortedPlayed = sortWithinGroup(playedSongs, true);
+      const sortedUnplayed = sortWithinGroup(unplayedSongs, false);
       
       // Find next unplayed song
       const nextSongId = sortedUnplayed[0]?._id;
@@ -255,10 +250,10 @@ export default function JamPage() {
     }
 
     // For grouped view, split each played status group into bangers and ballads
-    const playedBangers = sortWithinGroup(playedSongs.filter(song => song.song.type === 'banger'));
-    const playedBallads = sortWithinGroup(playedSongs.filter(song => song.song.type === 'ballad'));
-    const unplayedBangers = sortWithinGroup(unplayedSongs.filter(song => song.song.type === 'banger'));
-    const unplayedBallads = sortWithinGroup(unplayedSongs.filter(song => song.song.type === 'ballad'));
+    const playedBangers = sortWithinGroup(playedSongs.filter(song => song.song.type === 'banger'), true);
+    const playedBallads = sortWithinGroup(playedSongs.filter(song => song.song.type === 'ballad'), true);
+    const unplayedBangers = sortWithinGroup(unplayedSongs.filter(song => song.song.type === 'banger'), false);
+    const unplayedBallads = sortWithinGroup(unplayedSongs.filter(song => song.song.type === 'ballad'), false);
 
     // Find next unplayed song - first check bangers, then ballads
     const nextSongId = unplayedBangers[0]?._id || unplayedBallads[0]?._id;
@@ -488,7 +483,11 @@ export default function JamPage() {
           if (!prevJam) return prevJam;
           
           const updatedSongs = prevJam.songs.map(s => 
-            s._id === data.songId ? { ...s, played: data.played } : s
+            s._id === data.songId ? { 
+              ...s, 
+              played: data.played,
+              playedAt: data.playedAt
+            } : s
           );
           
           return {

@@ -37,6 +37,11 @@ const jamSongSchema = new mongoose.Schema({
     default: false,
     required: false
   },
+  playedAt: {
+    type: Date,
+    default: null,
+    required: false
+  },
   captains: [captainSchema]
 });
 

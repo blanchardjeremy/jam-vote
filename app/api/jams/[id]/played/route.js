@@ -25,6 +25,14 @@ export async function POST(request, context) {
     // Toggle the played status
     const newPlayedStatus = !jamSong.played;
     jamSong.played = newPlayedStatus;
+    // Set or clear playedAt timestamp based on played status
+    jamSong.playedAt = newPlayedStatus ? new Date() : null;
+    
+    console.log('[Played API] Updated jamSong:', {
+      songId,
+      played: jamSong.played,
+      playedAt: jamSong.playedAt
+    });
 
     const originalSong = await Song.findById(jamSong.song._id);
     if (originalSong) {
@@ -68,15 +76,91 @@ export async function POST(request, context) {
       await originalSong.save();
     }
 
-    await jam.save();
-
-    // Broadcast the update using Pusher
-    await pusherServer.trigger(`jam-${jamId}`, 'song-played', {
-      songId,
-      played: jamSong.played
+    // Update the jam atomically
+    console.log('[Played API] Attempting MongoDB update:', {
+      query: { 
+        _id: jamId,
+        'songs._id': songId 
+      },
+      update: { 
+        $set: { 
+          'songs.$.played': newPlayedStatus,
+          'songs.$.playedAt': newPlayedStatus ? new Date() : null
+        } 
+      },
+      options: { 
+        new: true,
+        runValidators: true
+      }
     });
 
-    return NextResponse.json({ success: true, played: jamSong.played });
+    // First update the specific song
+    const updatedJam = await Jam.findOneAndUpdate(
+      { 
+        _id: jamId,
+        'songs._id': songId 
+      },
+      { 
+        $set: { 
+          'songs.$.played': newPlayedStatus,
+          'songs.$.playedAt': newPlayedStatus ? new Date() : null
+        } 
+      },
+      { 
+        new: true,
+        runValidators: true
+      }
+    ).populate('songs.song');
+
+    // Log warning if we find any inconsistencies
+    if (updatedJam) {
+      const inconsistentSongs = updatedJam.songs.filter(s => s.played && !s.playedAt);
+      if (inconsistentSongs.length > 0) {
+        console.log('[Played API] Warning: Found songs marked as played without playedAt timestamp:', 
+          inconsistentSongs.map(s => ({
+            _id: s._id.toString(),
+            title: s.song.title,
+            artist: s.song.artist
+          }))
+        );
+      }
+    }
+
+    console.log('[Played API] MongoDB update result:', {
+      success: !!updatedJam,
+      updatedJamId: updatedJam?._id?.toString(),
+      songBeforeUpdate: {
+        _id: jamSong._id.toString(),
+        played: jamSong.played,
+        playedAt: jamSong.playedAt
+      },
+      songAfterUpdate: updatedJam?.songs?.find(s => s._id.toString() === songId)
+        ? {
+            _id: updatedJam.songs.find(s => s._id.toString() === songId)._id.toString(),
+            played: updatedJam.songs.find(s => s._id.toString() === songId).played,
+            playedAt: updatedJam.songs.find(s => s._id.toString() === songId).playedAt
+          }
+        : null,
+      allSongsAfterUpdate: updatedJam?.songs?.map(s => ({
+        _id: s._id.toString(),
+        played: s.played,
+        playedAt: s.playedAt
+      }))
+    });
+
+    if (!updatedJam) {
+      throw new Error('Failed to update jam');
+    }
+
+    // Broadcast the update using Pusher
+    const updatedSong = updatedJam.songs.find(s => s._id.toString() === songId);
+    await pusherServer.trigger(`jam-${jamId}`, 'song-played', {
+      songId,
+      played: updatedSong.played,
+      playedAt: updatedSong.playedAt
+    });
+
+    return NextResponse.json({ success: true, played: updatedSong.played });
   } catch (error) {
     console.error('Error updating song played status:', error);
     return NextResponse.json(

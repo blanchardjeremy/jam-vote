@@ -54,7 +54,8 @@ export async function POST(request, context) {
     const newSongs = newSongDocs.map(songDoc => ({
       song: songDoc._id,
       votes: 0,
-      played: false
+      played: false,
+      playedAt: null
     }));
 
     // Add only the new songs to the jam
