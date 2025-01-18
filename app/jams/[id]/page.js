@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import SongAutocomplete from "@/components/SongAutocomplete";
 import CreateSongModal from "@/components/CreateSongModal";
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import SongRow from "@/components/SongRowJam";
 import {
   AlertDialog,
@@ -17,8 +17,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { pusherClient } from "@/lib/pusher";
 import { SelectSeparator } from '@/components/ui/select';
-import { FireIcon, MusicalNoteIcon } from '@heroicons/react/24/solid';
-import { ArrowDownNarrowWide } from 'lucide-react';
+import { FireIcon, MusicalNoteIcon, TrashIcon } from '@heroicons/react/24/solid';
+import { ArrowDownNarrowWide, MoreVertical } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -32,7 +32,15 @@ import { toast } from 'sonner';
 import { useJamSongOperations, addSongToJam, handlePositionHighlight } from '@/lib/services/jamSongs';
 import { fetchSongs } from '@/lib/services/songs';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { useJamOperations } from '@/lib/services/jams';
 import PageTitle from '@/components/ui/page-title';
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Helper component for rendering song lists
 function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit, hideTypeBadge, emptyMessage, groupingEnabled, lastAddedSongId }) {
@@ -84,6 +92,7 @@ function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit,
 
 export default function JamPage() {
   const params = useParams();
+  const router = useRouter();
   const [jam, setJam] = useState(null);
   const [allSongs, setAllSongs] = useState([]);
   const [error, setError] = useState(null);
@@ -99,6 +108,8 @@ export default function JamPage() {
   const lastToastId = useRef(null);
   const lastVoteToastId = useRef(null);
   const lastCaptainToastId = useRef(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const highlightTimeouts = useRef({});
 
   // Clear timeouts on unmount
@@ -566,6 +577,26 @@ export default function JamPage() {
     };
   }, [params.id]); // Remove sortMethod from dependencies to prevent rebinding
 
+  // Get jam operations from our service
+  const { handleDelete: handleDeleteJam } = useJamOperations({
+    jams: [jam],
+    setJams: (updatedJams) => {
+      if (typeof updatedJams === 'function') {
+        const newJams = updatedJams([jam]);
+        setJam(newJams[0]);
+      } else {
+        setJam(updatedJams[0]);
+      }
+    },
+    onSuccess: () => {
+      router.push('/');
+    },
+    onError: (error) => {
+      setError(error);
+      console.error('Error deleting jam:', error);
+    }
+  });
+
   if (error) {
     return (
       <div className="rounded-md bg-red-50 p-4 mb-6">
@@ -591,16 +622,40 @@ export default function JamPage() {
     <>
       <PageTitle title={jam?.name || 'Loading Jam...'} />
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">{jam.name}</h1>
-        <div className="flex items-center gap-2">
-          <p className="text-gray-600">
-            {new Date(jam.jamDate).toLocaleDateString('en-US', { 
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
-          </p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{jam.name}</h1>
+            <div className="flex items-center gap-2">
+              <p className="text-gray-600">
+                {new Date(jam.jamDate).toLocaleDateString('en-US', { 
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </p>
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Open jam options"
+              >
+                <MoreVertical className="h-5 w-5 text-gray-500" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <TrashIcon className="h-4 w-4 mr-2" />
+                Delete Jam
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -735,6 +790,25 @@ export default function JamPage() {
         confirmText="Remove"
         confirmLoadingText="Removing..."
         isLoading={isRemoving}
+      />
+
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={async () => {
+          setIsDeleting(true);
+          try {
+            await handleDeleteJam(params.id);
+            setShowDeleteDialog(false);
+          } finally {
+            setIsDeleting(false);
+          }
+        }}
+        title="Delete Jam"
+        description={`This will permanently delete the jam session "${jam.name}". This action cannot be undone.`}
+        confirmText="Delete"
+        confirmLoadingText="Deleting..."
+        isLoading={isDeleting}
       />
 
     </>

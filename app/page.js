@@ -13,8 +13,6 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [jamToDelete, setJamToDelete] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchJams = async () => {
     try {
@@ -40,29 +38,6 @@ export default function Home() {
   const handleCreateJam = async (newJam) => {
     setIsModalOpen(false);
     router.push(`/jams/${newJam._id}`);
-  };
-
-  const handleDeleteJam = async () => {
-    setIsDeleting(true);
-    try {
-      const res = await fetch(`/api/jams/${jamToDelete._id}`, {
-        method: 'DELETE',
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to delete jam');
-      }
-      
-      // Remove the jam from the local state
-      setJams(jams.filter(jam => jam._id !== jamToDelete._id));
-      setJamToDelete(null);
-    } catch (e) {
-      setError(e.message);
-      console.error('Error deleting jam:', e);
-    } finally {
-      setIsDeleting(false);
-    }
   };
 
   if (error) {
@@ -122,17 +97,6 @@ export default function Home() {
                     <div className="text-sm text-gray-500">
                       {jam.songs.length} songs
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setJamToDelete(jam);
-                      }}
-                      aria-label={`Delete ${jam.name}`}
-                    >
-                      <TrashIcon className="h-5 w-5 text-gray-500 hover:text-red-600" />
-                    </Button>
                   </div>
                 </div>
               </div>
@@ -140,16 +104,6 @@ export default function Home() {
           ))}
         </ul>
       </div>
-
-      <ConfirmDialog
-        isOpen={!!jamToDelete}
-        onClose={() => setJamToDelete(null)}
-        onConfirm={handleDeleteJam}
-        description={`This will permanently delete the jam session "${jamToDelete?.name}". This action cannot be undone.`}
-        isLoading={isDeleting}
-        confirmText="Delete"
-        confirmLoadingText="Deleting..."
-      />
     </>
   );
 }
