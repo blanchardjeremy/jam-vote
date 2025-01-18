@@ -32,6 +32,7 @@ import { toast } from 'sonner';
 import { useJamSongOperations, addSongToJam, handlePositionHighlight } from '@/lib/services/jamSongs';
 import { fetchSongs } from '@/lib/services/songs';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import PageTitle from '@/components/ui/page-title';
 
 // Helper component for rendering song lists
 function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit, hideTypeBadge, emptyMessage, groupingEnabled, lastAddedSongId }) {
@@ -589,6 +590,7 @@ export default function JamPage() {
 
   return (
     <>
+      <PageTitle title={jam?.name || 'Loading Jam...'} />
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">{jam.name}</h1>
         <div className="flex items-center gap-2">

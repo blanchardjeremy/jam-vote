@@ -28,6 +28,7 @@ import LoadingBlock from "@/components/LoadingBlock";
 import SongModals from "@/components/SongModals";
 import { ArrowDownNarrowWide } from 'lucide-react';
 import { applySongFilters } from '@/lib/utils/songFilters';
+import PageTitle from '@/components/ui/page-title';
 
 const SONG_TYPE_OPTIONS = [
   { value: 'all', label: 'All types' },
@@ -424,6 +425,7 @@ export default function SongsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <PageTitle title="Song Library" />
       <div className="mb-8">
         <div className="flex justify-between items-center">
           <div>
