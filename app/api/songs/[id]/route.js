@@ -7,8 +7,9 @@ import { pusherServer } from '@/lib/pusher';
 export async function DELETE(request, context) {
   try {
     await connectDB();
+    const params = await context.params;
     
-    const songId = await context.params.id;
+    const songId = params.id;
     if (!songId) {
       return NextResponse.json(
         { error: 'Song ID is required' },

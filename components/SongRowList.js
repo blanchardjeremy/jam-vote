@@ -6,17 +6,27 @@ import HoverActionButtons from "@/components/ui/hover-action-buttons";
 import SongChordsButton from "@/components/SongChordsButton";
 
 function SongRowActions({ song, onEdit, onDelete }) {
+  const handleEdit = (e) => {
+    e.stopPropagation();
+    onEdit();
+  };
+
+  const handleDelete = (e) => {
+    e.stopPropagation();
+    onDelete();
+  };
+
   return (
     <HoverActionButtons>
       <SongChordsButton song={song} />
       <SongRowButton
         icon={PencilIcon}
-        onClick={onEdit}
+        onClick={handleEdit}
         tooltip="Edit song"
       />
       <SongRowButton
         icon={TrashIcon}
-        onClick={onDelete}
+        onClick={handleDelete}
         tooltip="Delete song"
         variant="danger"
       />
@@ -38,8 +48,8 @@ export default function SongListRow({
   };
 
   const handleRowClick = (e) => {
-    // Don't trigger selection if clicking on buttons or dropdown
-    if (e.target.closest('button') || e.target.closest('[role="menuitem"]')) {
+    // Don't trigger selection if clicking within the actions area or on links
+    if (e.target.closest('.hover-action-buttons') || e.target.closest('a')) {
       return;
     }
     onSelectionChange?.(!isSelected);

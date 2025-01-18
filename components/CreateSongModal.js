@@ -7,6 +7,8 @@ import { useState, useEffect } from 'react';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { SongResults } from '@/components/SongResults';
 import { searchSongs } from '@/lib/services/songs';
+import { ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function SongFormModal({ 
   isOpen, 
@@ -26,10 +28,10 @@ export default function SongFormModal({
   const [isSearching, setIsSearching] = useState(false);
   const form = useForm({
     defaultValues: {
-      title: mode === 'add' ? initialTitle : initialData.title,
-      artist: initialData.artist,
-      type: initialData.type,
-      chordChart: initialData.chordChart
+      title: mode === 'add' ? initialTitle || '' : initialData.title || '',
+      artist: initialData.artist || '',
+      type: initialData.type || 'banger',
+      chordChart: initialData.chordChart || initialData.chordChart || ''
     }
   });
 
@@ -245,14 +247,27 @@ export default function SongFormModal({
                 name="chordChart"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Chord Chart URL</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="url" 
-                        placeholder="https://tabs.ultimate-guitar.com/..." 
-                        {...field} 
-                      />
-                    </FormControl>
+                    <FormLabel>Chords/Lyrics URL</FormLabel>
+                    <div className="flex gap-2">
+                      <FormControl>
+                        <Input 
+                          type="url" 
+                          placeholder="https://tabs.ultimate-guitar.com/..." 
+                          {...field} 
+                        />
+                      </FormControl>
+                      {field.value && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => window.open(field.value, '_blank')}
+                          title="Open chord chart in new window"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -141,6 +141,25 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
   const [fuzzyDuplicateDecisions, setFuzzyDuplicateDecisions] = useState({});
   const [showDuplicateReview, setShowDuplicateReview] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  const resetState = () => {
+    setIsProcessing(false);
+    setError(null);
+    setPreview(null);
+    setIsDragging(false);
+    setCurrentFile(null);
+    setImportResults(null);
+    setFuzzyDuplicateDecisions({});
+    setShowDuplicateReview(false);
+    setProgress(0);
+  };
+
+  // Clear state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      resetState();
+    }
+  }, [isOpen]);
 
   const processFile = async (file) => {
     if (!file) return;
@@ -365,37 +384,41 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Import Songs from CSV</DialogTitle>
-          <DialogDescription>
-            Upload a CSV file with the following columns:
-          </DialogDescription>
-          <div className="mt-2 space-y-2">
-            <div className="bg-gray-50 p-3 rounded-md text-sm space-y-1">
-              <div><strong>Required columns:</strong></div>
-              <ul className="list-disc list-inside">
-                <li><code>title</code> - Song title</li>
-                <li><code>artist</code> - Artist name</li>
-              </ul>
-              <div><strong>Optional columns:</strong></div>
-              <ul className="list-disc list-inside">
-                <li><code>type</code> - Either 'banger' or 'ballad' (defaults to 'ballad')</li>
-                <li><code>tags</code> - Comma-separated list of tags (e.g. "rock,guitar,karaoke")</li>
-                <li><code>chordUrl</code> - URL to chord sheet/tab (e.g. Ultimate Guitar link)</li>
-              </ul>
-            </div>
-            <div className="flex justify-end">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleDownloadExample}
-              >
-                Download Example CSV
-              </Button>
-            </div>
-          </div>
+          {!preview && !importResults && !isProcessing && !showDuplicateReview && (
+            <>
+              <DialogDescription>
+                Upload a CSV file with the following columns:
+              </DialogDescription>
+              <div className="mt-2 space-y-2">
+                <div className="bg-gray-50 p-3 rounded-md text-sm space-y-1">
+                  <div><strong>Required columns:</strong></div>
+                  <ul className="list-disc list-inside">
+                    <li><code>title</code> - Song title</li>
+                    <li><code>artist</code> - Artist name</li>
+                  </ul>
+                  <div><strong>Optional columns:</strong></div>
+                  <ul className="list-disc list-inside">
+                    <li><code>type</code> - Either 'banger' or 'ballad' (defaults to 'ballad')</li>
+                    <li><code>tags</code> - Comma-separated list of tags (e.g. "rock,guitar,karaoke")</li>
+                    <li><code>chordChart</code> - URL to chord sheet/tab (e.g. Ultimate Guitar link)</li>
+                  </ul>
+                </div>
+                <div className="flex justify-end">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleDownloadExample}
+                  >
+                    Download Example CSV
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </DialogHeader>
 
         <div className="space-y-4">
-          {!importResults && !isProcessing && (
+          {!preview && !importResults && !isProcessing && !showDuplicateReview && (
             <>
               <div 
                 className="flex items-center justify-center w-full"
@@ -458,37 +481,37 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
                   />
                 </label>
               </div>
+            </>
+          )}
 
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription className="whitespace-pre-line">{error}</AlertDescription>
-                </Alert>
-              )}
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription className="whitespace-pre-line">{error}</AlertDescription>
+            </Alert>
+          )}
 
-              {preview && (
-                <div className="space-y-2">
-                  <h4 className="font-medium">Preview ({preview.totalRows} songs found)</h4>
-                  <div className="text-sm text-gray-600">
-                    {preview.sampleRows.map((row, i) => (
-                      <div key={i} className="py-1">
-                        {row.title} - {row.artist} ({row.type || 'ballad'})
-                        {row.tags && <span className="text-gray-400"> • {row.tags}</span>}
-                        {row.chordUrl && (
-                          <span className="text-gray-400">
-                            {' '}• <a href={row.chordUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">chords</a>
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                    {preview.totalRows > 3 && (
-                      <div className="text-gray-400 italic">
-                        ...and {preview.totalRows - 3} more
-                      </div>
+          {preview && !importResults && !showDuplicateReview && (
+            <div className="space-y-2">
+              <h4 className="font-medium">Preview ({preview.totalRows} songs found)</h4>
+              <div className="text-sm text-gray-600">
+                {preview.sampleRows.map((row, i) => (
+                  <div key={i} className="py-1">
+                    {row.title} - {row.artist} ({row.type || 'ballad'})
+                    {row.tags && <span className="text-gray-400"> • {row.tags}</span>}
+                    {row.chordChart && (
+                      <span className="text-gray-400">
+                        {' '}• <a href={row.chordChart} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">chords</a>
+                      </span>
                     )}
                   </div>
-                </div>
-              )}
-            </>
+                ))}
+                {preview.totalRows > 3 && (
+                  <div className="text-gray-400 italic">
+                    ...and {preview.totalRows - 3} more
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
           {isProcessing && (
@@ -506,10 +529,10 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
           )}
 
           {!isProcessing && importResults && !showDuplicateReview && (
-            <Alert className="bg-green-50 border-green-200">
+            <Alert variant="success">
               <div className="space-y-2">
-                <h4 className="font-medium text-green-800">Import Complete!</h4>
-                <div className="text-green-700">
+                <h4 className="font-medium text-success">Import Complete!</h4>
+                <div>
                   <p>Successfully processed {importResults.totalProcessed} songs:</p>
                   <ul className="list-disc list-inside mt-2">
                     <li>{importResults.added} songs were added</li>
@@ -520,7 +543,7 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
                       <li>{importResults.skippedDuplicates} duplicates were skipped</li>
                     )}
                     {importResults.errors > 0 && (
-                      <li className="text-red-600">{importResults.errors} songs failed to import</li>
+                      <li className="text-destructive">{importResults.errors} songs failed to import</li>
                     )}
                   </ul>
                 </div>
