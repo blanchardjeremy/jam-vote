@@ -3,6 +3,12 @@ import { Button } from "@/components/ui/button";
 import SelectJamModal from './SelectJamModal';
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function AddSongToTargetJamButton({ onJamSelected, selectedCount = 0, targetJam }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,6 +25,12 @@ export default function AddSongToTargetJamButton({ onJamSelected, selectedCount 
 
   const handleJamSelected = async (jam) => {
     try {
+      if (jam === null) {
+        // Just clear the selection without trying to add songs
+        onJamSelected(null);
+        return;
+      }
+
       console.log('[AddSongToTargetJamButton] Calling onJamSelected with jam:', jam);
       const result = await onJamSelected(jam);
       console.log('[AddSongToTargetJamButton] Result from onJamSelected:', result);
@@ -58,22 +70,50 @@ export default function AddSongToTargetJamButton({ onJamSelected, selectedCount 
     }
   };
 
+  const button = (
+    <Button
+      variant="primary"
+      size="sm"
+      onClick={handleClick}
+      disabled={selectedCount === 0}
+      className="flex items-center gap-2"
+    >
+      <PlusIcon className="h-4 w-4" />
+      <span>
+        {selectedCount === 0 
+          ? "Add to Jam" 
+          : `Add ${selectedCount} to Jam`}
+      </span>
+    </Button>
+  );
+
   return (
     <>
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={handleClick}
-        disabled={selectedCount === 0}
-        className="flex items-center gap-2"
-      >
-        <PlusIcon className="h-4 w-4" />
-        <span>
-          {selectedCount === 0 
-            ? "Add to Jam" 
-            : `Add ${selectedCount} to Jam`}
-        </span>
-      </Button>
+      {targetJam ? (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {button}
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                Adding to <b>{targetJam.name}</b>
+                {" • "}
+                <span 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleJamSelected(null);
+                  }}
+                  className="text-blue-300 hover:text-blue-200 hover:underline cursor-pointer"
+                >
+                  Clear selection
+                </span>
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ) : button}
 
       <SelectJamModal
         isOpen={isModalOpen}

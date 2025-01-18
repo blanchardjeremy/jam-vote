@@ -12,17 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
   TrashIcon, 
-  XMarkIcon,
   CalendarDaysIcon,
   HashtagIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
-  ArrowsUpDownIcon
 } from "@heroicons/react/24/outline";
 import { fetchSongs, useSongOperations } from '@/lib/services/songs';
 import { addSongsToJam } from '@/lib/services/jams';
 import { SearchInput } from "@/components/ui/search-input";
-import { fuzzySearchSong } from '@/lib/utils/fuzzyMatch';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import ImportSongsModal from "@/components/ImportSongsModal";
 import AddSongToTargetJamButton from "@/components/AddSongToTargetJamButton";
@@ -162,24 +157,13 @@ function SongsToolbar({
               aria-label="Select all songs"
               className="mr-4"
             />
-            {targetJam && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>Target: {targetJam.name}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onChangeTargetJam}
-                  className="h-6 w-6"
-                >
-                  <XMarkIcon className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
+          
             <AddSongToTargetJamButton
               selectedCount={selectedCount}
               onJamSelected={onAddToJam}
               targetJam={targetJam}
             />
+
             <Button
               variant="ghost"
               size="sm"
@@ -331,6 +315,13 @@ export default function SongsPage() {
 
   const handleAddToJam = async (jam) => {
     try {
+      if (jam === null) {
+        // Clear the target jam selection
+        setTargetJam(null);
+        setSelectedSongs(new Set());
+        return;
+      }
+
       const selectedSongIds = Array.from(selectedSongs);
       const response = await addSongsToJam(jam._id, selectedSongIds);
 
