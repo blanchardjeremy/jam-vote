@@ -97,6 +97,7 @@ export default function JamPage() {
   const [lastAddedSongId, setLastAddedSongId] = useState(null);
   const lastToastId = useRef(null);
   const lastVoteToastId = useRef(null);
+  const lastCaptainToastId = useRef(null);
   const highlightTimeouts = useRef({});
 
   // Clear timeouts on unmount
@@ -304,209 +305,266 @@ export default function JamPage() {
   // Set up Pusher connection in a separate useEffect
   useEffect(() => {
     const channelName = `jam-${params.id}`;
-    const channel = pusherClient.subscribe(channelName);
+    console.log('[Pusher Debug] Setting up channel:', channelName);
     
-    // Clean up any existing bindings first
-    channel.unbind_all();
+    // First unsubscribe to clean up any existing subscriptions
+    pusherClient.unsubscribe(channelName);
+    
+    // Then create a new subscription
+    const channel = pusherClient.subscribe(channelName);
 
-    // Handle song additions
-    channel.bind('song-added', (data) => {
+    // Bind all events immediately
+    const bindEvents = () => {
+      console.log('[Pusher Debug] Binding events for channel:', channelName);
       
-      // Only show toast if we haven't shown it for this song
-      if (lastToastId.current !== data.song._id) {
-        toast.success(`"${data.song.song.title}" by ${data.song.song.artist} was added to the jam`);
-        lastToastId.current = data.song._id;
-      }
-      
-      setJam(prevJam => {
-        if (!prevJam) return prevJam;
-        return {
-          ...prevJam,
-          songs: [...prevJam.songs, data.song]
-        };
+      // Clean up any existing bindings first
+      channel.unbind_all();
+
+      // Handle song additions
+      channel.bind('song-added', (data) => {
+        console.log('[Pusher Debug] Received song-added event:', data);
+        // Only show toast if we haven't shown it for this song
+        if (lastToastId.current !== data.song._id) {
+          toast.success(`"${data.song.song.title}" by ${data.song.song.artist} was added to the jam`);
+          lastToastId.current = data.song._id;
+        }
+        
+        setJam(prevJam => {
+          if (!prevJam) return prevJam;
+          return {
+            ...prevJam,
+            songs: [...prevJam.songs, data.song]
+          };
+        });
       });
-    });
 
-    // Handle vote updates
-    channel.bind('vote', (data) => {
-      console.log('[Vote Debug] Starting vote handler with data:', data);
-      
-      setJam(prevJam => {
-        console.log('[Vote Debug] Previous jam state:', {
-          songCount: prevJam?.songs?.length,
-          sortMethod
-        });
+      // Handle vote updates
+      channel.bind('vote', (data) => {
+        console.log('[Pusher Debug] Received vote event:', data);
         
-        if (!prevJam?.songs) {
-          console.log('[Vote Debug] No songs found in jam');
-          return prevJam;
-        }
-
-        const songIndex = prevJam.songs.findIndex(s => s._id.toString() === data.songId);
-        const songToUpdate = prevJam.songs[songIndex];
-        
-        console.log('[Vote Debug] Found song:', {
-          songIndex,
-          currentVotes: songToUpdate?.votes,
-          newVotes: data.votes
-        });
-        
-        if (!songToUpdate || songToUpdate.votes === data.votes) {
-          console.log('[Vote Debug] No update needed');
-          return prevJam;
-        }
-
-        // Show toast for vote change only if we haven't shown it for this vote update
-        const toastId = `${data.songId}-${data.votes}`;
-        if (lastVoteToastId.current !== toastId) {
-          const voteChange = data.votes - songToUpdate.votes;
-          if (voteChange > 0) {
-            toast.success(`Vote added for "${songToUpdate.song.title}" by ${songToUpdate.song.artist}`);
-          } else {
-            toast.info(`Vote removed for "${songToUpdate.song.title}" by ${songToUpdate.song.artist}`);
+        setJam(prevJam => {
+          console.log('[Vote Debug] Previous jam state:', {
+            songCount: prevJam?.songs?.length,
+            sortMethod
+          });
+          
+          if (!prevJam?.songs) {
+            console.log('[Vote Debug] No songs found in jam');
+            return prevJam;
           }
-          lastVoteToastId.current = toastId;
-        }
 
-        // Create a copy of songs for sorting
-        let updatedSongs = [...prevJam.songs];
-        
-        // Only sort if we're using vote-based sorting
-        if (sortMethod === 'votes') {
-          // Get current position before updating votes
-          const oldPosition = songIndex;
+          const songIndex = prevJam.songs.findIndex(s => s._id.toString() === data.songId);
+          const songToUpdate = prevJam.songs[songIndex];
           
-          // Update votes in the copy
-          updatedSongs[songIndex] = { ...songToUpdate, votes: data.votes };
-          
-          // Sort to find new position
-          updatedSongs.sort((a, b) => b.votes - a.votes);
-          const newPosition = updatedSongs.findIndex(s => s._id.toString() === data.songId);
-          
-          console.log('[Vote Debug] Position change:', {
-            songId: data.songId,
-            oldPosition,
-            newPosition,
-            oldVotes: songToUpdate.votes,
+          console.log('[Vote Debug] Found song:', {
+            songIndex,
+            currentVotes: songToUpdate?.votes,
             newVotes: data.votes
           });
           
-          // Apply highlight if position changed
-          if (newPosition !== oldPosition) {
-            updatedSongs = handlePositionHighlight(
-              updatedSongs, 
-              data.songId, 
-              oldPosition, 
-              newPosition, 
-              setJam,
-              clearHighlightAfterDelay
-            );
+          if (!songToUpdate || songToUpdate.votes === data.votes) {
+            console.log('[Vote Debug] No update needed');
+            return prevJam;
           }
-        } else {
-          // If not sorting by votes, just update the votes
-          updatedSongs[songIndex] = { ...songToUpdate, votes: data.votes };
-        }
-        
-        return {
-          ...prevJam,
-          songs: updatedSongs
-        };
-      });
-    });
 
-    // Handle captain updates
-    channel.bind('captain-added', (data) => {
-      setJam(prevJam => {
-        if (!prevJam) return prevJam;
-        
-        return {
-          ...prevJam,
-          captains: [...(prevJam.captains || []), data.captain]
-        };
-      });
-    });
+          // Show toast for vote change only if we haven't shown it for this vote update
+          const toastId = `${data.songId}-${data.votes}`;
+          if (lastVoteToastId.current !== toastId) {
+            const voteChange = data.votes - songToUpdate.votes;
+            if (voteChange > 0) {
+              toast.success(`Vote added for "${songToUpdate.song.title}" by ${songToUpdate.song.artist}`);
+            } else {
+              toast.info(`Vote removed for "${songToUpdate.song.title}" by ${songToUpdate.song.artist}`);
+            }
+            lastVoteToastId.current = toastId;
+          }
 
-    // Handle song played status updates
-    channel.bind('song-played', (data) => {
-      setJam(prevJam => {
-        if (!prevJam) return prevJam;
-        
-        const updatedSongs = prevJam.songs.map(s => 
-          s._id === data.songId ? { ...s, played: data.played } : s
-        );
-        
-        return {
-          ...prevJam,
-          songs: updatedSongs
-        };
-      });
-    });
-
-    // Handle song removals
-    channel.bind('song-removed', (data) => {
-      toast.error(`"${data.songTitle}" by ${data.songArtist} was removed from the jam`, {
-        // style: {
-        //   background: '#fef2f2',
-        //   border: '1px solid #fee2e2',
-        //   color: '#991b1b'
-        // }
-      });
-
-      setJam(prevJam => {
-        if (!prevJam) return prevJam;
-        const newState = {
-          ...prevJam,
-          songs: prevJam.songs.filter(s => s.song._id.toString() !== data.songId.toString())
-        };
-        return newState;
-      });
-    });
-
-    // Handle song edits
-    channel.bind('song-edited', (data) => {
-      setJam(prevJam => {
-        if (!prevJam) return prevJam;
-        
-        const updatedSongs = prevJam.songs.map(s => 
-          s.song._id === data.songId 
-            ? { ...s, song: data.updatedSong }
-            : s
-        );
-        
-        // Re-group songs if needed
-        if (groupingEnabled) {
+          // Create a copy of songs for sorting
+          let updatedSongs = [...prevJam.songs];
+          
+          // Only sort if we're using vote-based sorting
+          if (sortMethod === 'votes') {
+            // Get current position before updating votes
+            const oldPosition = songIndex;
+            
+            // Update votes in the copy
+            updatedSongs[songIndex] = { ...songToUpdate, votes: data.votes };
+            
+            // Sort to find new position
+            updatedSongs.sort((a, b) => b.votes - a.votes);
+            const newPosition = updatedSongs.findIndex(s => s._id.toString() === data.songId);
+            
+            console.log('[Vote Debug] Position change:', {
+              songId: data.songId,
+              oldPosition,
+              newPosition,
+              oldVotes: songToUpdate.votes,
+              newVotes: data.votes
+            });
+            
+            // Apply highlight if position changed
+            if (newPosition !== oldPosition) {
+              updatedSongs = handlePositionHighlight(
+                updatedSongs, 
+                data.songId, 
+                oldPosition, 
+                newPosition, 
+                setJam,
+                clearHighlightAfterDelay
+              );
+            }
+          } else {
+            // If not sorting by votes, just update the votes
+            updatedSongs[songIndex] = { ...songToUpdate, votes: data.votes };
+          }
+          
           return {
             ...prevJam,
             songs: updatedSongs
           };
+        });
+      });
+
+      // Handle captain updates
+      channel.bind('captain-added', (data) => {
+        console.log('[Captain Debug] Received captain-added event:', data);
+        
+        // Get current user's name from localStorage
+        const currentUserName = localStorage.getItem('userFirstName');
+        
+        // Only show toast if it's not the current user
+        if (currentUserName !== data.captain.name) {
+          toast.success(`${data.captain.name} was added as a song captain`);
         }
         
-        return {
-          ...prevJam,
-          songs: updatedSongs
-        };
+        setJam(prevJam => {
+          if (!prevJam) return prevJam;
+          
+          return {
+            ...prevJam,
+            songs: prevJam.songs.map(song => 
+              song._id === data.songId
+                ? { ...song, captains: [...(song.captains || []), data.captain] }
+                : song
+            )
+          };
+        });
       });
-    });
+
+      // Handle captain removals
+      channel.bind('captain-removed', (data) => {
+        console.log('[Captain Debug] Received captain-removed event:', data);
+        
+        // Get current user's name from localStorage
+        const currentUserName = localStorage.getItem('userFirstName');
+        
+        // Only show toast if it's not the current user
+        if (currentUserName !== data.captain.name) {
+        }
+        
+        setJam(prevJam => {
+          if (!prevJam) return prevJam;
+          
+          return {
+            ...prevJam,
+            songs: prevJam.songs.map(song => 
+              song._id === data.songId
+                ? { 
+                    ...song, 
+                    captains: (song.captains || []).filter(c => 
+                      !(c.name === data.captain.name && c.type === data.captain.type)
+                    )
+                  }
+                : song
+            )
+          };
+        });
+      });
+
+      // Handle song played status updates
+      channel.bind('song-played', (data) => {
+        setJam(prevJam => {
+          if (!prevJam) return prevJam;
+          
+          const updatedSongs = prevJam.songs.map(s => 
+            s._id === data.songId ? { ...s, played: data.played } : s
+          );
+          
+          return {
+            ...prevJam,
+            songs: updatedSongs
+          };
+        });
+      });
+
+      // Handle song removals
+      channel.bind('song-removed', (data) => {
+        toast.error(`"${data.songTitle}" by ${data.songArtist} was removed from the jam`, {
+          // style: {
+          //   background: '#fef2f2',
+          //   border: '1px solid #fee2e2',
+          //   color: '#991b1b'
+          // }
+        });
+
+        setJam(prevJam => {
+          if (!prevJam) return prevJam;
+          const newState = {
+            ...prevJam,
+            songs: prevJam.songs.filter(s => s.song._id.toString() !== data.songId.toString())
+          };
+          return newState;
+        });
+      });
+
+      // Handle song edits
+      channel.bind('song-edited', (data) => {
+        setJam(prevJam => {
+          if (!prevJam) return prevJam;
+          
+          const updatedSongs = prevJam.songs.map(s => 
+            s.song._id === data.songId 
+              ? { ...s, song: data.updatedSong }
+              : s
+          );
+          
+          // Re-group songs if needed
+          if (groupingEnabled) {
+            return {
+              ...prevJam,
+              songs: updatedSongs
+            };
+          }
+          
+          return {
+            ...prevJam,
+            songs: updatedSongs
+          };
+        });
+      });
+    };
+
+    // Bind events immediately
+    bindEvents();
 
     // Handle connection state changes
     const connectionHandler = (states) => {
       console.log('[Pusher Debug] Connection state changed:', states.current);
+      if (states.current === 'connected') {
+        // Rebind events when reconnected
+        bindEvents();
+      }
     };
     pusherClient.connection.bind('state_change', connectionHandler);
 
     // Clean up on unmount
     return () => {
       console.log('[Pusher Debug] Cleaning up - unsubscribing from:', channelName);
-      channel.unbind('song-added');
-      channel.unbind('vote');
-      channel.unbind('captain-added');
-      channel.unbind('song-played');
-      channel.unbind('song-removed');
-      channel.unbind('song-edited');
+      channel.unbind_all();
       pusherClient.unsubscribe(channelName);
       pusherClient.connection.unbind('state_change', connectionHandler);
     };
-  }, [params.id, sortMethod]);
+  }, [params.id]); // Remove sortMethod from dependencies to prevent rebinding
 
   if (error) {
     return (

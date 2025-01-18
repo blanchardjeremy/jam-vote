@@ -42,7 +42,6 @@ export default function CaptainSignupButton({ jamSong }) {
         );
 
         const data = await response.json();
-        console.log('[Captain Remove] Response:', data);
 
         if (!response.ok) {
           throw new Error(data.error || 'Failed to remove as captain');
@@ -100,7 +99,7 @@ export default function CaptainSignupButton({ jamSong }) {
 
       const data = await response.json();
       setIsCaptain(true);
-      toast.success('Successfully signed up as captain!');
+      toast.success('You are now a song captain!');
     } catch (error) {
       console.error('Error signing up as captain:', error);
       toast.error(error.message);
