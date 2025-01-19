@@ -13,8 +13,6 @@ export default function JamToolbar({
   handleSelectExisting, 
   handleAddNew, 
   currentSongs, 
-  sortMethod, 
-  setSortMethod, 
   groupingEnabled, 
   setGroupingEnabled 
 }) {
@@ -32,16 +30,6 @@ export default function JamToolbar({
 
       {currentSongs?.length > 0 && (
         <div className="flex items-center space-x-4 ml-4">
-          <Select value={sortMethod} onValueChange={setSortMethod}>
-            <SelectTrigger className="w-auto border-none text-gray-500 focus:text-gray-900 text-sm focus:ring-0">
-              <ArrowDownNarrowWide className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="votes">Sort by votes</SelectItem>
-              <SelectItem value="least-played">Sort by least played</SelectItem>
-            </SelectContent>
-          </Select>
 
           <Select value={groupingEnabled ? 'type' : 'none'} onValueChange={(value) => setGroupingEnabled(value === 'type')}>
             <SelectTrigger className="w-auto border-none text-gray-500 focus:text-gray-900 text-sm focus:ring-0">

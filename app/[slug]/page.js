@@ -92,8 +92,6 @@ export default function JamPage() {
         handleSelectExisting={handleSelectExisting}
         handleAddNew={handleAddNew}
         currentSongs={jam.songs}
-        sortMethod={sortMethod}
-        setSortMethod={setSortMethod}
         groupingEnabled={groupingEnabled}
         setGroupingEnabled={setGroupingEnabled}
       />
