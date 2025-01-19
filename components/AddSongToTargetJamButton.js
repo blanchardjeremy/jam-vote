@@ -47,7 +47,7 @@ export default function AddSongToTargetJamButton({ onJamSelected, selectedCount 
         toast.success(`Added ${result.addedSongs.length} ${result.addedSongs.length === 1 ? 'song' : 'songs'} to ${jam.name}`, {
           action: {
             label: 'View Jam',
-            onClick: () => window.open(`/${jam._id}`, '_blank'),
+            onClick: () => window.open(`/${jam.slug}`, '_blank'),
           },
         });
       }
@@ -60,7 +60,7 @@ export default function AddSongToTargetJamButton({ onJamSelected, selectedCount 
         toast.success('Added to jam', {
           action: {
             label: 'View Jam',
-            onClick: () => window.open(`/${jam._id}`, '_blank'),
+            onClick: () => window.open(`/${jam.slug}`, '_blank'),
           },
         });
       }

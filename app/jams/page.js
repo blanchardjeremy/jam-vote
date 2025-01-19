@@ -39,7 +39,7 @@ export default function Home() {
 
   const handleCreateJam = async (newJam) => {
     setIsModalOpen(false);
-    router.push(`/${newJam._id}`);
+    router.push(`/${newJam.slug}`);
   };
 
   if (error) {

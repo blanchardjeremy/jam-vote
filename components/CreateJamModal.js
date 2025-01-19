@@ -7,6 +7,7 @@ import * as z from "zod"
 import Modal, { ModalPrimaryButton, ModalSecondaryButton } from '@/components/Modal';
 import { Input } from '@/components/ui/input';
 import { DatePicker } from "@/components/DatePicker"
+import { createJam } from '@/lib/services/jams';
 import {
   Form,
   FormControl,
@@ -43,24 +44,12 @@ export default function CreateJamModal({ isOpen, onClose, onCreateJam }) {
     setError(null);
 
     try {
-      const response = await fetch('/api/jams', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: values.name,
-          jamDate: values.date.toISOString(),
-          songs: [] // Start with empty song list
-        })
+      const newJam = await createJam({
+        name: values.name,
+        jamDate: values.date.toISOString(),
+        songs: [] // Start with empty song list
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to create jam');
-      }
-
-      const newJam = await response.json();
+      
       onCreateJam(newJam);
       onClose();
     } catch (err) {
