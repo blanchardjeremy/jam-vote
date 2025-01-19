@@ -5,18 +5,7 @@ import SongAutocomplete from "@/components/SongAutocomplete";
 import CreateSongModal from "@/components/CreateSongModal";
 import { useParams, useRouter } from 'next/navigation';
 import SongRow from "@/components/SongRowJam";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle, 
-} from "@/components/ui/alert-dialog";
 import { pusherClient } from "@/lib/pusher";
-import { SelectSeparator } from '@/components/ui/select';
 import { FireIcon, MusicalNoteIcon, TrashIcon } from '@heroicons/react/24/solid';
 import { ArrowDownNarrowWide, MoreVertical } from 'lucide-react';
 import {
@@ -26,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import LoadingBlock from "@/components/LoadingBlock";
 import { toast } from 'sonner';
 import { useJamSongOperations, addSongToJam, handlePositionHighlight } from '@/lib/services/jamSongs';
@@ -291,7 +279,7 @@ export default function JamPage() {
 
   const fetchJam = async () => {
     try {
-      const res = await fetch(`/api/jams/${params.id}`);
+      const res = await fetch(`/api/jams/by-slug/${params.slug}`);
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.error || 'Failed to fetch jam');
@@ -320,11 +308,11 @@ export default function JamPage() {
       }
     };
     initialize();
-  }, [params.id]);
+  }, [params.slug]);
 
   // Set up Pusher connection in a separate useEffect
   useEffect(() => {
-    const channelName = `jam-${params.id}`;
+    const channelName = `jam-${jam?._id}`;  // Use _id for Pusher channel after we have the jam data
     console.log('[Pusher Debug] Setting up channel:', channelName);
     
     // First unsubscribe to clean up any existing subscriptions
@@ -588,7 +576,7 @@ export default function JamPage() {
       pusherClient.unsubscribe(channelName);
       pusherClient.connection.unbind('state_change', connectionHandler);
     };
-  }, [params.id]); // Remove sortMethod from dependencies to prevent rebinding
+  }, [params.slug]); // Remove sortMethod from dependencies to prevent rebinding
 
   // Get jam operations from our service
   const { handleDelete: handleDeleteJam } = useJamOperations({

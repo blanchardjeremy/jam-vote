@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { generateJamSlug } from '@/lib/jamSlug';
 import Modal, { ModalPrimaryButton, ModalSecondaryButton } from '@/components/Modal';
 import { Input } from '@/components/ui/input';
 import { DatePicker } from "@/components/DatePicker"
@@ -52,7 +51,6 @@ export default function CreateJamModal({ isOpen, onClose, onCreateJam }) {
         body: JSON.stringify({
           name: values.name,
           jamDate: values.date.toISOString(),
-          slug: generateJamSlug(),
           songs: [] // Start with empty song list
         })
       });

@@ -52,7 +52,7 @@ const jamSchema = new mongoose.Schema({
   },
   slug: {
     type: String,
-    required: true,
+    required: false,
     unique: true
   },
   jamDate: {
@@ -67,6 +67,22 @@ const jamSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true
+});
+
+// Static method to get the next available number
+jamSchema.statics.getNextNumber = async function() {
+  const lastJam = await this.findOne({}, { slug: 1 }).sort({ slug: -1 });
+  if (!lastJam) return '1';
+  const lastNumber = parseInt(lastJam.slug, 10);
+  return (lastNumber + 1).toString();
+};
+
+// Pre-save hook to set the slug
+jamSchema.pre('save', async function(next) {
+  if (!this.slug) {
+    this.slug = await this.constructor.getNextNumber();
+  }
+  next();
 });
 
 export default mongoose.models.Jam || mongoose.model('Jam', jamSchema); 
