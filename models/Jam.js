@@ -50,6 +50,11 @@ const jamSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  slug: {
+    type: String,
+    required: true,
+    unique: true
+  },
   jamDate: {
     type: Date,
     required: true

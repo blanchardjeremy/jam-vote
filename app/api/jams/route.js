@@ -17,6 +17,7 @@ export async function POST(request) {
     const jam = await Jam.create({
       name: data.name,
       jamDate: data.jamDate,
+      slug: data.slug,
       songs: songsWithOrder
     });
 
