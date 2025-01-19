@@ -41,9 +41,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 // Helper component for rendering song lists
-function SongList({ songs, nextSongId, onVote, onRemove, onTogglePlayed, onEdit, hideTypeBadge, emptyMessage, groupingEnabled, lastAddedSongId }) {
+function SongList({ 
+  songs, 
+  nextSongId, 
+  onVote, 
+  onRemove, 
+  onTogglePlayed, 
+  onEdit, 
+  hideTypeBadge, 
+  emptyMessage, 
+  groupingEnabled, 
+  lastAddedSongId,
+  type
+}) {
   // Add ref for the newly added song
   const lastAddedRef = useRef(null);
 
@@ -613,8 +626,120 @@ export default function JamPage() {
   }
 
   if (isLoading || !jam) {
+    return <LoadingBlock />;
+  }
+
+  // Show single empty state if no songs
+  if (!jam.songs || jam.songs.length === 0) {
     return (
-      <LoadingBlock />
+      <>
+        <PageTitle title={jam?.name || 'Loading Jam...'} />
+        <div className="mb-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{jam.name}</h1>
+              <div className="flex items-center gap-2">
+                <p className="text-gray-600">
+                  {new Date(jam.jamDate).toLocaleDateString('en-US', { 
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </p>
+              </div>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Open jam options"
+                >
+                  <MoreVertical className="h-5 w-5 text-gray-500" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <TrashIcon className="h-4 w-4 mr-2" />
+                  Delete Jam
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* Toolbar */}
+        <div className="sticky top-0 z-10 mb-4 flex items-center justify-between bg-white shadow-sm rounded-lg p-3 border border-gray-200">
+          <div className="flex-1 max-w-xl">
+            <SongAutocomplete 
+              ref={songAutocompleteRef}
+              onSelect={handleSelectExisting} 
+              onAddNew={handleAddNew}
+              currentSongs={jam.songs}
+              maxWidth="w-full"
+            />
+          </div>
+        </div>
+
+        <div className="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
+          <div className="flex flex-col items-center justify-center py-16 px-4">
+            <div className="text-center space-y-4">
+              <div className="flex justify-center">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-indigo-100">
+                  <MusicalNoteIcon className="w-6 h-6 text-indigo-600" />
+                </div>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No songs yet - add some tunes!</h3>
+                <p className="text-sm text-gray-500">
+                  Use the search bar at the top to add songs to your jam session.
+                  <br />
+                  You can search by title or artist name.
+                </p>
+              </div>
+              <div className="pt-4">
+                <div className="inline-flex items-center text-sm text-gray-500">
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.22 14.78a.75.75 0 001.06 0l7.22-7.22v5.69a.75.75 0 001.5 0v-7.5a.75.75 0 00-.75-.75h-7.5a.75.75 0 000 1.5h5.69l-7.22 7.22a.75.75 0 000 1.06z" clipRule="evenodd" />
+                  </svg>
+                  Look up here to get started
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <CreateSongModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          initialTitle={newSongTitle}
+          onAdd={handleAddSong}
+          jamId={params.id}
+        />
+
+        <ConfirmDialog
+          isOpen={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          onConfirm={async () => {
+            setIsDeleting(true);
+            try {
+              await handleDeleteJam(params.id);
+              setShowDeleteDialog(false);
+            } finally {
+              setIsDeleting(false);
+            }
+          }}
+          title="Delete Jam"
+          description={`This will permanently delete the jam session "${jam.name}". This action cannot be undone.`}
+          confirmText="Delete"
+          confirmLoadingText="Deleting..."
+          isLoading={isDeleting}
+        />
+      </>
     );
   }
 
@@ -718,6 +843,7 @@ export default function JamPage() {
                   emptyMessage="No bangers yet - vote up your favorites!"
                   groupingEnabled={groupingEnabled}
                   lastAddedSongId={lastAddedSongId}
+                  type="banger"
                 />
               </ul>
             </div>
@@ -741,6 +867,7 @@ export default function JamPage() {
                   emptyMessage="No ballads yet - add some chill tunes!"
                   groupingEnabled={groupingEnabled}
                   lastAddedSongId={lastAddedSongId}
+                  type="ballad"
                 />
               </ul>
             </div>
@@ -758,6 +885,7 @@ export default function JamPage() {
               emptyMessage="No songs yet - add some tunes!"
               groupingEnabled={groupingEnabled}
               lastAddedSongId={lastAddedSongId}
+              type="all"
             />
           </ul>
         )}
