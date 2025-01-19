@@ -13,12 +13,12 @@ const inter = Inter({
 
 export const metadata = {
   title: {
-    template: '%s | Music Jam',
-    default: 'Music Jam - A platform for musicians to jam together',
+    template: '%s | CouchJams',
+    default: 'CouchJams - Turn your living room into a stage',
   },
-  description: "A platform for musicians to jam together",
-  keywords: ["music", "jam", "guitar", "piano", "drums", "vocals"],
-  authors: [{ name: "Music Jam" }],
+  description: "Create jam sessions, share songs, and make music together from the comfort of your couch",
+  keywords: ["music", "jam", "guitar", "piano", "drums", "vocals", "living room", "couch jam"],
+  authors: [{ name: "CouchJams" }],
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",
@@ -29,8 +29,8 @@ export const metadata = {
   },
   openGraph: {
     type: 'website',
-    title: 'Music Jam',
-    description: 'A platform for musicians to jam together',
+    title: 'CouchJams',
+    description: 'Turn your living room into a stage - Create jam sessions, share songs, and make music together',
   },
 };
 

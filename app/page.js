@@ -1,109 +1,68 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { useRouter } from 'next/navigation';
-import { TrashIcon } from "@heroicons/react/24/outline";
-import ConfirmDialog from "@/components/ConfirmDialog";
-import LoadingBlock from "@/components/LoadingBlock";
+import { PlusIcon, MusicalNoteIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import Link from 'next/link';
 
 export default function Home() {
-  const router = useRouter();
-  const [jams, setJams] = useState([]);
-  const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  return (
+    <div className="min-h-[80vh] flex flex-col items-center justify-center px-4 relative overflow-hidden">
+      {/* Background wrapper */}
+      <div className="absolute inset-0 -z-10">
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/30 via-indigo-500/30 to-pink-500/30 animate-gradient-x" />
+        
+        {/* Overlay gradient for depth */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-white via-white/80 to-transparent" />
+        
+        {/* Subtle grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8882_1px,transparent_1px),linear-gradient(to_bottom,#8882_1px,transparent_1px)] bg-[size:14px_24px] opacity-[0.15]" />
+      </div>
 
-  const fetchJams = async () => {
-    try {
-      const res = await fetch('/api/jams');
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to fetch jams');
-      }
-      const data = await res.json();
-      setJams(data);
-    } catch (e) {
-      setError(e.message);
-      console.error('Error in Home component:', e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      <div className="relative text-center max-w-3xl mx-auto">
+        <div className="mb-8 flex justify-center items-center gap-2">
+          <MusicalNoteIcon className="h-16 w-16 text-indigo-600" />
+          <SparklesIcon className="h-8 w-8 text-purple-500" />
+        </div>
+        
+        <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl mb-4">
+          CouchJams
+        </h1>
+        
+        <p className="text-xl text-gray-600 mb-8">
+          Turn your living room into a stage. Create jam sessions, share songs, and make music together.
+        </p>
 
-  useEffect(() => {
-    fetchJams();
-  }, []);
+        <div className="flex gap-4 justify-center">
+          <Link href="/jams">
+            <Button size="lg" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200">
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Start Jamming
+            </Button>
+          </Link>
+          
+          <Link href="/songs">
+            <Button variant="outline" size="lg" className="shadow-md hover:shadow-lg transition-all duration-200">
+              Browse Songs
+            </Button>
+          </Link>
+        </div>
 
-  const handleCreateJam = async (newJam) => {
-    setIsModalOpen(false);
-    router.push(`/jams/${newJam._id}`);
-  };
-
-  if (error) {
-    return (
-      <div className="rounded-md bg-red-50 p-4 mb-6">
-        <div className="flex">
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-800">Error loading jams</h3>
-            <div className="mt-2 text-sm text-red-700">
-              <p>{error}</p>
-            </div>
+        <div className="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-3 text-left">
+          <div className="p-6 rounded-xl bg-white shadow-md hover:shadow-lg transition-all duration-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Host a Jam</h3>
+            <p className="text-gray-600">Create your jam session, set the date, and invite fellow musicians to join the fun.</p>
+          </div>
+          
+          <div className="p-6 rounded-xl bg-white shadow-md hover:shadow-lg transition-all duration-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Build the Playlist</h3>
+            <p className="text-gray-600">Suggest songs, discover new tunes, and collaborate on the perfect setlist.</p>
+          </div>
+          
+          <div className="p-6 rounded-xl bg-white shadow-md hover:shadow-lg transition-all duration-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Rock Together</h3>
+            <p className="text-gray-600">Vote on the next song, track what's been played, and keep the music flowing.</p>
           </div>
         </div>
       </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <LoadingBlock />
-    );
-  }
-
-  return (
-    <>
-      <div className="mb-6 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Jam Sessions</h1>
-      </div>
-
-      {/* Jams List */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
-        <ul className="divide-y divide-gray-200">
-          {jams.map((jam) => (
-            <li 
-              key={jam._id} 
-              className="hover:bg-gray-50"
-            >
-              <div className="px-4 py-4 sm:px-6">
-                <div className="flex items-center justify-between">
-                  <div 
-                    className="flex-grow cursor-pointer"
-                    onClick={() => router.push(`/jams/${jam._id}`)}
-                  >
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      {jam.name}
-                    </h2>
-                    <p className="mt-1 text-sm text-gray-600">
-                      {new Date(jam.jamDate).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-sm text-gray-500">
-                      {jam.songs.length} songs
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </>
+    </div>
   );
 }
