@@ -292,8 +292,9 @@ export default function JamPage() {
   });
 
   // Helper function to add a song to the jam
-  const handleAddSongToJam = async (songId) => {am
+  const handleAddSongToJam = async (songId) => {
     try {
+      console.log('[Debug] Adding song to jam:', { jamId: jam._id, songId });
       const { jam: updatedJam } = await addSongToJam(jam._id, songId);
       
       // Update local state immediately
@@ -312,6 +313,7 @@ export default function JamPage() {
 
       return updatedJam;
     } catch (e) {
+      console.error('[Debug] Error adding song:', e);
       // Only show error toast, success toast will come through Pusher
       toast.error(e.message || 'Failed to add song to jam');
       throw e;
@@ -415,12 +417,11 @@ export default function JamPage() {
         throw new Error(errorData.error || 'Failed to fetch jam');
       }
       const data = await res.json();
-      setJam(data);
+      return data;
     } catch (e) {
       setError(e.message);
       console.error('Error in JamPage component:', e);
-    } finally {
-      setIsLoading(false);
+      throw e;
     }
   };
 
@@ -432,7 +433,10 @@ export default function JamPage() {
           fetchJam(),
           fetchSongs()
         ]);
+        setJam(jamData);
         setAllSongs(songsData);
+      } catch (e) {
+        console.error('Error initializing:', e);
       } finally {
         setIsLoading(false);
       }
@@ -442,7 +446,9 @@ export default function JamPage() {
 
   // Set up Pusher connection in a separate useEffect
   useEffect(() => {
-    const channelName = `jam-${jam?._id}`;  // Use _id for Pusher channel after we have the jam data
+    if (!jam?._id) return; // Don't set up Pusher until we have the jam data
+    
+    const channelName = `jam-${jam._id}`;
     console.log('[Pusher Debug] Setting up channel:', channelName);
     
     // First unsubscribe to clean up any existing subscriptions
@@ -706,7 +712,7 @@ export default function JamPage() {
       pusherClient.unsubscribe(channelName);
       pusherClient.connection.unbind('state_change', connectionHandler);
     };
-  }, [params.slug]); // Remove sortMethod from dependencies to prevent rebinding
+  }, [jam]); // Add jam as a dependency
 
   // Get jam operations from our service
   const { handleDelete: handleDeleteJam } = useJamOperations({
