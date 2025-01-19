@@ -131,17 +131,14 @@ const SongAutocomplete = forwardRef(({
         options={allOptions}
         value={null}
         onValueChange={handleValueChange}
-        onInputChange={(newQuery) => {
-          console.log('[SongAutocomplete] Input changed to:', newQuery);
-          setQuery(newQuery);
-        }}
+        onInputChange={setQuery}
         inputValue={query}
         placeholder={placeholder}
         emptyMessage={isLoading ? "Searching..." : "Type to start searching"}
         isLoading={isLoading}
         renderOption={renderOption}
         className=""
-        inputClassName="h-12"
+        inputClassName="h-12 border-primary border"
         disabledText="Already added"
         maxWidth={maxWidth}
         position="auto"

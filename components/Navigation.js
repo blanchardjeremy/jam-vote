@@ -40,7 +40,9 @@ export function Navigation() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
-            <span className="text-xl font-bold mr-8">CouchJams</span>
+            <Link href="/">
+              <span className="text-xl font-bold mr-8">CouchJams</span>
+            </Link>
             
             {/* Desktop Navigation */}
             <div className="hidden md:block">
@@ -131,7 +133,7 @@ export function Navigation() {
                 setIsCreateModalOpen(true)
                 setIsMobileMenuOpen(false)
               }}
-              variant="secondary"
+              variant="outline"
               size="sm"
               className="w-full justify-start"
             >

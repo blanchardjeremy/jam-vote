@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import StickyQRCode from "@/components/StickyQRCode";
 
 // Helper component for rendering song lists
 function SongList({ 
@@ -927,6 +928,7 @@ export default function JamPage() {
         isLoading={isDeleting}
       />
 
+      <StickyQRCode jamSlug={params.slug} />
     </>
   );
 } 

@@ -37,7 +37,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} font-sans antialiased`}>
-      <body className="min-h-screen pb-64">
+      <body className="min-h-screen">
         <NavigationProgress />
         <AppLayout>{children}</AppLayout>
         <Toaster />
