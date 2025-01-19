@@ -512,8 +512,9 @@ export default function JamPage() {
           }
 
           // Show toast for vote change only if we haven't shown it for this vote update
+          // AND it's not a silent vote
           const toastId = `${data.songId}-${data.votes}`;
-          if (lastVoteToastId.current !== toastId) {
+          if (lastVoteToastId.current !== toastId && !data.silent) {
             const voteChange = data.votes - songToUpdate.votes;
             if (voteChange > 0) {
               toast.success(`Vote added for "${songToUpdate.song.title}" by ${songToUpdate.song.artist}`);
