@@ -12,9 +12,11 @@ import { cn } from "@/lib/utils";
 import { useParams } from 'next/navigation';
 import { toast } from "sonner";
 import CaptainNameModal from "@/components/CaptainNameModal";
+import { useJam } from "@/components/JamContext";
 
 export default function CaptainSignupButton({ jamSong }) {
   const params = useParams();
+  const jam = useJam();
   const [isCaptainLoading, setIsCaptainLoading] = useState(false);
   const [captainDropdownOpen, setCaptainDropdownOpen] = useState(false);
   const [isCaptain, setIsCaptain] = useState(false);
@@ -37,7 +39,7 @@ export default function CaptainSignupButton({ jamSong }) {
         console.log('[Captain Remove] Attempting to remove captain:', { userName, songId: jamSong._id });
         
         const response = await fetch(
-          `/api/jams/${params.id}/captain?songId=${jamSong._id}&name=${encodeURIComponent(userName)}`, 
+          `/api/jams/${jam._id}/captain?songId=${jamSong._id}&name=${encodeURIComponent(userName)}`, 
           { method: 'DELETE' }
         );
 
@@ -80,7 +82,7 @@ export default function CaptainSignupButton({ jamSong }) {
 
     setIsCaptainLoading(true);
     try {
-      const response = await fetch(`/api/jams/${params.id}/captain`, {
+      const response = await fetch(`/api/jams/${jam._id}/captain`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
