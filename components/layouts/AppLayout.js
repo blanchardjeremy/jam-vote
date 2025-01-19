@@ -12,7 +12,7 @@ export default function AppLayout({ children }) {
       <Navigation />
       
       {/* Main content */}
-      <main className="flex-1 w-full">
+      <main className="flex-1 w-full bg-gray-50">
         <div className="max-w-5xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           {children}
         </div>
