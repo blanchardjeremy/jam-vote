@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import SongRow from "@/components/SongRowJam";
 
-export default function SongList({ 
+export default function JamSongList({ 
   songs, 
   nextSongId, 
   onVote, 

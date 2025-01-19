@@ -6,8 +6,8 @@ import { useJamPusher } from '@/lib/hooks/useJamPusher';
 import { getGroupedSongs } from '@/lib/utils/songGrouping';
 import JamHeader from '@/components/jam/JamHeader';
 import JamToolbar from '@/components/jam/JamToolbar';
-import SongList from '@/components/jam/SongList';
-import EmptyState from '@/components/jam/EmptyState';
+import JamSongList from '@/components/jam/JamSongList';
+import JamEmptyState from '@/components/jam/JamEmptyState';
 import { FireIcon, MusicalNoteIcon } from '@heroicons/react/24/solid';
 import LoadingBlock from "@/components/LoadingBlock";
 import CreateSongModal from "@/components/CreateSongModal";
@@ -99,7 +99,7 @@ export default function JamPage() {
       />
 
       {(!jam.songs || jam.songs.length === 0) ? (
-        <EmptyState />
+        <JamEmptyState />
       ) : (
         <div className="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
           {groupingEnabled ? (
@@ -112,7 +112,7 @@ export default function JamPage() {
                   </h3>
                 </div>
                 <ul className="divide-y divide-gray-200">
-                  <SongList 
+                  <JamSongList 
                     songs={getGroupedSongs(jam.songs, groupingEnabled).bangers}
                     nextSongId={getGroupedSongs(jam.songs, groupingEnabled).nextSongId}
                     onVote={handleVote}
@@ -136,7 +136,7 @@ export default function JamPage() {
                   </h3>
                 </div>
                 <ul className="divide-y divide-gray-200">
-                  <SongList 
+                  <JamSongList 
                     songs={getGroupedSongs(jam.songs, groupingEnabled).ballads}
                     nextSongId={getGroupedSongs(jam.songs, groupingEnabled).nextSongId}
                     onVote={handleVote}
@@ -154,7 +154,7 @@ export default function JamPage() {
             </>
           ) : (
             <ul className="divide-y divide-gray-200">
-              <SongList 
+              <JamSongList 
                 songs={getGroupedSongs(jam.songs, groupingEnabled).ungrouped}
                 nextSongId={getGroupedSongs(jam.songs, groupingEnabled).nextSongId}
                 onVote={handleVote}

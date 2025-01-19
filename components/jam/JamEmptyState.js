@@ -1,6 +1,6 @@
 import { MusicalNoteIcon } from '@heroicons/react/24/solid';
 
-export default function EmptyState() {
+export default function JamEmptyState() {
   return (
     <div className="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
       <div className="flex flex-col items-center justify-center py-16 px-4">
