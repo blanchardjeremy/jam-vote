@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { TrashIcon } from "@heroicons/react/24/outline";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import LoadingBlock from "@/components/LoadingBlock";
+import Link from 'next/link';
 
 export default function Home() {
   const router = useRouter();
@@ -77,9 +78,9 @@ export default function Home() {
         >
           <div className="px-4 py-4 sm:px-6">
             <div className="flex items-center justify-between">
-              <div 
-                className="flex-grow cursor-pointer"
-                onClick={() => router.push(`/${jam._id}`)}
+              <Link 
+                href={`/${jam.slug}`}
+                className="flex-grow hover:opacity-75"
               >
                 <h2 className="text-lg font-semibold text-gray-900">
                   {jam.name}
@@ -92,7 +93,7 @@ export default function Home() {
                     day: 'numeric'
                   })}
                 </p>
-              </div>
+              </Link>
               <div className="flex items-center gap-4">
                 <div className="text-sm text-gray-500">
                   {jam.songs.length} songs

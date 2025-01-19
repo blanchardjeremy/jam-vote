@@ -71,10 +71,11 @@ const jamSchema = new mongoose.Schema({
 
 // Static method to get the next available number
 jamSchema.statics.getNextNumber = async function() {
-  const lastJam = await this.findOne({}, { slug: 1 }).sort({ slug: -1 });
-  if (!lastJam) return '1';
-  const lastNumber = parseInt(lastJam.slug, 10);
-  return (lastNumber + 1).toString();
+  const lastJam = await this.findOne({}, { slug: 1 }).sort({ createdAt: -1 });
+  if (!lastJam || !lastJam.slug) return '1';
+  
+  const lastNumber = parseInt(lastJam.slug.replace(/\D/g, ''), 10);
+  return isNaN(lastNumber) ? '1' : (lastNumber + 1).toString();
 };
 
 // Pre-save hook to set the slug
