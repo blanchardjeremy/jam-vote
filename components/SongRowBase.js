@@ -34,7 +34,6 @@ const BaseSongRow = forwardRef(({
         )}
         onClick={onClick}
         onKeyDown={handleKeyDown}
-        role="button"
         tabIndex={0}
         data-variant={highlight}
       >
