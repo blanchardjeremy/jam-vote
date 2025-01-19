@@ -2,14 +2,14 @@
 
 import { useEffect } from 'react';
 
-export default function PageTitle({ title, suffix = 'Music Jam Voting | CouchJams' }) {
+export default function PageTitle({ title, suffix = 'Music Jam Voting | Jam Vote' }) {
   useEffect(() => {
     // Update the document title when the component mounts or title changes
     document.title = suffix ? `${title} | ${suffix}` : title;
 
     // Cleanup - reset to default when component unmounts
     return () => {
-      document.title = 'CouchJams';
+      document.title = 'Jam Vote';
     };
   }, [title, suffix]);
 

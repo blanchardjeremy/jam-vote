@@ -24,7 +24,7 @@ export default function Home() {
         </div>
         
         <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl mb-4">
-          CouchJams
+          Jam Vote
         </h1>
         
         <p className="text-xl text-gray-600 mb-8">

@@ -41,7 +41,7 @@ export function Navigation() {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
             <Link href="/">
-              <span className="text-xl font-bold mr-8">CouchJams</span>
+              <span className="text-xl font-bold mr-8">Jam Vote</span>
             </Link>
             
             {/* Desktop Navigation */}
