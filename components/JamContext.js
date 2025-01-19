@@ -1,12 +1,15 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext } from 'react';
 
 const JamContext = createContext();
 
-export function JamProvider({ children, initialJam }) {
-  const [jam] = useState(initialJam);
+export function JamProvider({ children, initialJam, setJam }) {
+  const value = {
+    jam: initialJam,
+    setJam
+  };
   
   return (
-    <JamContext.Provider value={jam}>
+    <JamContext.Provider value={value}>
       {children}
     </JamContext.Provider>
   );

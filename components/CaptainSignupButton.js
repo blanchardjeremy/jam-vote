@@ -16,7 +16,7 @@ import { useJam } from "@/components/JamContext";
 
 export default function CaptainSignupButton({ jamSong }) {
   const params = useParams();
-  const jam = useJam();
+  const { jam } = useJam();
   const [isCaptainLoading, setIsCaptainLoading] = useState(false);
   const [captainDropdownOpen, setCaptainDropdownOpen] = useState(false);
   const [isCaptain, setIsCaptain] = useState(false);

@@ -2,6 +2,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
+  TooltipProvider,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -35,22 +36,24 @@ export default function SongRowButton({
   const linkProps = href ? { href, target: "_blank", rel: "noopener noreferrer" } : {};
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <ButtonOrLink
-          onClick={onClick}
-          onTouchStart={onTouchStart}
-          onTouchEnd={onTouchEnd}
-          disabled={disabled || isLoading}
-          className={styles}
-          {...linkProps}
-        >
-          <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
-        </ButtonOrLink>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>{tooltip}</p>
-      </TooltipContent>
-    </Tooltip>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <ButtonOrLink
+            onClick={onClick}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+            disabled={disabled || isLoading}
+            className={styles}
+            {...linkProps}
+          >
+            <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
+          </ButtonOrLink>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 } 
