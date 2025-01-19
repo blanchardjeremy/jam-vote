@@ -2,6 +2,7 @@ import { useState, useEffect, forwardRef } from 'react';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { XCircle } from 'lucide-react';
 import { AutoComplete } from "@/components/ui/autocomplete";
+import Link from 'next/link';
 
 const SongAutocomplete = forwardRef(({ 
   onSelect, 
@@ -134,7 +135,17 @@ const SongAutocomplete = forwardRef(({
         onInputChange={setQuery}
         inputValue={query}
         placeholder={placeholder}
-        emptyMessage={isLoading ? "Searching..." : "Type to start searching"}
+        emptyMessage={isLoading ? "Searching..." : (
+          <div className="py-2">
+            <p className="text-lg">Type to start searching</p>
+            <p className="mt-1">
+              or{'  '}
+              <Link href="/songs" className="text-primary hover:text-primary/80 underline">
+                browse all songs
+              </Link>
+            </p>
+          </div>
+        )}
         isLoading={isLoading}
         renderOption={renderOption}
         className=""
