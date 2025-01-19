@@ -29,12 +29,14 @@ const formSchema = z.object({
 
 export default function CreateJamModal({ isOpen, onClose, onCreateJam }) {
   const [error, setError] = useState(null);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time portion to midnight
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      date: undefined,
+      date: today,
     },
   })
 
@@ -102,16 +104,13 @@ export default function CreateJamModal({ isOpen, onClose, onCreateJam }) {
             name="date"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Date</FormLabel>
+                <FormLabel>Date of the jam session</FormLabel>
                 <FormControl>
                   <DatePicker
                     date={field.value}
                     onDateChange={field.onChange}
                   />
                 </FormControl>
-                <FormDescription>
-                  When will this jam session take place?
-                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
