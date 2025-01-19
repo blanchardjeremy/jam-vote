@@ -12,9 +12,11 @@ import { cn } from "@/lib/utils";
 import { useParams } from 'next/navigation';
 import { toast } from "sonner";
 import CaptainNameModal from "@/components/CaptainNameModal";
+import { useJam } from "@/components/JamContext";
 
 export default function CaptainSignupButton({ jamSong }) {
   const params = useParams();
+  const { jam } = useJam();
   const [isCaptainLoading, setIsCaptainLoading] = useState(false);
   const [captainDropdownOpen, setCaptainDropdownOpen] = useState(false);
   const [isCaptain, setIsCaptain] = useState(false);
@@ -37,12 +39,11 @@ export default function CaptainSignupButton({ jamSong }) {
         console.log('[Captain Remove] Attempting to remove captain:', { userName, songId: jamSong._id });
         
         const response = await fetch(
-          `/api/jams/${params.id}/captain?songId=${jamSong._id}&name=${encodeURIComponent(userName)}`, 
+          `/api/jams/${jam._id}/captain?songId=${jamSong._id}&name=${encodeURIComponent(userName)}`, 
           { method: 'DELETE' }
         );
 
         const data = await response.json();
-        console.log('[Captain Remove] Response:', data);
 
         if (!response.ok) {
           throw new Error(data.error || 'Failed to remove as captain');
@@ -81,7 +82,7 @@ export default function CaptainSignupButton({ jamSong }) {
 
     setIsCaptainLoading(true);
     try {
-      const response = await fetch(`/api/jams/${params.id}/captain`, {
+      const response = await fetch(`/api/jams/${jam._id}/captain`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +101,7 @@ export default function CaptainSignupButton({ jamSong }) {
 
       const data = await response.json();
       setIsCaptain(true);
-      toast.success('Successfully signed up as captain!');
+      toast.success('You are now a song captain!');
     } catch (error) {
       console.error('Error signing up as captain:', error);
       toast.error(error.message);
@@ -124,7 +125,7 @@ export default function CaptainSignupButton({ jamSong }) {
         onOpenChange={(open) => !jamSong.played && setCaptainDropdownOpen(open)}
       >
         <DropdownMenuTrigger asChild>
-          <div>
+          <div className="inline-flex">
             <SongRowButton
               icon={isCaptain ? UserIconSolid : UserIconOutline}
               onClick={() => setCaptainDropdownOpen(true)}

@@ -1,8 +1,7 @@
 import { useState, useRef } from "react";
-import { MusicalNoteIcon } from "@heroicons/react/24/outline";
-import { CheckCircleIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon, MinusCircleIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
-import { TrashIcon, PencilIcon, EllipsisVerticalIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, EllipsisVerticalIcon } from "@heroicons/react/24/outline";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import SongRowButton from "@/components/SongRowButton";
 import CaptainSignupButton from "@/components/CaptainSignupButton";
-import ConfirmDialog from "@/components/ConfirmDialog";
+import SongChordsButton from "@/components/SongChordsButton";
 import { cn } from "@/lib/utils";
 
 export default function SongRowButtonToolbar({ 
@@ -22,8 +21,6 @@ export default function SongRowButtonToolbar({
   onRemove
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
-  const [isRemoving, setIsRemoving] = useState(false);
   const touchStartPos = useRef(null);
   
   const handleTouchStart = (e) => {
@@ -43,26 +40,10 @@ export default function SongRowButtonToolbar({
     touchStartPos.current = null;
   };
 
-  const handleRemove = async () => {
-    setIsRemoving(true);
-    try {
-      await onRemove?.();
-      setShowRemoveDialog(false);
-    } finally {
-      setIsRemoving(false);
-    }
-  };
-
   return (
     <>
       <div className="flex items-center gap-1">
-        {song.chordChart && (
-          <SongRowButton
-            icon={MusicalNoteIcon}
-            href={song.chordChart}
-            tooltip="View chord chart"
-          />
-        )}
+        <SongChordsButton song={song} />
         <CaptainSignupButton jamSong={jamSong} />
         <SongRowButton
           icon={jamSong.played ? CheckCircleSolid : CheckCircleIcon}
@@ -77,13 +58,16 @@ export default function SongRowButtonToolbar({
 
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
           <DropdownMenuTrigger asChild>
-            <button 
-              className="p-0.5 md:p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-150 ease-in-out touch-none"
+            <div 
+              className="inline-flex"
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
             >
-              <EllipsisVerticalIcon className="h-4 w-4 md:h-5 md:w-5" />
-            </button>
+              <SongRowButton
+                icon={EllipsisVerticalIcon}
+                tooltip="More options"
+              />
+            </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
@@ -96,27 +80,16 @@ export default function SongRowButtonToolbar({
             <DropdownMenuItem
               onClick={() => {
                 setIsOpen(false);
-                setShowRemoveDialog(true);
+                onRemove(jamSong);
               }}
               className="text-destructive hover:text-destructive hover:bg-destructive/10"
             >
-              <TrashIcon className="h-4 w-4 mr-2" />
+              <MinusCircleIcon className="h-4 w-4 mr-2" />
               <span>Remove from jam</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-
-      <ConfirmDialog
-        isOpen={showRemoveDialog}
-        onClose={() => setShowRemoveDialog(false)}
-        onConfirm={handleRemove}
-        title="Remove Song"
-        description={`Are you sure you want to remove "${song.title}" by ${song.artist} from this jam?`}
-        confirmText="Remove"
-        isLoading={isRemoving}
-        confirmLoadingText="Removing..."
-      />
     </>
   );
 } 

@@ -48,7 +48,7 @@ export function AutoComplete({
         <Input
           ref={ref}
           {...inputProps}
-          className={cn("pl-9", inputClassName)}
+          className={cn("pl-9 rounded-full", inputClassName)}
           placeholder={placeholder}
         />
       </div>

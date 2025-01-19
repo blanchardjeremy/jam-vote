@@ -17,26 +17,26 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 226 70% 55.5%;
+    --primary: 244 76% 59%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 226 70% 94%;
-    --secondary-foreground: 226 70% 55.5%;
-    --muted: 226 70% 94%;
-    --muted-foreground: 226 30% 40%;
-    --accent: 226 70% 94%;
-    --accent-foreground: 226 70% 55.5%;
+    --secondary: 244 70% 94%;
+    --secondary-foreground: 244 76% 59%;
+    --muted: 244 70% 94%;
+    --muted-foreground: 244 30% 40%;
+    --accent: 244 70% 94%;
+    --accent-foreground: 244 76% 59%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --success: 142 72% 29%;
     --success-foreground: 142 76% 97%;
     --success-muted: 142 70% 96%;
-    --border: 226 30% 91%;
-    --input: 226 30% 91%;
-    --ring: 226 70% 55.5%;
+    --border: 244 30% 91%;
+    --input: 244 30% 91%;
+    --ring: 244 76% 59%;
     --played: 220 17% 93%;
     --played-foreground: 220 9% 46%;
-    --next: 226 70% 97%;
-    --next-border: 226 70% 75%;
+    --next: 244 70% 97%;
+    --next-border: 244 70% 75%;
     --banger: 24 100% 93%;
     --banger-foreground: 24 95% 40%;
     --jam: 226 100% 93%;
@@ -47,6 +47,12 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    
+    /* Highlight variants */
+    --highlight-success: rgba(34, 197, 94, 0.2);
+    --highlight-primary: rgba(59, 130, 246, 0.2);
+    --highlight-warning: rgba(245, 158, 11, 0.2);
+    --highlight-error: rgba(239, 68, 68, 0.2);
   }
   /* .dark {
     --background: 222.2 84% 4.9%;
@@ -95,4 +101,40 @@
   100% {
     width: 100%;
   }
+}
+
+@keyframes highlight {
+  0% {
+    background-color: transparent;
+  }
+  2% {
+    background-color: var(--highlight-color, var(--highlight-success));
+  }
+  85% {
+    background-color: var(--highlight-color, var(--highlight-success));
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.highlight-animation[data-variant='success'] {
+  --highlight-color: var(--highlight-success);
+}
+
+.highlight-animation[data-variant='primary'] {
+  --highlight-color: var(--highlight-primary);
+}
+
+.highlight-animation[data-variant='warning'] {
+  --highlight-color: var(--highlight-warning);
+}
+
+.highlight-animation[data-variant='error'] {
+  --highlight-color: var(--highlight-error);
+}
+
+.highlight-animation {
+  animation: highlight 10s cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: forwards;
 }

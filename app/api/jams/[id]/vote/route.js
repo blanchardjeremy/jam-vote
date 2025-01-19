@@ -7,10 +7,10 @@ export async function POST(request, { params }) {
   try {
     console.log('[Vote API] Received vote request');
     await connectDB();
-    const { songId, action } = await request.json();
+    const { songId, action, silent } = await request.json();
     const jamId = (await params).id;
     
-    console.log('[Vote API] Request details:', { jamId, songId, action });
+    console.log('[Vote API] Request details:', { jamId, songId, action, silent });
 
     const jam = await Jam.findById(jamId);
     if (!jam) {
@@ -43,7 +43,8 @@ export async function POST(request, { params }) {
     console.log('[Vote API] Triggering Pusher event');
     await pusherServer.trigger(`jam-${jamId}`, 'vote', {
       songId,
-      votes: songToUpdate.votes
+      votes: songToUpdate.votes,
+      silent
     });
     console.log('[Vote API] Pusher event triggered');
 

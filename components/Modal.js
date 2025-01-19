@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 export default function Modal({
   isOpen,
@@ -35,13 +36,13 @@ export default function Modal({
         </DialogHeader>
 
         {/* Content */}
-        <div className="mt-4">
+        <div className="">
           {children}
         </div>
 
         {/* Actions */}
         {actions && (
-          <div className="bg-background pt-4 mt-6 flex flex-col-reverse gap-3 sm:flex-row-reverse sm:mt-4">
+          <div className="bg-background pt-4 mt-0 flex flex-col-reverse gap-3 sm:flex-row-reverse sm:mt-0">
             {actions}
           </div>
         )}
@@ -53,46 +54,24 @@ export default function Modal({
 // Helper components for consistent button styling
 export function ModalPrimaryButton({ children, className, ...props }) {
   return (
-    <button
-      type="button"
-      className={cn(
-        // Base styles
-        'inline-flex w-full justify-center rounded-md px-3 py-3 text-sm font-semibold shadow-sm sm:w-auto sm:py-2',
-        // Colors
-        'bg-indigo-600 text-white',
-        // States
-        'transition-colors duration-200',
-        'hover:bg-indigo-500',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
-        // Custom classes
-        className
-      )}
+    <Button
+      variant="primary"
+      className={cn(className)}
       {...props}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
 export function ModalSecondaryButton({ children, className, ...props }) {
   return (
-    <button
-      type="button"
-      className={cn(
-        // Base styles
-        'inline-flex w-full justify-center rounded-md px-3 py-3 text-sm font-semibold sm:w-auto sm:py-2',
-        // Colors
-        'bg-white text-gray-900 ring-1 ring-inset ring-gray-300',
-        // States
-        'transition-colors duration-200',
-        'hover:bg-gray-50',
-        // Custom classes
-        className
-      )}
+    <Button
+      variant="outline"
+      className={cn(className)}
       {...props}
     >
       {children}
-    </button>
+    </Button>
   );
 } 

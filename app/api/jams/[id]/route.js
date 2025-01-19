@@ -45,6 +45,16 @@ export async function PATCH(request, context) {
       return NextResponse.json({ error: 'Jam not found' }, { status: 404 });
     }
 
+    // Check if song already exists in the jam
+    const existingSong = jam.songs.find(s => s.song._id.toString() === songId.toString());
+    if (existingSong) {
+      return NextResponse.json({ 
+        error: 'Song already exists in this jam',
+        skippedSongs: [songId],
+        addedSongs: []
+      }, { status: 400 });
+    }
+
     // Add the song to the jam with the next order number
     const nextOrder = jam.songs.length > 0 
       ? Math.max(...jam.songs.map(s => s.order)) + 1 
@@ -70,7 +80,9 @@ export async function PATCH(request, context) {
     // Return the jam and the added song's ID for localStorage
     return NextResponse.json({
       jam: updatedJam,
-      addedSongId: addedSong._id
+      addedSongId: addedSong._id,
+      addedSongs: [songId],
+      skippedSongs: []
     });
   } catch (error) {
     console.error('Error adding song to jam:', error);
@@ -83,7 +95,7 @@ export async function DELETE(request, context) {
     await connectDB();
     const { id } = await context.params;
 
-    const result = await Jam.findByIdAndDelete(id);
+    const result = await Jam.findByIdAndUpdate(id, { archived: true }, { new: true });
 
     if (!result) {
       return NextResponse.json(
@@ -94,9 +106,9 @@ export async function DELETE(request, context) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting jam:', error);
+    console.error('Error archiving jam:', error);
     return NextResponse.json(
-      { error: 'Failed to delete jam' },
+      { error: 'Failed to archive jam' },
       { status: 500 }
     );
   }

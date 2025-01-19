@@ -2,6 +2,7 @@ import { useState, useEffect, forwardRef } from 'react';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { XCircle } from 'lucide-react';
 import { AutoComplete } from "@/components/ui/autocomplete";
+import Link from 'next/link';
 
 const SongAutocomplete = forwardRef(({ 
   onSelect, 
@@ -29,7 +30,10 @@ const SongAutocomplete = forwardRef(({
         
         // Transform the data to match AutoComplete's expected format
         const options = data.map(song => {
-          const isDuplicate = currentSongs.some(existingSong => existingSong._id === song._id);
+          const isDuplicate = currentSongs.some(existingSong => 
+            existingSong._id === song._id || // Check direct match
+            existingSong.song?._id === song._id // Check nested song match
+          );
           return {
             value: song._id,
             label: `${song.title} - ${song.artist}`, // Generic label for base component
@@ -91,10 +95,13 @@ const SongAutocomplete = forwardRef(({
 
   const handleValueChange = (option) => {
     if (option) {
+      console.log('[SongAutocomplete] handleValueChange called with option:', option);
       if (option.isAddNew) {
+        console.log('[SongAutocomplete] Calling onAddNew with query:', option.query);
         onAddNew(option.query);
         setQuery('');
       } else if (!option.isDuplicate) {
+        console.log('[SongAutocomplete] Calling onSelect with song:', option);
         onSelect(option);
         setQuery('');
       }
@@ -102,7 +109,7 @@ const SongAutocomplete = forwardRef(({
   };
 
   // Combine search results with "Add new" option
-  const allOptions = query.trim() 
+  const allOptions = query.trim() && !isLoading && results.length > 0
     ? [
         ...(Array.isArray(results) ? results : []), 
         { 
@@ -128,11 +135,21 @@ const SongAutocomplete = forwardRef(({
         onInputChange={setQuery}
         inputValue={query}
         placeholder={placeholder}
-        emptyMessage={isLoading ? "Searching..." : "Type to start searching"}
+        emptyMessage={isLoading ? "Searching..." : (
+          <div className="py-2">
+            <p className="text-lg">Type to start searching</p>
+            <p className="mt-1">
+              or{'  '}
+              <Link href="/songs" className="text-primary hover:text-primary/80 underline">
+                browse all songs
+              </Link>
+            </p>
+          </div>
+        )}
         isLoading={isLoading}
         renderOption={renderOption}
-        className="rounded-lg border shadow-md"
-        inputClassName="h-12"
+        className=""
+        inputClassName="h-12 border-primary border"
         disabledText="Already added"
         maxWidth={maxWidth}
         position="auto"
