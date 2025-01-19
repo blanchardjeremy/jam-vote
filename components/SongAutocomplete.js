@@ -108,7 +108,7 @@ const SongAutocomplete = forwardRef(({
   };
 
   // Combine search results with "Add new" option
-  const allOptions = query.trim() 
+  const allOptions = query.trim() && !isLoading && results.length > 0
     ? [
         ...(Array.isArray(results) ? results : []), 
         { 
