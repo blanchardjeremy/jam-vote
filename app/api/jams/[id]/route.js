@@ -95,7 +95,7 @@ export async function DELETE(request, context) {
     await connectDB();
     const { id } = await context.params;
 
-    const result = await Jam.findByIdAndDelete(id);
+    const result = await Jam.findByIdAndUpdate(id, { archived: true }, { new: true });
 
     if (!result) {
       return NextResponse.json(
@@ -106,9 +106,9 @@ export async function DELETE(request, context) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting jam:', error);
+    console.error('Error archiving jam:', error);
     return NextResponse.json(
-      { error: 'Failed to delete jam' },
+      { error: 'Failed to archive jam' },
       { status: 500 }
     );
   }

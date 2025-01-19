@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import JamSlugCounter from './JamSlugCounter';
 
 const captainSchema = new mongoose.Schema({
   name: {
@@ -59,6 +60,11 @@ const jamSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
+  archived: {
+    type: Boolean,
+    default: false,
+    required: true
+  },
   songs: [jamSongSchema],
   createdAt: {
     type: Date,
@@ -71,17 +77,58 @@ const jamSchema = new mongoose.Schema({
 
 // Static method to get the next available number
 jamSchema.statics.getNextNumber = async function() {
-  const lastJam = await this.findOne({}, { slug: 1 }).sort({ createdAt: -1 });
-  if (!lastJam || !lastJam.slug) return '1';
+  // First try to find and increment the counter
+  const counter = await JamSlugCounter.findByIdAndUpdate(
+    'jamSlug',
+    { $inc: { seq: 1 } },
+    { 
+      new: true // Return the updated value
+    }
+  );
+
+  if (!counter) {
+    // If no counter exists, create it starting at 1
+    const newCounter = await JamSlugCounter.create({
+      _id: 'jamSlug',
+      seq: 1
+    });
+    return newCounter.seq.toString();
+  }
   
-  const lastNumber = parseInt(lastJam.slug.replace(/\D/g, ''), 10);
-  return isNaN(lastNumber) ? '1' : (lastNumber + 1).toString();
+  return counter.seq.toString();
 };
 
 // Pre-save hook to set the slug
 jamSchema.pre('save', async function(next) {
   if (!this.slug) {
-    this.slug = await this.constructor.getNextNumber();
+    let attempts = 0;
+    const maxAttempts = 5;
+    
+    while (attempts < maxAttempts) {
+      try {
+        // Get the next number
+        this.slug = await this.constructor.getNextNumber();
+        
+        // Check if this slug is already in use
+        const existingJam = await this.constructor.findOne({ slug: this.slug });
+        if (!existingJam) {
+          break; // Slug is available, proceed with save
+        }
+        
+        attempts++;
+      } catch (error) {
+        if (attempts === maxAttempts - 1) {
+          next(error); // If we're out of attempts, pass the error
+          return;
+        }
+        attempts++;
+      }
+    }
+    
+    if (attempts === maxAttempts) {
+      next(new Error('Failed to generate unique slug after maximum attempts'));
+      return;
+    }
   }
   next();
 });

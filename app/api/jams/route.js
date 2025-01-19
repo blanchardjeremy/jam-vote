@@ -14,11 +14,30 @@ export async function POST(request) {
       order: index + 1
     }));
 
-    const jam = await Jam.create({
-      name: data.name,
-      jamDate: data.jamDate,
-      songs: songsWithOrder
-    });
+    let jam;
+    let attempts = 0;
+    const maxAttempts = 5;
+
+    while (attempts < maxAttempts) {
+      try {
+        jam = await Jam.create({
+          name: data.name,
+          jamDate: data.jamDate,
+          songs: songsWithOrder
+        });
+        break; // If successful, exit the loop
+      } catch (error) {
+        if (error.code === 11000 && error.keyPattern?.slug) {
+          // Duplicate slug error, retry
+          attempts++;
+          if (attempts === maxAttempts) {
+            throw new Error('Failed to create jam with unique slug after maximum attempts');
+          }
+          continue;
+        }
+        throw error; // For other errors, throw immediately
+      }
+    }
 
     return NextResponse.json(jam, { status: 201 });
   } catch (error) {
@@ -33,7 +52,7 @@ export async function POST(request) {
 export async function GET() {
   try {
     await connectDB();
-    const jams = await Jam.find({})
+    const jams = await Jam.find({ archived: false })
       .sort({ jamDate: -1, createdAt: -1 })
       .populate('songs.song');
 
