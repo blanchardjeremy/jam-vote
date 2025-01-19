@@ -32,7 +32,7 @@ export function Navigation() {
 
   const handleCreateJam = (newJam) => {
     setIsCreateModalOpen(false)
-    router.push(`/jams/${newJam._id}`)
+    router.push(`/${newJam._id}`)
   }
 
   return (

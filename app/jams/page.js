@@ -38,7 +38,7 @@ export default function Home() {
 
   const handleCreateJam = async (newJam) => {
     setIsModalOpen(false);
-    router.push(`/jams/${newJam._id}`);
+    router.push(`/${newJam._id}`);
   };
 
   if (error) {
@@ -79,7 +79,7 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <div 
                 className="flex-grow cursor-pointer"
-                onClick={() => router.push(`/jams/${jam._id}`)}
+                onClick={() => router.push(`/${jam._id}`)}
               >
                 <h2 className="text-lg font-semibold text-gray-900">
                   {jam.name}
