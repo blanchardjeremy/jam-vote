@@ -1,70 +1,69 @@
 import { Button } from "@/components/ui/button";
-import { PlusIcon, MusicalNoteIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import { Music, Users, ListMusic, ThumbsUp, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Home() {
   return (
-    <>
-      {/* Full-width background */}
-      <div className="fixed inset-0 bg-white">
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-500/10 to-transparent">
-          <div className="absolute inset-0 bg-gradient-to-b from-pink-500/10 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-l from-white/90 via-white/60 to-white/30" />
+    <div className="min-h-screen bg-gradient-to-b from-purple-900 to-black text-white py-6 px-4 sm:px-6 lg:px-8">
+      {/* Hero Section */}
+      <div className="text-center mb-16">
+        <div className="mb-6">
+          <Music className="h-16 w-16 text-purple-300 mx-auto" />
         </div>
-
-        {/* Grid overlay */}
-        <div className="absolute inset-0 opacity-[0.07] bg-[length:24px_24px] [background-image:linear-gradient(to_right,#666_1px,transparent_1px),linear-gradient(to_bottom,#666_1px,transparent_1px)]" />
+        <h1 className="text-6xl font-bold mb-4 drop-shadow-lg">JamVote</h1>
+        <p className="text-2xl text-purple-200">Host live music jams and vote on what to play next.</p>
       </div>
 
-      {/* Content */}
-      <div className="relative min-h-[80vh] flex flex-col items-center justify-center">
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="mb-8 flex justify-center items-center gap-2">
-            <MusicalNoteIcon className="h-16 w-16 text-indigo-600" />
-            <SparklesIcon className="h-8 w-8 text-purple-500" />
-          </div>
-          
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl mb-4">
-            Jam Vote
-          </h1>
-          
-          <p className="text-xl text-gray-600 mb-8">
-            Turn your living room into a stage. Create jam sessions, share songs, and make music together.
-          </p>
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 max-w-4xl mx-auto">
+        <Link href="/4" className="w-full sm:w-auto">
+          <Button size="lg" className="w-full sm:w-auto bg-white hover:bg-gray-100 text-purple-900 rounded-lg px-8 py-3 text-lg font-medium">
+            See Demo Jam
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </Link>
+        
+        <Link href="/jams" className="w-full sm:w-auto">
+          <Button variant="outline" size="lg" className="w-full sm:w-auto bg-transparent border-2 border-white text-white hover:bg-white/10 hover:text-white hover:border-white/80 rounded-lg px-8 py-3 text-lg font-medium">
+            Browse Jams
+          </Button>
+        </Link>
+      </div>
 
-          <div className="flex gap-4 justify-center">
-            <Link href="/jams">
-              <Button size="lg" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200">
-                <PlusIcon className="h-5 w-5 mr-2" />
-                Start Jamming
-              </Button>
-            </Link>
-            
-            <Link href="/songs">
-              <Button variant="outline" size="lg" className="shadow-md hover:shadow-lg transition-all duration-200">
-                Browse Songs
-              </Button>
-            </Link>
+      {/* Features Grid */}
+      <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="bg-purple-800 bg-opacity-30 p-6 rounded-lg">
+          <div className="flex items-center mb-4">
+            <Music className="w-8 h-8 mr-3 text-purple-300" />
+            <h2 className="text-xl font-semibold">Host a Jam</h2>
           </div>
-
-          <div className="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-3 text-left">
-            <div className="p-6 rounded-xl bg-white shadow-md hover:shadow-lg transition-all duration-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Host a Jam</h3>
-              <p className="text-gray-600">Create your jam session, set the date, and invite fellow musicians to join the fun.</p>
-            </div>
-            
-            <div className="p-6 rounded-xl bg-white shadow-md hover:shadow-lg transition-all duration-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Build the Playlist</h3>
-              <p className="text-gray-600">Suggest songs, discover new tunes, and collaborate on the perfect setlist.</p>
-            </div>
-            
-            <div className="p-6 rounded-xl bg-white shadow-md hover:shadow-lg transition-all duration-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Rock Together</h3>
-              <p className="text-gray-600">Vote on the next song, track what's been played, and keep the music flowing.</p>
-            </div>
+          <p>Create your jam session and invite friends to join the fun</p>
+        </div>
+        
+        <div className="bg-purple-800 bg-opacity-30 p-6 rounded-lg">
+          <div className="flex items-center mb-4">
+            <ListMusic className="w-8 h-8 mr-3 text-purple-300" />
+            <h2 className="text-xl font-semibold">Build the Playlist</h2>
           </div>
+          <p>Suggest songs and collaborate on the perfect setlist</p>
+        </div>
+        
+        <div className="bg-purple-800 bg-opacity-30 p-6 rounded-lg">
+          <div className="flex items-center mb-4">
+            <ThumbsUp className="w-8 h-8 mr-3 text-purple-300" />
+            <h2 className="text-xl font-semibold">Vote Together</h2>
+          </div>
+          <p>Choose the next song and keep the music flowing</p>
+        </div>
+        
+        <div className="bg-purple-800 bg-opacity-30 p-6 rounded-lg">
+          <div className="flex items-center mb-4">
+            <Users className="w-8 h-8 mr-3 text-purple-300" />
+            <h2 className="text-xl font-semibold">Rock Out</h2>
+          </div>
+          <p>Turn your living room into an instant concert venue</p>
         </div>
       </div>
-    </>
+    </div>
   );
 }
