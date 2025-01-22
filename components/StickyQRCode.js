@@ -4,9 +4,11 @@ import QRCode from './QRCode';
 import { Button } from './ui/button';
 import { getJamUrl } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+
 export default function StickyQRCode({ jamSlug }) {
   const [isVisible, setIsVisible] = useState(false);
   const [size, setSize] = useState(150);
+  const [showToolbar, setShowToolbar] = useState(false);
   const jamUrl = getJamUrl(jamSlug);
   const displayUrl = jamUrl.replace(/^https?:\/\//, '');
 
@@ -34,10 +36,17 @@ export default function StickyQRCode({ jamSlug }) {
     }
   };
 
+  const handleTouchStart = () => {
+    setShowToolbar(true);
+  };
+
   return (
     <div className="fixed bottom-4 right-4 z-50">
       {isVisible ? (
-        <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col items-center space-y-2">
+        <div 
+          className="bg-white rounded-lg shadow-lg p-4 flex flex-col items-center space-y-2 group relative"
+          onTouchStart={handleTouchStart}
+        >
           <p className={cn(`${QR_SIZES[currentSizeKey].title} tracking-wide text-primary rotate-[-2deg] font-extrabold`)}>
             Scan to vote!
           </p>
@@ -45,7 +54,11 @@ export default function StickyQRCode({ jamSlug }) {
           <p className={`font-mono ${QR_SIZES[currentSizeKey].url} text-muted-foreground break-all text-center max-w-[200px]`}>
             {displayUrl}
           </p>
-          <div className="flex gap-2 justify-end w-full">
+          <div className={cn(
+            "absolute bottom-2 right-2 flex gap-2 transition-opacity duration-200 bg-foreground px-2 py-1 rounded-md",
+            "opacity-0 group-hover:opacity-100",
+            showToolbar && "opacity-100"
+          )}>
             <Button
               onClick={decreaseSize}
               disabled={currentSizeIndex === 0}
@@ -65,7 +78,10 @@ export default function StickyQRCode({ jamSlug }) {
               <MagnifyingGlassPlusIcon className="h-4 w-4" />
             </Button>
             <Button
-              onClick={() => setIsVisible(false)}
+              onClick={() => {
+                setIsVisible(false);
+                setShowToolbar(false);
+              }}
               variant="outline"
               size="icon"
               className="h-8 w-8 hover:bg-secondary/80"
