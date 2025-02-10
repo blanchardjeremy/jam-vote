@@ -47,7 +47,7 @@ export default function StickyQRCode({ jamSlug }) {
           className="bg-white rounded-lg shadow-lg p-4 flex flex-col items-center space-y-2 group relative"
           onTouchStart={handleTouchStart}
         >
-          <p className={cn(`${QR_SIZES[currentSizeKey].title} tracking-wide text-primary rotate-[-2deg] font-extrabold`)}>
+          <p className={cn(`${QR_SIZES[currentSizeKey].title} tracking-wide text-primary font-extrabold`)}>
             Scan to vote!
           </p>
           <QRCode url={jamUrl} size={size} />
@@ -55,7 +55,7 @@ export default function StickyQRCode({ jamSlug }) {
             {displayUrl}
           </p>
           <div className={cn(
-            "absolute bottom-2 right-2 flex gap-2 transition-opacity duration-200 bg-foreground px-2 py-1 rounded-md",
+            "absolute bottom-2 right-2 flex gap-2 transition-opacity duration-200 bg-muted/50 backdrop-blur-md px-2 py-1 rounded-md",
             "opacity-0 group-hover:opacity-100",
             showToolbar && "opacity-100"
           )}>
