@@ -38,6 +38,13 @@ export default function SongFormModal({
 
   const debouncedTitle = useDebounce(form.watch('title'), 300);
 
+  // Update form when initialTitle changes
+  useEffect(() => {
+    if (mode === 'add' && initialTitle) {
+      form.setValue('title', initialTitle);
+    }
+  }, [initialTitle, mode, form]);
+
   useEffect(() => {
     // Only search in add mode and when modal is open
     if (mode !== 'add' || !isOpen) {
