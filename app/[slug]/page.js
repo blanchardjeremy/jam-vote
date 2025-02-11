@@ -174,7 +174,7 @@ export default function JamPage() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         initialTitle={newSongTitle}
-        onAdd={handleAddSong}
+        onSubmit={handleAddSong}
         jamId={jam._id}
       />
 

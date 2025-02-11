@@ -14,15 +14,18 @@ const SongAutocomplete = forwardRef(({
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchComplete, setSearchComplete] = useState(false);
 
   useEffect(() => {
     const searchSongs = async () => {
       if (!query.trim()) {
         setResults([]);
+        setSearchComplete(false);
         return;
       }
 
       setIsLoading(true);
+      setSearchComplete(false);
       try {
         const res = await fetch(`/api/songs/search?q=${encodeURIComponent(query)}`);
         if (!res.ok) throw new Error('Search failed');
@@ -47,8 +50,10 @@ const SongAutocomplete = forwardRef(({
           };
         });
         setResults(options);
+        setSearchComplete(true);
       } catch (error) {
         console.error('Search error:', error);
+        setSearchComplete(true);
       } finally {
         setIsLoading(false);
       }
@@ -109,20 +114,19 @@ const SongAutocomplete = forwardRef(({
   };
 
   // Combine search results with "Add new" option
-  const allOptions = query.trim() && !isLoading && results.length > 0
-    ? [
-        ...(Array.isArray(results) ? results : []), 
-        { 
-          value: 'add-new',
-          label: `Add "${query}" as a new song`,
-          isAddNew: true,
-          query: query,
-          title: query,
-          artist: '',
-          type: 'banger',
-          _id: 'add-new'
-        }
-      ]
+  const addNewOption = {
+    value: 'add-new',
+    label: `Add "${query}" as a new song`,
+    isAddNew: true,
+    query: query,
+    title: query,
+    artist: '',
+    type: 'banger',
+    _id: 'add-new'
+  };
+
+  const allOptions = query.trim() && !isLoading && searchComplete
+    ? [...(Array.isArray(results) ? results : []), addNewOption]
     : Array.isArray(results) ? results : [];
 
   return (
