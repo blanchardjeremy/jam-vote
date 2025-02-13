@@ -84,8 +84,9 @@ export default function SongFormModal({
 
   const handleSongSelect = (song) => {
     if (mode === 'add') {
-      // Pass the full song data to onClose for handling in the parent
-      onClose(song);
+      // Pass the full song data to onSubmit for handling in the parent
+      onSubmit?.(song);
+      onClose();
       return;
     }
     
@@ -101,6 +102,8 @@ export default function SongFormModal({
 
   const handleSubmit = async (formData) => {
     try {
+      console.log('[Debug] Creating/updating song with data:', formData);
+      
       // First create/update the song
       const endpoint = mode === 'edit' 
         ? `/api/songs/${initialData._id || initialData.song?._id}` 
@@ -123,31 +126,14 @@ export default function SongFormModal({
       }
       
       const song = await response.json();
+      console.log('[Debug] Song created/updated:', song);
 
-      // If we're adding a new song and have a jamId, add it to the jam
-      if (mode === 'add' && jamId) {
-        const jamResponse = await fetch(`/api/jams/${jamId}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ songId: song._id })
-        });
-
-        if (!jamResponse.ok) {
-          const error = await jamResponse.json();
-          throw new Error(error.error || 'Failed to add song to jam');
-        }
-
-        const updatedJam = await jamResponse.json();
-        onSubmit?.(updatedJam);
-      } else {
-        onSubmit?.(song);
-      }
-      
+      // Pass the song to onSubmit for handling in the parent
+      onSubmit?.(song);
       onClose();
     } catch (error) {
       console.error(`Error ${mode}ing song:`, error);
+      throw error; // Re-throw to be handled by parent
     }
   };
 

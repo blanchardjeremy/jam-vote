@@ -36,13 +36,29 @@ export async function GET(request, context) {
 export async function PATCH(request, context) {
   try {
     await connectDB();
-    const { songId } = await request.json();
+    const body = await request.json();
+    console.log('[Debug PATCH] Request body:', body);
+    const { songId } = body;
+    console.log('[Debug PATCH] Extracted songId:', songId);
+    
     const params = await context.params;
     const jamId = params.id;
+    console.log('[Debug PATCH] Context params:', { jamId });
 
     const jam = await Jam.findById(jamId).populate('songs.song');
     if (!jam) {
       return NextResponse.json({ error: 'Jam not found' }, { status: 404 });
+    }
+    console.log('[Debug PATCH] Found jam:', { 
+      jamId: jam._id, 
+      songCount: jam.songs.length,
+      songs: jam.songs.map(s => ({ id: s.song._id, order: s.order }))
+    });
+
+    // Validate songId
+    if (!songId) {
+      console.log('[Debug PATCH] Invalid songId:', songId);
+      return NextResponse.json({ error: 'Invalid songId provided' }, { status: 400 });
     }
 
     // Check if song already exists in the jam
@@ -57,9 +73,11 @@ export async function PATCH(request, context) {
 
     // Add the song to the jam with the next order number
     const nextOrder = jam.songs.length > 0 
-      ? Math.max(...jam.songs.map(s => s.order)) + 1 
+      ? Math.max(...jam.songs.map(s => s.order || 0)) + 1 
       : 1;
-    jam.songs.push({ song: songId, votes: 1, order: nextOrder });
+    console.log('[Debug PATCH] Calculated nextOrder:', nextOrder);
+    
+    jam.songs.push({ song: songId, votes: 0, order: nextOrder });
     await jam.save();
 
     // Re-fetch to get the populated song data
@@ -69,12 +87,6 @@ export async function PATCH(request, context) {
     // Broadcast the song addition using Pusher
     await pusherServer.trigger(`jam-${jamId}`, 'song-added', {
       song: addedSong
-    });
-
-    // Also broadcast the initial vote
-    await pusherServer.trigger(`jam-${jamId}`, 'vote', {
-      songId: addedSong._id,
-      votes: 1
     });
 
     // Return the jam and the added song's ID for localStorage

@@ -22,6 +22,15 @@ export async function POST(request, context) {
       );
     }
 
+    // Validate that none of the songIds are null/undefined
+    if (songIds.some(id => !id)) {
+      console.log('[Songs API] Invalid request: songIds cannot be null or undefined');
+      return NextResponse.json(
+        { error: 'Invalid request: songIds cannot be null or undefined' },
+        { status: 400 }
+      );
+    }
+
     // Get the jam and populate existing songs
     const jam = await Jam.findById(jamId).populate('songs.song');
     if (!jam) {
@@ -50,10 +59,16 @@ export async function POST(request, context) {
     // Get full song data for new songs
     const newSongDocs = await Song.find({ _id: { $in: newSongIds } });
     
-    // Create song entries with song references
-    const newSongs = newSongDocs.map(songDoc => ({
+    // Calculate the next order number
+    const nextOrder = jam.songs.length > 0 
+      ? Math.max(...jam.songs.map(s => s.order || 0)) + 1 
+      : 1;
+
+    // Create song entries with song references and sequential order numbers
+    const newSongs = newSongDocs.map((songDoc, index) => ({
       song: songDoc._id,
       votes: 0,
+      order: nextOrder + index,
       played: false,
       playedAt: null
     }));
