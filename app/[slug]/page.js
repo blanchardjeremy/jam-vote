@@ -60,6 +60,23 @@ export default function JamPage() {
     clearHighlightAfterDelay
   });
 
+  // Helper function to render song list with common props
+  const renderSongList = ({ songs, hideTypeBadge = false, emptyMessage = "No songs yet - add some tunes!", type }) => (
+    <JamSongList 
+      songs={songs}
+      nextSongId={getGroupedSongs(jam.songs, groupingEnabled).nextSongId}
+      onVote={handleVote}
+      onRemove={setSongToDelete}
+      onTogglePlayed={handleTogglePlayed}
+      onEdit={handleEdit}
+      hideTypeBadge={hideTypeBadge}
+      emptyMessage={emptyMessage}
+      groupingEnabled={groupingEnabled}
+      lastAddedSongId={lastAddedSongId}
+      type={type}
+    />
+  );
+
   if (error) {
     return (
       <div className="rounded-md bg-red-50 p-4 mb-6">
@@ -78,6 +95,8 @@ export default function JamPage() {
   if (isLoading || !jam) {
     return <LoadingBlock />;
   }
+
+  const groupedSongs = getGroupedSongs(jam.songs, groupingEnabled);
 
   return (
     <JamProvider initialJam={jam} setJam={setJam}>
@@ -110,19 +129,11 @@ export default function JamPage() {
                   </h3>
                 </div>
                 <ul className="divide-y divide-gray-200">
-                  <JamSongList 
-                    songs={getGroupedSongs(jam.songs, groupingEnabled).bangers}
-                    nextSongId={getGroupedSongs(jam.songs, groupingEnabled).nextSongId}
-                    onVote={handleVote}
-                    onRemove={setSongToDelete}
-                    onTogglePlayed={handleTogglePlayed}
-                    onEdit={handleEdit}
-                    hideTypeBadge={true}
-                    emptyMessage="No bangers yet - vote up your favorites!"
-                    groupingEnabled={groupingEnabled}
-                    lastAddedSongId={lastAddedSongId}
-                    type="banger"
-                  />
+                  {renderSongList({
+                    songs: groupedSongs.bangers,
+                    hideTypeBadge: true,
+                    type: "banger"
+                  })}
                 </ul>
               </div>
               
@@ -134,37 +145,21 @@ export default function JamPage() {
                   </h3>
                 </div>
                 <ul className="divide-y divide-gray-200">
-                  <JamSongList 
-                    songs={getGroupedSongs(jam.songs, groupingEnabled).ballads}
-                    nextSongId={getGroupedSongs(jam.songs, groupingEnabled).nextSongId}
-                    onVote={handleVote}
-                    onRemove={setSongToDelete}
-                    onTogglePlayed={handleTogglePlayed}
-                    onEdit={handleEdit}
-                    hideTypeBadge={true}
-                    emptyMessage="No ballads yet - add some chill tunes!"
-                    groupingEnabled={groupingEnabled}
-                    lastAddedSongId={lastAddedSongId}
-                    type="ballad"
-                  />
+                  {renderSongList({
+                    songs: groupedSongs.ballads,
+                    hideTypeBadge: true,
+                    type: "ballad"
+                  })}
                 </ul>
               </div>
             </>
           ) : (
             <ul className="divide-y divide-gray-200">
-              <JamSongList 
-                songs={getGroupedSongs(jam.songs, groupingEnabled).ungrouped}
-                nextSongId={getGroupedSongs(jam.songs, groupingEnabled).nextSongId}
-                onVote={handleVote}
-                onRemove={setSongToDelete}
-                onTogglePlayed={handleTogglePlayed}
-                onEdit={handleEdit}
-                hideTypeBadge={false}
-                emptyMessage="No songs yet - add some tunes!"
-                groupingEnabled={groupingEnabled}
-                lastAddedSongId={lastAddedSongId}
-                type="all"
-              />
+              {renderSongList({
+                songs: groupedSongs.ungrouped,
+                hideTypeBadge: false,
+                type: "all"
+              })}
             </ul>
           )}
         </div>
