@@ -12,7 +12,8 @@ export default function JamSongList({
   emptyMessage, 
   groupingEnabled, 
   lastAddedSongId,
-  type
+  type,
+  hostMode = false
 }) {
   // Add ref for the newly added song
   const lastAddedRef = useRef(null);
@@ -54,6 +55,7 @@ export default function JamSongList({
           hideType={hideTypeBadge}
           groupingEnabled={groupingEnabled}
           highlight={willHighlight}
+          hostMode={hostMode}
         />
       </li>
     );

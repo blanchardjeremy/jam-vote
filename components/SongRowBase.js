@@ -25,7 +25,7 @@ const BaseSongRow = forwardRef(({
     <TooltipProvider delayDuration={200}>
       <div 
         className={cn(
-          "border-2 border-transparent px-2 py-1 md:px-4 md:py-2",
+          "border-2 border-transparent px-2 py-1 md:px-4 md:py-3",
           isNext && "border-primary/70 bg-primary/5",
           isSelected && "bg-primary/5",
           "hover:bg-accent/50",

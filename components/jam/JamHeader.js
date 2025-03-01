@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useJam } from '@/components/JamContext';
 
-export default function JamHeader({ onDeleteClick }) {
+export default function JamHeader({ onDeleteClick, hostMode, setHostMode }) {
   const { jam } = useJam();
 
   return (
@@ -28,26 +28,34 @@ export default function JamHeader({ onDeleteClick }) {
             </p>
           </div>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Open jam options"
-            >
-              <MoreVertical className="h-5 w-5 text-gray-500" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={onDeleteClick}
-            >
-              <TrashIcon className="h-4 w-4 mr-2" />
-              Delete Jam
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant={hostMode ? "default" : "outline"}
+            onClick={() => setHostMode(!hostMode)}
+          >
+             {hostMode ? 'Disable' : 'Enable'} Host Tools
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Open jam options"
+              >
+                <MoreVertical className="h-5 w-5 text-gray-500" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={onDeleteClick}
+              >
+                <TrashIcon className="h-4 w-4 mr-2" />
+                Delete Jam
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </div>
   );

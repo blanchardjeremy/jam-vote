@@ -18,7 +18,8 @@ export default function SongRowButtonToolbar({
   jamSong,
   handleTogglePlayed,
   setIsEditModalOpen,
-  onRemove
+  onRemove,
+  hostMode = false
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const touchStartPos = useRef(null);
@@ -45,16 +46,18 @@ export default function SongRowButtonToolbar({
       <div className="flex items-center gap-1">
         <SongChordsButton song={song} />
         <CaptainSignupButton jamSong={jamSong} />
-        <SongRowButton
-          icon={jamSong.played ? CheckCircleSolid : CheckCircleIcon}
-          onClick={handleTogglePlayed}
-          variant="success"
-          tooltip={jamSong.played ? 'Mark as not played' : 'Mark as played'}
-          className={jamSong.played 
-            ? 'text-success hover:text-success hover:bg-success-muted' 
-            : 'hover:text-success hover:bg-success-muted'
-          }
-        />
+        {hostMode && (
+          <SongRowButton
+            icon={jamSong.played ? CheckCircleSolid : CheckCircleIcon}
+            onClick={handleTogglePlayed}
+            variant="success"
+            tooltip={jamSong.played ? 'Mark as not played' : 'Mark as played'}
+            className={jamSong.played 
+              ? 'text-success hover:text-success hover:bg-success-muted' 
+              : 'hover:text-success hover:bg-success-muted'
+            }
+          />
+        )}
 
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
           <DropdownMenuTrigger asChild>
