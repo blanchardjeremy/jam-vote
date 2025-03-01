@@ -15,9 +15,11 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import PageTitle from '@/components/ui/page-title';
 import { JamProvider } from '@/components/JamContext';
 import StickyQRCode from "@/components/StickyQRCode";
+import { useState } from 'react';
 
 export default function JamPage() {
   const params = useParams();
+  const [hostMode, setHostMode] = useState(false);
   const {
     jam,
     setJam,
@@ -74,6 +76,7 @@ export default function JamPage() {
       groupingEnabled={groupingEnabled}
       lastAddedSongId={lastAddedSongId}
       type={type}
+      hostMode={hostMode}
     />
   );
 
@@ -104,6 +107,8 @@ export default function JamPage() {
       
       <JamHeader 
         onDeleteClick={() => setShowDeleteDialog(true)} 
+        hostMode={hostMode}
+        setHostMode={setHostMode}
       />
 
       <JamToolbar 

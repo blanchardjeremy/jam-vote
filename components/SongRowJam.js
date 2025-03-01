@@ -14,7 +14,8 @@ export default function SongRow({
   onEdit, 
   isNext, 
   hideType,
-  highlight 
+  highlight,
+  hostMode
 }) {
   const { song } = jamSong;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -44,6 +45,7 @@ export default function SongRow({
             handleTogglePlayed={handleTogglePlayed}
             setIsEditModalOpen={setIsEditModalOpen}
             onRemove={onRemove}
+            hostMode={hostMode}
           />
         }
         additionalInfo={
