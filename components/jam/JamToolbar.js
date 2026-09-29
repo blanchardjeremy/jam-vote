@@ -17,8 +17,8 @@ export default function JamToolbar({
   setGroupingEnabled 
 }) {
   return (
-    <div className="sticky top-0 z-10 mb-4 flex items-center justify-between bg-white shadow-sm rounded-lg p-3 border border-gray-200">
-      <div className="flex-1 max-w-xl">
+    <div className="sticky top-0 z-10 mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4 bg-white shadow-sm rounded-lg p-2 sm:p-3 border border-gray-200">
+      <div className="w-full sm:flex-1 sm:max-w-xl">
         <SongAutocomplete 
           ref={songAutocompleteRef}
           onSelect={handleSelectExisting} 
@@ -29,7 +29,7 @@ export default function JamToolbar({
       </div>
 
       {currentSongs?.length > 0 && (
-        <div className="flex items-center space-x-4 ml-4">
+        <div className="flex items-center justify-end">
 
           <Select value={groupingEnabled ? 'type' : 'none'} onValueChange={(value) => setGroupingEnabled(value === 'type')}>
             <SelectTrigger className="w-auto border-none text-gray-500 focus:text-gray-900 text-sm focus:ring-0">

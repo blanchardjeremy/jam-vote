@@ -32,7 +32,7 @@ export function SongResults({
             <div
               key={song._id}
               className={cn(
-                "flex items-center justify-between px-3 py-2 text-sm",
+                "flex items-center justify-between gap-3 rounded-sm px-3 py-3 sm:py-2 text-sm",
                 isHighlightable && !song.disabled && [
                   "cursor-pointer hover:bg-accent hover:text-accent-foreground",
                   "transition-colors duration-100"
@@ -45,7 +45,7 @@ export function SongResults({
                 }
               }}
             >
-              <div>
+              <div className="min-w-0">
                 <span className="font-medium">{song.title}</span>
                 <span className="ml-2 text-muted-foreground">{song.artist}</span>
                 {song.disabled && (
@@ -56,7 +56,7 @@ export function SongResults({
               </div>
               <span
                 className={cn(
-                  "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
+                  "shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
                   song.type === 'banger'
                     ? 'bg-banger text-banger-foreground'
                     : 'bg-jam text-jam-foreground'

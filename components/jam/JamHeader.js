@@ -13,9 +13,9 @@ export default function JamHeader({ onDeleteClick, hostMode, setHostMode }) {
   const { jam } = useJam();
 
   return (
-    <div className="mb-8">
-      <div className="flex justify-between items-center">
-        <div>
+    <div className="mb-6 sm:mb-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-900">{jam.name}</h1>
           <div className="flex items-center gap-2">
             <p className="text-gray-600">
@@ -28,7 +28,7 @@ export default function JamHeader({ onDeleteClick, hostMode, setHostMode }) {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <Button 
             variant={hostMode ? "default" : "outline"}
             onClick={() => setHostMode(!hostMode)}
