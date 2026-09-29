@@ -71,20 +71,25 @@ const SORT_OPTIONS = [
 
 function FilterBar({ filters, onChange }) {
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-wrap gap-2 sm:gap-3 w-full">
 
-      <SearchInput
-        placeholder="Search songs..."
-        value={filters.query}
-        onChange={(e) => onChange({ ...filters, query: e.target.value })}
-        className="w-full sm:w-auto flex-1"
-      />
+      <div className="w-full sm:w-auto sm:flex-1">
+        <SearchInput
+          type="search"
+          enterKeyHint="search"
+          autoComplete="off"
+          placeholder="Search songs..."
+          value={filters.query}
+          onChange={(e) => onChange({ ...filters, query: e.target.value })}
+          className="w-full [&::-webkit-search-cancel-button]:hidden"
+        />
+      </div>
 
       <Select 
         value={filters.type} 
         onValueChange={(value) => onChange({ ...filters, type: value })}
       >
-        <SelectTrigger className="w-[140px]">
+        <SelectTrigger className="flex-1 sm:flex-none sm:w-[140px]">
           <SelectValue placeholder="Filter by type" />
         </SelectTrigger>
         <SelectContent>
@@ -100,7 +105,7 @@ function FilterBar({ filters, onChange }) {
         value={filters.sort} 
         onValueChange={(value) => onChange({ ...filters, sort: value })}
       >
-        <SelectTrigger className="w-[200px]">
+        <SelectTrigger className="flex-[2] sm:flex-none sm:w-[200px]">
           <SelectValue>
             {(() => {
               const selectedOption = SORT_OPTIONS.find(opt => opt.value === filters.sort);
@@ -177,7 +182,7 @@ function SongsToolbar({
           </div>
 
           {/* Right group - action buttons and filter */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             <FilterBar
               filters={filters}
               onChange={onFiltersChange}
@@ -424,17 +429,17 @@ export default function SongsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto sm:px-4 sm:py-8">
       <PageTitle title="Song Library" />
-      <div className="mb-8">
-        <div className="flex justify-between items-center">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">All Songs</h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-600 mt-1 sm:mt-2">
               {songs.length} songs in the library
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <CreateSongButton 
               onSongCreated={loadSongs} 
               variant="outline" 
@@ -505,8 +510,8 @@ export default function SongsPage() {
         
         {/* Bottom create button */}
         {filteredSongs.length > 0 && (
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-center">
-            <span className="text-sm text-gray-500 mr-4">
+          <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+            <span className="text-sm text-gray-500">
               Can't find the song you're looking for?
             </span>
             <CreateSongButton 

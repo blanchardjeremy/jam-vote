@@ -66,27 +66,27 @@ const SongAutocomplete = forwardRef(({
   const renderOption = (option, isSelected) => {
     if (option.isAddNew) {
       return (
-        <div className="flex items-center text-indigo-600">
+        <div className="flex items-center text-indigo-600 font-medium">
           <PlusIcon className="h-5 w-5 mr-2 flex-shrink-0" aria-hidden="true" />
-          <span>Add "{option.query}" as a new song</span>
+          <span className="min-w-0 break-words">Add "{option.query}" as a new song</span>
         </div>
       );
     }
 
     return (
-      <div className="flex items-center justify-between w-full">
-        <div>
-          <span className="font-medium text-base">{option.title}</span>
-          <span className="ml-2 text-gray-500 text-base">{option.artist}</span>
+      <div className="flex items-center justify-between gap-3 w-full min-w-0">
+        <div className="min-w-0">
+          <div className="font-medium text-base leading-snug">{option.title}</div>
+          <div className="text-sm text-gray-500 leading-snug">{option.artist}</div>
           {option.isDuplicate && (
-            <div className="ml-2 inline-flex items-center gap-1">
+            <div className="mt-0.5 inline-flex items-center gap-1">
               <XCircle className="h-3.5 w-3.5 flex-shrink-0 text-gray-500" />
               <span className="text-sm text-gray-700 font-medium">Already added</span>
             </div>
           )}
         </div>
         <span
-          className={`inline-flex items-center px-2 py-0.5 rounded-full text-sm font-medium ${
+          className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
             option.type === 'banger'
               ? 'bg-orange-100 text-orange-800'
               : 'bg-blue-100 text-blue-800'
@@ -156,9 +156,6 @@ const SongAutocomplete = forwardRef(({
         inputClassName="h-12 border-primary border"
         disabledText="Already added"
         maxWidth={maxWidth}
-        position="auto"
-        align="start"
-        side="top"
       />
     </div>
   );

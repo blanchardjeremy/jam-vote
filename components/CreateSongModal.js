@@ -32,18 +32,24 @@ export default function SongFormModal({
       title: mode === 'add' ? initialTitle || '' : initialData.title || '',
       artist: initialData.artist || '',
       type: initialData.type || 'banger',
-      chordChart: initialData.chordChart || initialData.chordChart || ''
+      chordChart: initialData.chordChart || ''
     }
   });
 
   const debouncedTitle = useDebounce(form.watch('title'), 300);
 
-  // Update form when initialTitle changes
+  // Start from a clean form every time the modal opens, so values from the
+  // previously added song don't carry over
   useEffect(() => {
-    if (mode === 'add' && initialTitle) {
-      form.setValue('title', initialTitle);
-    }
-  }, [initialTitle, mode, form]);
+    if (!isOpen) return;
+    form.reset({
+      title: mode === 'add' ? initialTitle || '' : initialData.title || '',
+      artist: initialData.artist || '',
+      type: initialData.type || 'banger',
+      chordChart: initialData.chordChart || ''
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   useEffect(() => {
     // Only search in add mode and when modal is open
@@ -170,6 +176,9 @@ export default function SongFormModal({
                     <FormControl>
                       <Input 
                         {...field} 
+                        autoComplete="off"
+                        autoCapitalize="words"
+                        enterKeyHint="next"
                       />
                     </FormControl>
                     <FormMessage />
@@ -183,7 +192,7 @@ export default function SongFormModal({
                         className="w-full bg-muted/40 text-muted-foreground shadow-sm rounded-b-lg border border-t-0 !mt-0"
                         header={
                           <div className="py-2 px-3 text-sm font-bold text-red-700">
-                            This song might already exist! Please click below to choose it!
+                            This song might already exist! Tap one below to use it instead.
                           </div>
                         }
                       />
@@ -202,7 +211,7 @@ export default function SongFormModal({
                   <FormItem>
                     <FormLabel>Artist</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} autoComplete="off" autoCapitalize="words" enterKeyHint="next" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -216,26 +225,22 @@ export default function SongFormModal({
                 name="type"
                 rules={{ required: "Type is required" }}
                 render={({ field }) => (
-                  <FormItem className="space-y-3">
+                  <FormItem className="space-y-2">
                     <FormLabel>Type</FormLabel>
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="flex flex-col space-y-1"
+                        value={field.value}
+                        className="flex gap-6"
                       >
-                        <div className="flex items-center space-x-2">
+                        <label htmlFor="banger" className="flex items-center gap-2 py-1 text-sm font-medium leading-none cursor-pointer">
                           <RadioGroupItem value="banger" id="banger" />
-                          <label htmlFor="banger" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            Banger
-                          </label>
-                        </div>
-                        <div className="flex items-center space-x-2">
+                          Banger
+                        </label>
+                        <label htmlFor="ballad" className="flex items-center gap-2 py-1 text-sm font-medium leading-none cursor-pointer">
                           <RadioGroupItem value="ballad" id="ballad" />
-                          <label htmlFor="ballad" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            Ballad
-                          </label>
-                        </div>
+                          Ballad
+                        </label>
                       </RadioGroup>
                     </FormControl>
                     <FormMessage />
@@ -255,6 +260,11 @@ export default function SongFormModal({
                       <FormControl>
                         <Input 
                           type="url" 
+                          inputMode="url"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          autoComplete="off"
+                          enterKeyHint="done"
                           placeholder="https://tabs.ultimate-guitar.com/..." 
                           {...field} 
                         />

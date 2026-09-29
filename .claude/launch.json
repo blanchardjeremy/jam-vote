@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev-localdb",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["MONGODB_URI=mongodb://127.0.0.1:27018/musicluck", "yarn", "dev", "-p", "3005"],
+      "port": 3005
+    }
+  ]
+}

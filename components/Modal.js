@@ -24,13 +24,13 @@ export default function Modal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className={cn(
         // Base styles
-        'w-full overflow-hidden p-6',
+        'overflow-hidden',
         // Width
         `max-w-${maxWidth}`,
         // Height and scroll
-        'max-h-[calc(100vh-4rem)] overflow-y-auto',
+        'overflow-y-auto',
       )}>
-        <DialogHeader className="bg-background pb-4">
+        <DialogHeader className="bg-background pb-2 sm:pb-4 text-left">
           {title && <DialogTitle>{title}</DialogTitle>}
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
