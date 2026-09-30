@@ -98,4 +98,6 @@ const BaseSongRow = forwardRef(({
   );
 });
 
+BaseSongRow.displayName = 'BaseSongRow';
+
 export default BaseSongRow; 

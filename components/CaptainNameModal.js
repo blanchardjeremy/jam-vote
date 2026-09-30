@@ -30,7 +30,7 @@ export default function CaptainNameModal({ isOpen, onClose, onSubmit }) {
           <DialogDescription>
            Song captains welcome! If you know the song well, you can help guide others. 
            We need 1-2 people each for vocals and instruments per song. 
-           Don't worry about being perfect!
+           Don&apos;t worry about being perfect!
 
           </DialogDescription>
         </DialogHeader>
