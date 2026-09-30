@@ -68,7 +68,7 @@ const SongAutocomplete = forwardRef(({
       return (
         <div className="flex items-center text-indigo-600 font-medium">
           <PlusIcon className="h-5 w-5 mr-2 flex-shrink-0" aria-hidden="true" />
-          <span className="min-w-0 break-words">Add "{option.query}" as a new song</span>
+          <span className="min-w-0 break-words">Add &quot;{option.query}&quot; as a new song</span>
         </div>
       );
     }

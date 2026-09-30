@@ -512,7 +512,7 @@ export default function SongsPage() {
         {filteredSongs.length > 0 && (
           <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
             <span className="text-sm text-gray-500">
-              Can't find the song you're looking for?
+              Can&apos;t find the song you&apos;re looking for?
             </span>
             <CreateSongButton 
               label="Create a New Song"

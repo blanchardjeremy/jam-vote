@@ -398,8 +398,8 @@ export default function ImportSongsModal({ isOpen, onClose, onSuccess, allSongs 
                   </ul>
                   <div><strong>Optional columns:</strong></div>
                   <ul className="list-disc list-inside">
-                    <li><code>type</code> - Either 'banger' or 'ballad' (defaults to 'ballad')</li>
-                    <li><code>tags</code> - Comma-separated list of tags (e.g. "rock,guitar,karaoke")</li>
+                    <li><code>type</code> - Either &apos;banger&apos; or &apos;ballad&apos; (defaults to &apos;ballad&apos;)</li>
+                    <li><code>tags</code> - Comma-separated list of tags (e.g. &quot;rock,guitar,karaoke&quot;)</li>
                     <li><code>chordChart</code> - URL to chord sheet/tab (e.g. Ultimate Guitar link)</li>
                   </ul>
                 </div>
