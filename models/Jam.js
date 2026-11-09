@@ -33,6 +33,11 @@ const jamSongSchema = new mongoose.Schema({
     default: 0,
     required: false
   },
+  knows: {
+    type: Number,
+    default: 0,
+    required: false
+  },
   played: {
     type: Boolean,
     default: false,
