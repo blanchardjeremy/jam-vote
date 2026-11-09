@@ -24,8 +24,9 @@ const YOUR_ANSWER = {
 
 // How well the room knows a song: one small bar whose length is how many
 // people answered (scaled to the most-answered song in the jam). From the
-// left: loved it (rose), knows it (indigo), doesn't know it (faint). A check
-// before it means you know it. Hover or tap for the numbers.
+// left: loved it (rose), knows it without a heart (indigo), doesn't know it
+// (slate), then light grey for everyone who hasn't answered. A check before it
+// means you know it. Hover or tap for the numbers.
 export default function KnowBar({ jamSong, maxAnswers, status }) {
   const [open, setOpen] = useState(false);
   const youKnowIt = status === 'know';
@@ -51,11 +52,11 @@ export default function KnowBar({ jamSong, maxAnswers, status }) {
             aria-hidden
             className={cn('h-3.5 w-3.5 text-primary', !youKnowIt && 'invisible')}
           />
-          <span aria-hidden className="flex h-1.5 w-14 overflow-hidden rounded-full bg-gray-200/70">
+          <span aria-hidden className="flex h-1.5 w-20 overflow-hidden rounded-full bg-gray-200/70 sm:h-2 sm:w-36">
             <span className="flex h-full overflow-hidden rounded-full" style={{ width: pct(answered, scale) }}>
               <span className="h-full bg-rose-500" style={{ width: pct(loves, answered) }} />
               <span className="h-full bg-primary" style={{ width: pct(knows - loves, answered) }} />
-              <span className="h-full flex-1 bg-primary/25" />
+              <span className="h-full flex-1 bg-slate-400" />
             </span>
           </span>
         </button>
@@ -78,7 +79,7 @@ export default function KnowBar({ jamSong, maxAnswers, status }) {
             {loves > 0 && <span className="text-gray-500">(incl. loves)</span>}
           </li>
           <li className="flex items-center gap-1.5">
-            <QuestionMarkCircleIcon aria-hidden className="h-3.5 w-3.5 text-primary/40" />
+            <QuestionMarkCircleIcon aria-hidden className="h-3.5 w-3.5 text-slate-400" />
             <span className="font-semibold tabular-nums">{dontKnows}</span> don&apos;t know it
           </li>
         </ul>
