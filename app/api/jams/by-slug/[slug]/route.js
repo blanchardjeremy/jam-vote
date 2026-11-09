@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Jam from '@/models/Jam';
 import Song from '@/models/Song';
 import { ObjectId } from 'mongodb';
+import { compareByVotes } from '@/lib/utils/songOrder';
 
 export async function GET(request, context) {
   try {
@@ -20,7 +21,7 @@ export async function GET(request, context) {
     }
 
     // Sort the songs by votes in descending order
-    jam.songs.sort((a, b) => b.votes - a.votes);
+    jam.songs.sort(compareByVotes);
 
     return NextResponse.json(jam);
   } catch (error) {

@@ -45,6 +45,7 @@ export default function JamPage() {
     handleEdit,
     handleRemove,
     handleVote,
+    handleKnow,
     handleTogglePlayed,
     handleDeleteJam,
     handleSelectExisting,
@@ -68,6 +69,7 @@ export default function JamPage() {
       songs={songs}
       nextSongId={getGroupedSongs(jam.songs, groupingEnabled).nextSongId}
       onVote={handleVote}
+      onKnow={handleKnow}
       onRemove={setSongToDelete}
       onTogglePlayed={handleTogglePlayed}
       onEdit={handleEdit}

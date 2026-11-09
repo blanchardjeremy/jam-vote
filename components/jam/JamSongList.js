@@ -5,6 +5,7 @@ export default function JamSongList({
   songs, 
   nextSongId, 
   onVote, 
+  onKnow,
   onRemove, 
   onTogglePlayed, 
   onEdit, 
@@ -48,6 +49,7 @@ export default function JamSongList({
         <SongRow 
           jamSong={jamSong} 
           onVote={onVote} 
+          onKnow={onKnow}
           onRemove={() => onRemove(jamSong)}
           onTogglePlayed={onTogglePlayed}
           onEdit={onEdit}
