@@ -124,7 +124,11 @@ export default function GuidedPickerPage() {
   const jamLoaded = !!jam;
   useEffect(() => {
     if (!jamLoaded) return;
-    setQueue(buildQueue(jam.songs, typeFilter));
+    // A "Vote" badge in the list links here with ?song=<id> to start on that song
+    const startId = new URLSearchParams(window.location.search).get('song');
+    const queue = buildQueue(jam.songs, typeFilter);
+    const startSong = startId && jam.songs.find((s) => s._id === startId && !s.played);
+    setQueue(startSong ? [startId, ...queue.filter((id) => id !== startId)] : queue);
     setPosition(0);
     setHistory([]);
     setCelebratedAt(0);
