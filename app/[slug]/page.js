@@ -31,7 +31,6 @@ export default function JamPage() {
     isAddModalOpen,
     setIsAddModalOpen,
     groupingEnabled,
-    setGroupingEnabled,
     sortMethod,
     setSortMethod,
     newSongTitle,
@@ -119,8 +118,6 @@ export default function JamPage() {
         handleSelectExisting={handleSelectExisting}
         handleAddNew={handleAddNew}
         currentSongs={jam.songs}
-        groupingEnabled={groupingEnabled}
-        setGroupingEnabled={setGroupingEnabled}
       />
 
       {(!jam.songs || jam.songs.length === 0) ? (
