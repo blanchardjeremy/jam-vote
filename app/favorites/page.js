@@ -29,7 +29,7 @@ function FavoritesContent() {
   const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, song: null });
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { handleEdit, handleDelete } = useSongOperations({
+  const { handleEdit, handleDelete, handleToggleFavorite } = useSongOperations({
     songs,
     setSongs,
     selectedSongs,
@@ -190,6 +190,7 @@ function FavoritesContent() {
                   song={song}
                   onEdit={(s) => setEditModalState({ isOpen: true, song: s })}
                   onDelete={(s) => setDeleteModalState({ isOpen: true, song: s })}
+                  onToggleFavorite={handleToggleFavorite}
                   isSelected={selectedSongs.has(song._id)}
                   onSelectionChange={() => toggleSelection(song._id)}
                   additionalInfo={songIdsInTargetJam.has(song._id) && (
