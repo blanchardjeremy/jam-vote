@@ -363,10 +363,24 @@ export default function GuidedPickerPage() {
     <div className="max-w-xl mx-auto">
       <PageTitle title={`${jam.name} – Guided voting`} />
 
-      <h1 className="mb-2 truncate text-center text-sm font-medium text-gray-500">{jam.name}</h1>
+      {/* Jam name, with Exit in the top right corner */}
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h1 className="min-w-0 truncate text-sm font-medium text-gray-500">{jam.name}</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          asChild
+          className="h-9 shrink-0 gap-1 rounded-full pl-2.5 pr-3.5 text-gray-700"
+        >
+          <Link href={`/${jam.slug}`}>
+            <XMarkIcon className="h-4 w-4" />
+            Exit
+          </Link>
+        </Button>
+      </div>
 
-      {/* Undo on the left, progress in the middle, close on the right. Undo
-          keeps its space when there's nothing to undo so the bar doesn't jump. */}
+      {/* Undo on the left, then progress. Undo keeps its space when there's
+          nothing to undo so the bar doesn't jump. */}
       <div className="mb-4 flex items-center gap-3">
         <Button
           variant="outline"
@@ -394,17 +408,6 @@ export default function GuidedPickerPage() {
           <div className="flex-1" />
         )}
 
-        <Button
-          variant="outline"
-          size="sm"
-          asChild
-          className="h-9 shrink-0 gap-1 rounded-full pl-2.5 pr-3.5 text-gray-700"
-        >
-          <Link href={`/${jam.slug}`}>
-            <XMarkIcon className="h-4 w-4" />
-            Exit
-          </Link>
-        </Button>
       </div>
 
       <ToggleGroup.Root
