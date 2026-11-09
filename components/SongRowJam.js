@@ -3,12 +3,14 @@ import SongFormModal from "@/components/CreateSongModal";
 import { useParams } from 'next/navigation';
 import SongRowButtonToolbar from "@/components/SongRowButtonToolbar";
 import SongVotingButton from "@/components/SongVotingButton";
+import SongKnowButton from "@/components/SongKnowButton";
 import CaptainBadges from "@/components/CaptainBadges";
 import BaseSongRow from "@/components/SongRowBase";
 
 export default function SongRow({ 
   jamSong, 
   onVote, 
+  onKnow,
   onRemove, 
   onTogglePlayed, 
   onEdit, 
@@ -36,7 +38,10 @@ export default function SongRow({
         hideType={hideType}
         className={jamSong.played ? 'bg-gray-200 opacity-50' : ''}
         leftControl={
-          <SongVotingButton jamSong={jamSong} onVote={onVote} />
+          <div className="flex items-start">
+            <SongVotingButton jamSong={jamSong} onVote={onVote} />
+            <SongKnowButton jamSong={jamSong} onKnow={onKnow} />
+          </div>
         }
         rightActions={
           <SongRowButtonToolbar
