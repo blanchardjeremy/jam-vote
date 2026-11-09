@@ -3,7 +3,6 @@ import SongRowButton from "@/components/SongRowButton";
 import { PencilIcon, TrashIcon, StarIcon as StarOutline } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolid } from "@heroicons/react/24/solid";
 import BaseSongRow from "@/components/SongRowBase";
-import HoverActionButtons from "@/components/ui/hover-action-buttons";
 import SongChordsButton from "@/components/SongChordsButton";
 
 function FavoriteStarButton({ song, onToggleFavorite }) {
@@ -31,29 +30,25 @@ function SongRowActions({ song, onEdit, onDelete, onToggleFavorite }) {
     onDelete();
   };
 
+  // All buttons are always visible (same as the jam list), so the star stays
+  // in a fixed spot whether or not the song is a favorite.
   return (
     <div className="flex items-center gap-1 md:gap-2">
       {onToggleFavorite && (
-        // Filled stars always show so favorites stand out; an empty star only
-        // appears on hover (mouse) like the other buttons, or always on touch.
-        <div className={song.favorite ? 'flex' : 'flex [@media(hover:hover)]:opacity-0 group-hover:opacity-100'}>
-          <FavoriteStarButton song={song} onToggleFavorite={onToggleFavorite} />
-        </div>
+        <FavoriteStarButton song={song} onToggleFavorite={onToggleFavorite} />
       )}
-      <HoverActionButtons>
-        <SongChordsButton song={song} />
-        <SongRowButton
-          icon={PencilIcon}
-          onClick={handleEdit}
-          tooltip="Edit song"
-        />
-        <SongRowButton
-          icon={TrashIcon}
-          onClick={handleDelete}
-          tooltip="Delete song"
-          variant="danger"
-        />
-      </HoverActionButtons>
+      <SongChordsButton song={song} />
+      <SongRowButton
+        icon={PencilIcon}
+        onClick={handleEdit}
+        tooltip="Edit song"
+      />
+      <SongRowButton
+        icon={TrashIcon}
+        onClick={handleDelete}
+        tooltip="Delete song"
+        variant="danger"
+      />
     </div>
   );
 }
