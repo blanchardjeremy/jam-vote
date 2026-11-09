@@ -39,7 +39,7 @@ const PianoIcon = (props) => <Piano strokeWidth={1.5} {...props} />;
 const MAIN_ANSWERS = [
   { id: 'love', label: 'I love it', icon: HeartIcon, className: 'text-rose-600 border-rose-200 bg-rose-50/40 hover:bg-rose-50' },
   { id: 'know', label: 'I know it', icon: AcademicCapIcon, className: 'text-primary border-primary/30 bg-primary/[0.03] hover:bg-primary/5' },
-  { id: 'dontKnow', label: "I don't know it", icon: QuestionMarkCircleIcon, className: 'text-gray-600 border-gray-200 hover:bg-gray-50' },
+  { id: 'dontKnow', label: "I'm not sure", icon: QuestionMarkCircleIcon, className: 'text-gray-600 border-gray-200 hover:bg-gray-50' },
 ];
 const CAPTAIN_ANSWERS = [
   { id: 'captain', captainType: 'regular', label: "I'll captain it", icon: UserIcon },
@@ -51,7 +51,6 @@ const ANSWER_ACCENT = {
   love: 'text-rose-500',
   know: 'text-primary',
   dontKnow: 'text-gray-500',
-  unsure: 'text-gray-400',
   captain: 'text-indigo-600',
 };
 
@@ -223,9 +222,6 @@ export default function GuidedPickerPage() {
       storage.set(keys.dontKnow(id), 'true');
       inBackground(handleKnow(id, 'dontknow'));
       advance({ jamSongId: id, answer: 'dontKnow' });
-    } else if (answerId === 'unsure') {
-      storage.set(keys.unsure(id), 'true');
-      advance({ jamSongId: id, answer: 'unsure' });
     } else if (answerId === 'captain') {
       const name = storage.get('userFirstName');
       if (!name) {
@@ -264,8 +260,6 @@ export default function GuidedPickerPage() {
     } else if (last.answer === 'dontKnow') {
       storage.remove(keys.dontKnow(id));
       inBackground(handleKnow(id, 'undontknow'));
-    } else if (last.answer === 'unsure') {
-      storage.remove(keys.unsure(id));
     }
     setHistory((prev) => prev.slice(0, -1));
     setPosition(queue.indexOf(id));
@@ -386,13 +380,6 @@ export default function GuidedPickerPage() {
               ))}
             </div>
 
-            {/* Quieter than the three main answers: moves on without counting either way */}
-            <button
-              onClick={() => answer('unsure')}
-              className="mt-2 w-full rounded-lg py-2.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 active:scale-[0.98]"
-            >
-              Not sure
-            </button>
 
             <div className="mt-2 grid grid-cols-2 gap-2 border-t border-dashed border-gray-200 pt-4">
               {CAPTAIN_ANSWERS.map(({ id, captainType, label, icon: Icon }) => (

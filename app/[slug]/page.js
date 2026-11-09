@@ -15,7 +15,11 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import PageTitle from '@/components/ui/page-title';
 import { JamProvider } from '@/components/JamContext';
 import StickyQRCode from "@/components/StickyQRCode";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useReducer, useRef } from 'react';
+import Link from 'next/link';
+import { XMarkIcon } from '@heroicons/react/20/solid';
+import { buildQueue } from '@/lib/utils/guideQueue';
+import { cn } from '@/lib/utils';
 import FavoriteSuggestions, { pickRandomFavorites } from '@/components/jam/FavoriteSuggestions';
 
 // With "Include favorites" on (⋮ menu), only songs with at least this many
@@ -31,6 +35,12 @@ export default function JamPage() {
   // Collapsed song-type sections, e.g. collapse Bangers to jump straight to Ballads
   const [collapsed, setCollapsed] = useState({ banger: false, ballad: false });
   const toggleSection = (type) => setCollapsed((prev) => ({ ...prev, [type]: !prev[type] }));
+  // Votes live in localStorage, so re-render the page when this device votes
+  // to keep the "Not voted" count and the new songs pill current
+  const [, voteChanged] = useReducer((n) => n + 1, 0);
+  // "Not voted" filter: the songs you hadn't voted on when you turned it on.
+  // They stay listed after you vote so you can see your answers.
+  const [notVotedIds, setNotVotedIds] = useState(null);
   const {
     jam,
     setJam,
@@ -72,6 +82,16 @@ export default function JamPage() {
     sortMethod, 
     clearHighlightAfterDelay
   });
+
+  // Songs added by other people since you opened the page, that you haven't
+  // voted on yet. Songs you add get your heart, so they never count.
+  const seenIdsRef = useRef(null);
+  const [dismissedNewIds, setDismissedNewIds] = useState(() => new Set());
+  useEffect(() => {
+    if (jam?.songs && !seenIdsRef.current) {
+      seenIdsRef.current = new Set(jam.songs.map((s) => s._id));
+    }
+  }, [jam?.songs]);
 
   // "Include favorites": random favorites (not already in the jam) to show under
   // each section. Picked once each time it's turned on, so they don't
@@ -132,6 +152,7 @@ export default function JamPage() {
       lastAddedSongId={lastAddedSongId}
       type={type}
       hostMode={hostMode}
+      onVoteChange={voteChanged}
     />
   );
 
@@ -155,6 +176,21 @@ export default function JamPage() {
   }
 
   const groupedSongs = getGroupedSongs(jam.songs, groupingEnabled);
+  const notVotedQueue = buildQueue(jam.songs);
+  // Songs added since you opened the page. They join the "Not voted" list
+  // and stay there after you vote, like the rest of it.
+  const arrivedIds = seenIdsRef.current
+    ? jam.songs.map((s) => s._id).filter((id) => !seenIdsRef.current.has(id))
+    : [];
+  const forNotVotedView = (songs) =>
+    notVotedIds ? songs.filter((s) => notVotedIds.has(s._id) || arrivedIds.includes(s._id)) : songs;
+  const forView = (songs) => forNotVotedView(forFavoritesView(songs));
+  const notVotedEmptyMessage = "You've voted on every song";
+  const viewEmptyMessage = notVotedIds
+    ? { emptyMessage: notVotedEmptyMessage }
+    : showFavorites && { emptyMessage: favoritesViewEmptyMessage };
+  // The ones you haven't voted on yet get the pill
+  const newSongIds = notVotedQueue.filter((id) => arrivedIds.includes(id) && !dismissedNewIds.has(id));
 
   return (
     <JamProvider initialJam={jam} setJam={setJam}>
@@ -175,6 +211,14 @@ export default function JamPage() {
         currentSongs={jam.songs}
       />
 
+      {jam.songs?.length > 0 && (
+        <ListFilter
+          notVotedCount={notVotedQueue.length}
+          showNotVoted={!!notVotedIds}
+          onChange={(notVoted) => setNotVotedIds(notVoted ? new Set(notVotedQueue) : null)}
+        />
+      )}
+
       {(!jam.songs || jam.songs.length === 0) ? (
         <JamEmptyState />
       ) : (
@@ -193,10 +237,10 @@ export default function JamPage() {
                   <>
                     <ul className="divide-y divide-gray-200">
                       {renderSongList({
-                        songs: forFavoritesView(groupedSongs.bangers),
+                        songs: forView(groupedSongs.bangers),
                         hideTypeBadge: true,
                         type: "banger",
-                        ...(showFavorites && { emptyMessage: favoritesViewEmptyMessage })
+                        ...viewEmptyMessage
                       })}
                     </ul>
                     <FavoriteSuggestions songs={favoriteSuggestions?.banger} hideTypeBadge onSongUpdated={handleSuggestionUpdated} />
@@ -216,10 +260,10 @@ export default function JamPage() {
                   <>
                     <ul className="divide-y divide-gray-200">
                       {renderSongList({
-                        songs: forFavoritesView(groupedSongs.ballads),
+                        songs: forView(groupedSongs.ballads),
                         hideTypeBadge: true,
                         type: "ballad",
-                        ...(showFavorites && { emptyMessage: favoritesViewEmptyMessage })
+                        ...viewEmptyMessage
                       })}
                     </ul>
                     <FavoriteSuggestions songs={favoriteSuggestions?.ballad} hideTypeBadge onSongUpdated={handleSuggestionUpdated} />
@@ -231,16 +275,24 @@ export default function JamPage() {
             <>
               <ul className="divide-y divide-gray-200">
                 {renderSongList({
-                  songs: forFavoritesView(groupedSongs.ungrouped),
+                  songs: forView(groupedSongs.ungrouped),
                   hideTypeBadge: false,
                   type: "all",
-                  ...(showFavorites && { emptyMessage: favoritesViewEmptyMessage })
+                  ...viewEmptyMessage
                 })}
               </ul>
               <FavoriteSuggestions songs={favoriteSuggestions?.any} onSongUpdated={handleSuggestionUpdated} />
             </>
           )}
         </div>
+      )}
+
+      {newSongIds.length > 0 && (
+        <NewSongsPill
+          count={newSongIds.length}
+          href={`/${params.slug}/guide?song=${newSongIds[0]}`}
+          onDismiss={() => setDismissedNewIds((prev) => new Set([...prev, ...newSongIds]))}
+        />
       )}
 
       <CreateSongModal
@@ -315,5 +367,42 @@ function SectionHeader({ icon: Icon, label, collapsed, onToggle }) {
         />
       </button>
     </h3>
+  );
+}
+
+// "All" or just the songs you haven't voted on yet
+function ListFilter({ notVotedCount, showNotVoted, onChange }) {
+  const chip = (active) => cn(
+    'rounded-full border px-3 py-1 text-sm font-medium transition-colors',
+    active
+      ? 'border-primary/40 bg-primary/10 text-primary'
+      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+  );
+  return (
+    <div className="mb-3 flex gap-2" role="group" aria-label="Show songs">
+      <button type="button" aria-pressed={!showNotVoted} className={chip(!showNotVoted)} onClick={() => onChange(false)}>
+        All
+      </button>
+      <button type="button" aria-pressed={showNotVoted} className={chip(showNotVoted)} onClick={() => onChange(true)}>
+        Not voted ({notVotedCount})
+      </button>
+    </div>
+  );
+}
+
+// Shown when other people add songs you haven't voted on yet
+function NewSongsPill({ count, href, onDismiss }) {
+  return (
+    <div className="fixed inset-x-0 bottom-20 z-40 flex justify-center px-4 sm:bottom-6" role="status">
+      <div className="flex items-center gap-1 rounded-full bg-gray-900 py-1.5 pl-4 pr-1.5 text-sm text-white shadow-lg">
+        <span>{count} new {count === 1 ? 'song' : 'songs'} added</span>
+        <Link href={href} className="rounded-full px-2.5 py-1 font-semibold text-indigo-300 hover:bg-white/10">
+          Vote
+        </Link>
+        <button type="button" onClick={onDismiss} aria-label="Dismiss" className="rounded-full p-1 text-gray-400 hover:bg-white/10 hover:text-white">
+          <XMarkIcon aria-hidden className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
   );
 }
