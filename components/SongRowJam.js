@@ -69,14 +69,12 @@ export default function SongRow({
         additionalInfo={
           <>
             <CaptainBadges jamSong={jamSong} isNext={isNext} />
-            {/* Hosts see how the whole room answered; everyone sees their own vote on the left */}
-            {hostMode && (
-              <KnowBar
-                jamSong={jamSong}
-                maxAnswers={maxAnswers}
-                status={vote === 'love' ? 'know' : vote}
-              />
-            )}
+            {/* How the whole room voted; your own vote is the button on the left */}
+            <KnowBar
+              jamSong={jamSong}
+              maxAnswers={maxAnswers}
+              status={vote === 'love' ? 'know' : vote}
+            />
           </>
         }
         highlight={highlight}

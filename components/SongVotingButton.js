@@ -77,47 +77,45 @@ const VOTE_LABEL = {
   unanswered: 'not voted yet',
 };
 
-// How the count looks for each of your votes
+// How the button looks for each vote. "Not voted yet" is the only
+// solid one, so the songs you still need to vote on stand out.
 const STYLES = {
-  love: 'bg-rose-100 text-rose-600 hover:bg-rose-200/70',
+  love: 'bg-rose-100 text-rose-500 hover:bg-rose-200/70',
   know: 'text-primary ring-2 ring-inset ring-primary/70 hover:bg-primary/5',
   dontKnow: 'text-gray-500 hover:bg-gray-100',
   unsure: 'text-gray-500 hover:bg-gray-100',
-  unanswered: 'text-primary ring-2 ring-inset ring-primary/70 hover:bg-primary/5',
+  unanswered: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
 };
 
-function VoteMark({ vote, played }) {
-  const iconClass = 'h-3.5 w-3.5 md:h-4 md:w-4';
-  if (vote === 'love') return <HeartIcon aria-hidden className={cn(iconClass, 'text-rose-500')} />;
+function VoteMark({ vote }) {
+  const iconClass = 'h-5 w-5 md:h-6 md:w-6';
+  if (vote === 'love') return <HeartIcon aria-hidden className={iconClass} />;
   if (vote === 'know') return <CheckIcon aria-hidden className={iconClass} />;
   if (vote === 'dontKnow') return <QuestionMarkCircleIcon aria-hidden className={iconClass} />;
   if (vote === 'unsure') return <EllipsisHorizontalIcon aria-hidden className={iconClass} />;
-  if (played) return null;
-  return <span aria-hidden className="text-[10px] font-semibold uppercase leading-none tracking-wide md:text-[11px]">Vote</span>;
+  return <span aria-hidden className="text-[11px] font-semibold uppercase tracking-wide">Vote</span>;
 }
 
-// The song's love count, styled by your own vote. Tapping it opens a small
-// menu to change your vote in place.
+// Your own vote on a song. Tapping it opens a small menu to change your vote
+// in place. How the whole room voted is in the know bar on the right.
 export default function SongVotingButton({ jamSong, vote, onVote, onKnow, onChange }) {
   const [open, setOpen] = useState(false);
   const { played } = jamSong;
   const shown = vote || 'unanswered';
-  const count = jamSong.votes || 0;
-  const label = `${count} love it. Your vote: ${VOTE_LABEL[shown]}.`;
+  const label = `Your vote: ${VOTE_LABEL[shown]}.`;
 
   const box = cn(
-    'flex h-12 w-11 shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg md:h-14 md:w-12',
+    'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg md:h-11 md:w-11',
     // Wait for this device's vote to load so the first render matches the server
     !vote && 'invisible'
   );
-  const number = <span className="text-base font-bold tabular-nums leading-none md:text-lg">{count}</span>;
 
-  // Played songs can't be voted on any more, so show the count without a menu
+  // Played songs can't be voted on any more, so show your vote without a menu
   if (played) {
+    if (shown === 'unanswered') return <div className={box} aria-hidden />;
     return (
-      <div className={cn(box, shown === 'love' ? 'bg-rose-50 text-rose-600' : 'text-gray-500')} aria-label={label} role="img">
-        {number}
-        <VoteMark vote={shown} played />
+      <div className={cn(box, shown === 'love' ? 'bg-rose-50 text-rose-500' : 'text-gray-500')} aria-label={label} role="img">
+        <VoteMark vote={shown} />
       </div>
     );
   }
@@ -143,7 +141,6 @@ export default function SongVotingButton({ jamSong, vote, onVote, onKnow, onChan
             STYLES[shown]
           )}
         >
-          {number}
           <VoteMark vote={shown} />
         </button>
       </PopoverTrigger>
