@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { HeartIcon, CheckIcon, QuestionMarkCircleIcon } from '@heroicons/react/20/solid';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
 
 // The counts behind a song's know bar. Every heart also counts as a know, so
 // `loves` is always a subset of `knows`, even for hearts given before knows
@@ -25,8 +24,8 @@ const YOUR_ANSWER = {
 // How well the room knows a song: one small bar whose length is how many
 // people answered (scaled to the most-answered song in the jam). From the
 // left: loved it (rose), knows it without a heart (indigo), doesn't know it
-// (slate), then light grey for everyone who hasn't answered. A check before it
-// means you know it. Hover or tap for the numbers.
+// (slate), then light grey for everyone who hasn't answered. Hover or tap for
+// the numbers.
 export default function KnowBar({ jamSong, maxAnswers, status }) {
   const [open, setOpen] = useState(false);
   const youKnowIt = status === 'know';
@@ -46,12 +45,8 @@ export default function KnowBar({ jamSong, maxAnswers, status }) {
           onPointerEnter={(e) => e.pointerType === 'mouse' && setOpen(true)}
           onPointerLeave={(e) => e.pointerType === 'mouse' && setOpen(false)}
           onClick={(e) => e.stopPropagation()}
-          className="-my-1.5 inline-flex items-center gap-1 rounded py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="-my-1.5 inline-flex items-center rounded py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <CheckIcon
-            aria-hidden
-            className={cn('h-3.5 w-3.5 text-primary', !youKnowIt && 'invisible')}
-          />
           <span aria-hidden className="flex h-1.5 w-20 overflow-hidden rounded-full bg-gray-200/70 sm:h-2 sm:w-36">
             <span className="flex h-full overflow-hidden rounded-full" style={{ width: pct(answered, scale) }}>
               <span className="h-full bg-rose-500" style={{ width: pct(loves, answered) }} />
