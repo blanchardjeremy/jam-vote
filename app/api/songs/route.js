@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Song from '@/models/Song';
+import { artworkFields } from '@/lib/songArtwork';
 
 export async function GET() {
   try {
@@ -20,7 +21,10 @@ export async function POST(request) {
   try {
     await connectDB();
     const data = await request.json();
-    const song = await Song.create(data);
+    const artwork = data.artworkUrl
+      ? { artworkCheckedAt: new Date() }
+      : await artworkFields(data.title, data.artist);
+    const song = await Song.create({ ...data, ...artwork });
     return NextResponse.json(song);
   } catch (error) {
     console.error('Error in POST /api/songs:', error);

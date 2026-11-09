@@ -12,6 +12,7 @@ import {
   XMarkIcon,
   ListBulletIcon,
   CheckCircleIcon,
+  MusicalNoteIcon,
 } from '@heroicons/react/24/outline';
 import { Piano } from 'lucide-react';
 import { useJamPage } from '@/lib/hooks/useJamPage';
@@ -188,6 +189,17 @@ export default function GuidedPickerPage() {
   const behindCount = queue && currentSong
     ? Math.min(BEHIND.length, queue.slice(currentIndex + 1).filter(isAvailable).length)
     : 0;
+
+  // Start loading the next songs' album art so it's there when their card is
+  const upcomingArt = queue
+    ? queue.slice(currentIndex + 1).filter(isAvailable).slice(0, PRELOAD_ART)
+        .map((id) => songsById[id]?.song?.artworkUrl).filter(Boolean).join(' ')
+    : '';
+  useEffect(() => {
+    upcomingArt.split(' ').filter(Boolean).forEach((url) => {
+      new Image().src = url;
+    });
+  }, [upcomingArt]);
 
   // Animate the new top card in (on load too). It stays mounted from song
   // to song (so a focused button keeps focus), which is why this uses the Web
@@ -629,7 +641,10 @@ function useSwipe(onSwipe) {
   };
 }
 
-// One song's card: title, artist, captains and the answer buttons. With
+// How many songs ahead to load album art for
+const PRELOAD_ART = 3;
+
+// One song's card: album art, title, artist, captains and the answer buttons. With
 // `onSwipe` it can be dragged to answer. Without `onAnswer` it's a look-alike
 // copy whose buttons can't be used.
 function SongCard({ ref, song, onAnswer, onSwipe, className, ...props }) {
@@ -652,6 +667,7 @@ function SongCard({ ref, song, onAnswer, onSwipe, className, ...props }) {
           area takes drags in every direction; the button area leaves vertical
           drags to page scrolling. */}
       <div className="relative flex min-h-40 touch-none flex-col items-center justify-center px-5 py-4 text-center">
+        <AlbumArt url={song.song.artworkUrl} />
         <h2
           className={cn(
             'font-bold leading-tight text-gray-900 [overflow-wrap:anywhere]',
@@ -757,6 +773,31 @@ function OutgoingCard({ outgoing, onDone }) {
         if (e.target === e.currentTarget) onDone();
       }}
     />
+  );
+}
+
+// The song's album cover, or a note on a plain square when it has none (or
+// it fails to load), so the title and buttons sit in the same place either
+// way. Keyed by URL so the last song's cover never shows while the next loads.
+function AlbumArt({ url }) {
+  const [failed, setFailed] = useState(null);
+  const showArt = url && failed !== url;
+  return (
+    <div className="mb-3 flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100 shadow-sm ring-1 ring-black/5">
+      {showArt ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={url}
+          src={url}
+          alt=""
+          draggable={false}
+          onError={() => setFailed(url)}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <MusicalNoteIcon aria-hidden className="h-10 w-10 text-gray-300" />
+      )}
+    </div>
   );
 }
 
