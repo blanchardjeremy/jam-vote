@@ -18,10 +18,10 @@ import StickyQRCode from "@/components/StickyQRCode";
 import { useState, useEffect } from 'react';
 import FavoriteSuggestions, { pickRandomFavorites } from '@/components/jam/FavoriteSuggestions';
 
-// With "Include favorites" on (⋮ menu), only songs with at least this many hearts
-// are listed (played songs always stay visible), and a few favorites are
-// suggested under each section.
-const FAVORITES_VIEW_MIN_HEARTS = 6;
+// With "Include favorites" on (⋮ menu), only songs with at least this many
+// hearts OR at least this many "know it" are listed (played songs always stay
+// visible), and a few favorites are suggested under each section.
+const FAVORITES_VIEW_MIN_COUNT = 5;
 const FAVORITE_SUGGESTION_COUNT = 5;
 
 export default function JamPage() {
@@ -94,8 +94,14 @@ export default function JamPage() {
   }, [showFavorites, jamId, allSongs]);
 
   const forFavoritesView = (songs) =>
-    showFavorites ? songs.filter((s) => s.played || s.votes >= FAVORITES_VIEW_MIN_HEARTS) : songs;
-  const favoritesViewEmptyMessage = `No songs with ${FAVORITES_VIEW_MIN_HEARTS}+ hearts yet`;
+    showFavorites
+      ? songs.filter((s) =>
+          s.played ||
+          s.votes >= FAVORITES_VIEW_MIN_COUNT ||
+          (s.knows || 0) >= FAVORITES_VIEW_MIN_COUNT
+        )
+      : songs;
+  const favoritesViewEmptyMessage = `No songs with ${FAVORITES_VIEW_MIN_COUNT}+ hearts or ${FAVORITES_VIEW_MIN_COUNT}+ "know it" yet`;
 
   // Helper function to render song list with common props
   const renderSongList = ({ songs, hideTypeBadge = false, emptyMessage = "No songs yet - add some tunes!", type }) => (
