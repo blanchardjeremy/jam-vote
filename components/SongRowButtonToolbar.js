@@ -22,23 +22,24 @@ export default function SongRowButtonToolbar({
   hostMode = false
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const touchStartPos = useRef(null);
-  
-  const handleTouchStart = (e) => {
-    touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  const tapStart = useRef(null);
+
+  // The menu normally opens on finger-down, so a scroll that starts on the
+  // button would open it. For touch, open only on a tap that didn't move.
+  // A scroll fires pointercancel, so pointerup never arrives for it.
+  const handleTriggerPointerDown = (e) => {
+    if (e.pointerType === 'mouse') return;
+    e.preventDefault();
+    tapStart.current = { x: e.clientX, y: e.clientY };
   };
-  
-  const handleTouchEnd = (e) => {
-    if (!touchStartPos.current) return;
-    
-    const deltaX = Math.abs(e.changedTouches[0].clientX - touchStartPos.current.x);
-    const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartPos.current.y);
-    
-    // If movement was minimal (less than 10px), treat it as a tap
-    if (deltaX < 10 && deltaY < 10) {
+
+  const handleTriggerPointerUp = (e) => {
+    const start = tapStart.current;
+    tapStart.current = null;
+    if (!start) return;
+    if (Math.abs(e.clientX - start.x) < 10 && Math.abs(e.clientY - start.y) < 10) {
       setIsOpen(true);
     }
-    touchStartPos.current = null;
   };
 
   return (
@@ -63,8 +64,9 @@ export default function SongRowButtonToolbar({
           <DropdownMenuTrigger asChild>
             <div 
               className="inline-flex"
-              onTouchStart={handleTouchStart}
-              onTouchEnd={handleTouchEnd}
+              onPointerDown={handleTriggerPointerDown}
+              onPointerUp={handleTriggerPointerUp}
+              onPointerCancel={() => { tapStart.current = null; }}
             >
               <SongRowButton
                 icon={EllipsisVerticalIcon}
