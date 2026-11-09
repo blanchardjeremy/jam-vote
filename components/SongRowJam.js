@@ -20,7 +20,8 @@ export default function SongRow({
   isNext, 
   hideType,
   highlight,
-  hostMode
+  hostMode,
+  maxAnswers = 0
 }) {
   const { song } = jamSong;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -44,7 +45,11 @@ export default function SongRow({
   // without loving it is only marked from guided voting.
   const handleVote = (id, action) => {
     if (action === 'vote' && onKnow) {
-      alsoMarkKnownForLove(id, (songId) => onKnow(songId, 'know'));
+      alsoMarkKnownForLove(
+        id,
+        (songId) => onKnow(songId, 'know'),
+        (songId) => onKnow(songId, 'undontknow')
+      );
     }
     // The heart button has already saved this device's vote, so the dot and
     // check update right away instead of waiting for the server
@@ -87,18 +92,12 @@ export default function SongRow({
         additionalInfo={
           <>
             <CaptainBadges jamSong={jamSong} isNext={isNext} />
-            {knowCount > 0 && (
-              <span
-                className={cn(
-                  'inline-flex items-center gap-0.5 text-xs whitespace-nowrap',
-                  youKnowIt ? 'text-primary' : 'text-gray-500'
-                )}
-              >
-                {youKnowIt && <CheckIcon aria-hidden className="h-3.5 w-3.5" />}
-                <span className={youKnowIt ? 'font-medium' : 'text-foreground'}>{knowCount}</span> know it
-                {youKnowIt && <span className="sr-only">, including you</span>}
-              </span>
-            )}
+            <KnowBar
+              knows={knowCount}
+              dontKnows={jamSong.dontKnows || 0}
+              maxAnswers={maxAnswers}
+              youKnowIt={youKnowIt}
+            />
           </>
         }
         highlight={highlight}
@@ -114,4 +113,36 @@ export default function SongRow({
       />
     </>
   );
-} 
+}
+
+// How well the room knows this song: one small bar whose length is how many
+// people answered (scaled to the most-answered song in the jam), split into
+// "know it" (solid) and "don't know it" (faint). A check before it means you
+// know it. Hidden until anyone in the jam has answered.
+function KnowBar({ knows, dontKnows, maxAnswers, youKnowIt }) {
+  const scale = Math.max(maxAnswers, knows + dontKnows);
+  if (scale === 0) return null;
+  const answered = knows + dontKnows;
+  const label = `${knows} know it, ${dontKnows} don't`;
+
+  return (
+    <span className="inline-flex items-center gap-1" title={label}>
+      <CheckIcon
+        aria-hidden
+        className={cn('h-3.5 w-3.5 text-primary', !youKnowIt && 'invisible')}
+      />
+      <span aria-hidden className="flex h-1.5 w-14 overflow-hidden rounded-full bg-gray-200/70">
+        <span
+          className="flex h-full overflow-hidden rounded-full"
+          style={{ width: `${(answered / scale) * 100}%` }}
+        >
+          <span className="h-full bg-primary" style={{ width: answered ? `${(knows / answered) * 100}%` : 0 }} />
+          <span className="h-full flex-1 bg-primary/25" />
+        </span>
+      </span>
+      <span className="sr-only">
+        {label}{youKnowIt ? ', including you' : ''}
+      </span>
+    </span>
+  );
+}
