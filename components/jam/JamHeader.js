@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MoreVertical, Check } from 'lucide-react';
-import { RectangleStackIcon } from '@heroicons/react/24/outline';
+import { RectangleStackIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { TrashIcon, WrenchScrewdriverIcon, StarIcon } from '@heroicons/react/24/solid';
 import { Button } from "@/components/ui/button";
 import {
@@ -10,9 +11,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useJam } from '@/components/JamContext';
+import { buildQueue } from '@/lib/utils/guideQueue';
+import { cn } from '@/lib/utils';
 
 export default function JamHeader({ onDeleteClick, hostMode, setHostMode, showFavorites, setShowFavorites }) {
   const { jam } = useJam();
+
+  // Songs this device hasn't answered yet, counted the same way the guided
+  // picker builds its queue. Read after mount since it uses localStorage, and
+  // again whenever the jam changes (new songs, votes from this list).
+  const [songsLeft, setSongsLeft] = useState(null);
+  useEffect(() => {
+    setSongsLeft(buildQueue(jam.songs).length);
+  }, [jam.songs]);
+  const caughtUp = songsLeft === 0;
 
   return (
     <div className="mb-6 sm:mb-8">
@@ -31,12 +43,30 @@ export default function JamHeader({ onDeleteClick, hostMode, setHostMode, showFa
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="primary" asChild>
-            <Link href={`/${jam.slug}/guide`}>
-              <RectangleStackIcon className="h-5 w-5" />
-              Guided voting
-            </Link>
-          </Button>
+          {caughtUp ? (
+            <Button variant="outline" asChild className="text-green-700">
+              <Link href={`/${jam.slug}/guide`} title="You've answered every song. Open guided voting.">
+                <CheckCircleIcon className="h-5 w-5" />
+                Caught up
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="primary" asChild>
+              <Link
+                href={`/${jam.slug}/guide`}
+                aria-label={songsLeft ? `Guided voting, ${songsLeft} ${songsLeft === 1 ? 'song' : 'songs'} left` : undefined}
+              >
+                {/* On phones the count takes the icon's place, keeping the button narrow */}
+                <RectangleStackIcon className={cn('h-5 w-5', songsLeft > 0 && 'hidden sm:block')} />
+                Guided voting
+                {songsLeft > 0 && (
+                  <span className="-mr-1 rounded-full bg-white/25 px-2 py-0.5 text-xs font-semibold tabular-nums">
+                    {songsLeft}
+                  </span>
+                )}
+              </Link>
+            </Button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button

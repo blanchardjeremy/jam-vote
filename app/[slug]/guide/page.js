@@ -15,7 +15,7 @@ import {
 import { Piano } from 'lucide-react';
 import { useJamPage } from '@/lib/hooks/useJamPage';
 import { useJamPusher } from '@/lib/hooks/useJamPusher';
-import { compareByVotes } from '@/lib/utils/songOrder';
+import { storage, keys, buildQueue } from '@/lib/utils/guideQueue';
 import { alsoMarkKnownForLove } from '@/lib/services/jamSongs';
 import { apiRequest } from '@/lib/services/apiHelpers';
 import { toast } from 'sonner';
@@ -26,65 +26,53 @@ import LoadingBlock from '@/components/LoadingBlock';
 import PageTitle from '@/components/ui/page-title';
 import { cn } from '@/lib/utils';
 
-// localStorage keys shared with the list view, so answers given in either
-// place are remembered in both.
-const storage = {
-  get(key) {
-    try { return localStorage.getItem(key); } catch { return null; }
-  },
-  set(key, value) {
-    try { localStorage.setItem(key, value); } catch {}
-  },
-  remove(key) {
-    try { localStorage.removeItem(key); } catch {}
-  },
-};
-
-const keys = {
-  love: (id) => `vote-${id}`,
-  know: (id) => `know-${id}`,
-  dontKnow: (id) => `dontknow-${id}`,
-};
-
-function isAnsweredOnThisDevice(jamSong) {
-  const id = jamSong._id;
-  if (storage.get(keys.love(id)) === 'true') return true;
-  if (storage.get(keys.know(id)) === 'true') return true;
-  if (storage.get(keys.dontKnow(id)) === 'true') return true;
-  const name = storage.get('userFirstName');
-  return !!name && (jamSong.captains || []).some((c) => c.name === name);
-}
-
-// Songs still to go through: unplayed, optionally one type, not answered yet,
-// ranked by hearts (then know) at the moment the queue is built.
-function buildQueue(songs, typeFilter) {
-  return (songs || [])
-    .filter((s) => !s.played)
-    .filter((s) => !typeFilter || s.song?.type === typeFilter)
-    .filter((s) => !isAnsweredOnThisDevice(s))
-    .sort(compareByVotes)
-    .map((s) => s._id);
-}
-
 // Index of the first song at or after `from` that is still available
 function firstAvailableIndex(queue, from, isAvailable) {
   const offset = queue.slice(from).findIndex(isAvailable);
   return offset === -1 ? queue.length : from + offset;
 }
 
-// Top row: captain options. Bottom row: the quick answers.
+// Main answers come first; the captain options sit below as smaller buttons.
 // Lucide's piano, drawn at Heroicons' outline stroke width so it matches the others
 const PianoIcon = (props) => <Piano strokeWidth={1.5} {...props} />;
 
-const CAPTAIN_ANSWERS = [
-  { id: 'captain', captainType: 'regular', label: "I'll captain it", icon: UserIcon, className: 'text-indigo-700 border-indigo-200 hover:bg-indigo-50' },
-  { id: 'captain', captainType: 'piano', label: "I'll play piano", icon: PianoIcon, className: 'text-indigo-700 border-indigo-200 hover:bg-indigo-50' },
-];
-const QUICK_ANSWERS = [
-  { id: 'love', label: 'I love it', icon: HeartIcon, className: 'text-rose-600 border-rose-200 hover:bg-rose-50' },
-  { id: 'know', label: 'I know it', icon: AcademicCapIcon, className: 'text-primary border-primary/30 hover:bg-primary/5' },
+const MAIN_ANSWERS = [
+  { id: 'love', label: 'I love it', icon: HeartIcon, className: 'text-rose-600 border-rose-200 bg-rose-50/40 hover:bg-rose-50' },
+  { id: 'know', label: 'I know it', icon: AcademicCapIcon, className: 'text-primary border-primary/30 bg-primary/[0.03] hover:bg-primary/5' },
   { id: 'dontKnow', label: "I don't know it", icon: QuestionMarkCircleIcon, className: 'text-gray-600 border-gray-200 hover:bg-gray-50' },
 ];
+const CAPTAIN_ANSWERS = [
+  { id: 'captain', captainType: 'regular', label: "I'll captain it", icon: UserIcon },
+  { id: 'captain', captainType: 'piano', label: "I'll play piano", icon: PianoIcon },
+];
+
+// Color of the little "+1" that floats off the progress bar, per answer
+const ANSWER_ACCENT = {
+  love: 'text-rose-500',
+  know: 'text-primary',
+  dontKnow: 'text-gray-500',
+  captain: 'text-indigo-600',
+};
+
+const MILESTONES = [
+  { at: 0.25, text: 'Nice start!' },
+  { at: 0.5, text: 'Halfway there!' },
+  { at: 0.75, text: 'Almost done!' },
+];
+
+const CONFETTI_COLORS = ['bg-rose-400', 'bg-indigo-500', 'bg-amber-400', 'bg-emerald-400', 'bg-sky-400'];
+// Fixed spread so each burst looks the same and renders the same on server and client
+const CONFETTI = Array.from({ length: 14 }, (_, i) => {
+  const angle = (i / 14) * Math.PI * 2;
+  const dist = 26 + (i % 3) * 10;
+  return {
+    dx: `${Math.round(Math.cos(angle) * dist)}px`,
+    dy: `${Math.round(Math.sin(angle) * dist * 0.8)}px`,
+    rot: `${(i * 67) % 360}deg`,
+    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+    round: i % 2 === 0,
+  };
+});
 
 // Fire a save in the background. The picker never waits for it, and a
 // failed save is simply dropped (the shared handlers already log/toast).
@@ -125,6 +113,11 @@ export default function GuidedPickerPage() {
   const [position, setPosition] = useState(0);
   const [history, setHistory] = useState([]); // [{ jamSongId, answer, captainName }]
   const [pendingCaptainType, setPendingCaptainType] = useState(null);
+  // Each answer bumps `key` so the progress bar's animations replay
+  const [feedback, setFeedback] = useState({ key: 0, answer: null, milestone: null });
+  // Highest milestone already celebrated this run, so undo/redo or a shrinking
+  // total never repeats one and a skipped one still shows on the next answer
+  const [celebratedAt, setCelebratedAt] = useState(0);
 
   // Build the queue once the jam has loaded, and again when the type filter changes
   const jamLoaded = !!jam;
@@ -133,6 +126,7 @@ export default function GuidedPickerPage() {
     setQueue(buildQueue(jam.songs, typeFilter));
     setPosition(0);
     setHistory([]);
+    setCelebratedAt(0);
     // Only rebuild on load / filter change, not on every live vote
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jamLoaded, typeFilter]);
@@ -176,7 +170,25 @@ export default function GuidedPickerPage() {
     inBackground(handleKnow(jamSongId, 'know'));
   };
 
+  // Progress through this run: answered so far vs. answered + still to go
+  const remaining = queue
+    ? queue.slice(currentIndex).filter(isAvailable).length
+    : 0;
+  const total = history.length + remaining;
+  const progress = total > 0 ? history.length / total : 0;
+
   const advance = (entry) => {
+    const after = total > 0 ? (history.length + 1) / total : 1;
+    // The last answer gets the "all caught up" celebration instead
+    const reached = after < 1
+      ? MILESTONES.filter((m) => m.at > celebratedAt && after >= m.at).pop()
+      : null;
+    if (reached) setCelebratedAt(reached.at);
+    setFeedback((prev) => ({
+      key: prev.key + 1,
+      answer: entry.answer,
+      milestone: reached ? reached.text : null,
+    }));
     setHistory((prev) => [...prev, entry]);
     setPosition(currentIndex + 1);
   };
@@ -251,6 +263,7 @@ export default function GuidedPickerPage() {
     setQueue(buildQueue(jam.songs, typeFilter));
     setPosition(0);
     setHistory([]);
+    setCelebratedAt(0);
   };
 
   if (error) {
@@ -287,6 +300,16 @@ export default function GuidedPickerPage() {
         )}
       </div>
 
+      {/* Nothing to show when there was nothing to answer */}
+      {total > 0 && (
+        <ProgressBar
+          done={history.length}
+          total={total}
+          progress={currentSong ? progress : 1}
+          feedback={feedback}
+        />
+      )}
+
       <h1 className="text-xl font-bold text-gray-900 mb-2">{jam.name}</h1>
 
       <div className="mb-3 flex flex-wrap items-center gap-5">
@@ -306,46 +329,71 @@ export default function GuidedPickerPage() {
 
       {currentSong ? (
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-          <div className="px-5 pt-4 pb-4 text-center">
-            <h2 className="text-2xl font-bold text-gray-900">{currentSong.song.title}</h2>
-            <p className="text-lg text-muted-foreground font-medium">{currentSong.song.artist}</p>
+          {/* A minimum height that fits a two-line title, and smaller type for
+              longer titles, so the buttons stay put from song to song. Only an
+              unusually long title or large text settings make it grow. */}
+          <div
+            key={currentSong._id}
+            className="guide-card-in flex min-h-40 flex-col items-center justify-center px-5 py-4 text-center"
+          >
+            <h2
+              className={cn(
+                'font-bold leading-tight text-gray-900 [overflow-wrap:anywhere]',
+                titleSize(currentSong.song.title)
+              )}
+            >
+              {currentSong.song.title}
+            </h2>
+            <p className="mt-1 line-clamp-1 text-lg text-muted-foreground font-medium">
+              {currentSong.song.artist}
+            </p>
             {currentSong.captains?.length > 0 && (
-              <p className="mt-2 inline-flex items-center gap-1 text-sm text-gray-500">
-                <UserIcon className="h-4 w-4" />
-                Captained by {currentSong.captains.map((c) => c.name).join(', ')}
+              <p className="mt-1.5 inline-flex max-w-full items-center gap-1 text-sm text-gray-500">
+                <UserIcon className="h-4 w-4 shrink-0" />
+                <span className="truncate">
+                  Captained by {currentSong.captains.map((c) => c.name).join(', ')}
+                </span>
               </p>
             )}
           </div>
 
           <div className="border-t border-gray-100 p-4">
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              {CAPTAIN_ANSWERS.map(({ id, captainType, label, icon: Icon, className }) => (
-                <AnswerButton
-                  key={captainType}
-                  label={label}
-                  icon={<Icon className="h-7 w-7" />}
-                  className={className}
-                  onClick={() => answer(id, captainType)}
-                />
+            <div className="flex flex-col gap-3">
+              {MAIN_ANSWERS.map(({ id, label, icon: Icon, className }) => (
+                <button
+                  key={id}
+                  onClick={() => answer(id)}
+                  className={cn(
+                    'flex w-full items-center justify-center gap-2 rounded-lg border-2 px-3 py-4 text-base font-semibold transition-colors active:scale-[0.98]',
+                    className
+                  )}
+                >
+                  <Icon className="h-6 w-6" />
+                  {label}
+                </button>
               ))}
             </div>
-            <div className="flex flex-col gap-3">
-              {QUICK_ANSWERS.map(({ id, label, icon: Icon, className }) => (
-                <AnswerButton
-                  key={id}
-                  label={label}
-                  icon={<Icon className="h-6 w-6" />}
-                  className={className}
-                  onClick={() => answer(id)}
-                  wide
-                />
+
+            <div className="mt-4 grid grid-cols-2 gap-2 border-t border-dashed border-gray-200 pt-4">
+              {CAPTAIN_ANSWERS.map(({ id, captainType, label, icon: Icon }) => (
+                <button
+                  key={captainType}
+                  onClick={() => answer(id, captainType)}
+                  className="flex items-center justify-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-2 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.98]"
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </button>
               ))}
             </div>
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-          <CheckCircleIcon className="mx-auto h-12 w-12 text-green-600" />
+        <div className="guide-card-in rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+          <div className="relative mx-auto h-12 w-12">
+            <CheckCircleIcon className="guide-pop h-12 w-12 text-green-600" />
+            {history.length > 0 && <Confetti />}
+          </div>
           <h2 className="mt-3 text-xl font-bold text-gray-900">You&apos;re all caught up!</h2>
           <p className="mt-1 text-gray-600">
             {history.length > 0
@@ -374,21 +422,103 @@ export default function GuidedPickerPage() {
   );
 }
 
-// `wide` = full-width row with the icon beside the label; otherwise the icon
-// sits above the label (used for the two half-width captain buttons).
-function AnswerButton({ label, icon, className, onClick, wide = false }) {
+// Longer titles get smaller type so most fit in two lines
+function titleSize(title) {
+  if (title.length > 55) return 'text-lg';
+  if (title.length > 30) return 'text-xl';
+  return 'text-2xl';
+}
+
+// A burst of confetti centered on its (relative) parent
+function Confetti() {
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'flex items-center justify-center rounded-lg border-2 bg-white px-2 text-sm font-semibold leading-tight text-center transition-colors active:scale-[0.98]',
-        // Full-width rows are a little taller, closer to the captain buttons' height
-        wide ? 'w-full flex-row gap-2 py-5 text-base' : 'flex-col gap-1 py-4',
-        className
-      )}
-    >
-      {icon}
-      {label}
-    </button>
+    <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2">
+      {CONFETTI.map((c, i) => (
+        <span
+          key={i}
+          className={cn(
+            'guide-confetti absolute left-0 top-0 h-1.5 w-1.5',
+            c.round ? 'rounded-full' : 'rounded-[1px]',
+            c.color
+          )}
+          style={{ '--dx': c.dx, '--dy': c.dy, '--rot': c.rot }}
+        />
+      ))}
+    </span>
+  );
+}
+
+// Progress through this run. On each answer the bar grows, a glint sweeps
+// across it, the count pops and a "+1" floats up; crossing a quarter mark
+// adds a short message and a confetti burst.
+function ProgressBar({ done, total, progress, feedback }) {
+  const pct = Math.round(progress * 100);
+  const animate = feedback.key > 0;
+
+  return (
+    <div className="mb-4">
+      <div className="relative mb-1.5 flex h-5 items-center justify-between text-xs font-medium text-gray-500">
+        <span>Your progress</span>
+        {feedback.milestone && (
+          // Centered by the wrapper, since the chip's own transform is animated
+          <span className="pointer-events-none absolute inset-x-0 flex justify-center">
+            <span
+              key={`m-${feedback.key}`}
+              className="guide-milestone rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800"
+            >
+              {feedback.milestone}
+            </span>
+          </span>
+        )}
+        <span
+          key={`c-${feedback.key}`}
+          className={cn('tabular-nums text-gray-700', animate && 'guide-pop inline-block')}
+        >
+          {done} / {total}
+        </span>
+      </div>
+
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={total}
+        aria-valuenow={done}
+        aria-label="Songs answered"
+        className="relative h-2.5 rounded-full bg-gray-200"
+      >
+        <div
+          className="relative h-full overflow-hidden rounded-full bg-gradient-to-r from-indigo-500 via-primary to-rose-500 transition-[width] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+          style={{ width: `${pct}%` }}
+        >
+          {animate && (
+            <span
+              key={`g-${feedback.key}`}
+              className="guide-glint absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/70 to-transparent"
+            />
+          )}
+        </div>
+
+        {/* Leading edge of the bar: where the +1 and confetti come from. It
+            moves with the same timing as the fill, so they ride the bar's end. */}
+        {animate && (
+          <span
+            className="pointer-events-none absolute top-1/2 transition-[left] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+            style={{ left: `${pct}%` }}
+          >
+            <span key={`e-${feedback.key}`}>
+              <span
+                className={cn(
+                  'guide-float-up absolute bottom-1 left-0 text-xs font-bold',
+                  ANSWER_ACCENT[feedback.answer]
+                )}
+              >
+                {feedback.answer === 'love' ? <HeartIcon className="h-4 w-4 fill-current" /> : '+1'}
+              </span>
+              {feedback.milestone && <Confetti />}
+            </span>
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
