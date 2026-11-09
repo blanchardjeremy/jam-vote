@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import SongRow from "@/components/SongRowJam";
 import { useJam } from '@/components/JamContext';
+import { knowCounts } from '@/components/jam/KnowBar';
 
 export default function JamSongList({ 
   songs, 
@@ -20,7 +21,7 @@ export default function JamSongList({
   // Know bars are scaled to the most-answered song across the whole jam, so
   // bars in the Bangers and Ballads lists compare fairly
   const { jam } = useJam();
-  const maxAnswers = Math.max(0, ...(jam?.songs || []).map((s) => (s.knows || 0) + (s.dontKnows || 0)));
+  const maxAnswers = Math.max(0, ...(jam?.songs || []).map((s) => knowCounts(s).answered));
 
   // Add ref for the newly added song
   const lastAddedRef = useRef(null);

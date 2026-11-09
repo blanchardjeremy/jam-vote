@@ -7,8 +7,7 @@ import CaptainBadges from "@/components/CaptainBadges";
 import BaseSongRow from "@/components/SongRowBase";
 import { alsoMarkKnownForLove } from "@/lib/services/jamSongs";
 import { answerStatus } from "@/lib/utils/guideQueue";
-import { CheckIcon } from "@heroicons/react/20/solid";
-import { cn } from "@/lib/utils";
+import KnowBar from "@/components/jam/KnowBar";
 
 export default function SongRow({ 
   jamSong, 
@@ -33,9 +32,6 @@ export default function SongRow({
     setStatus(answerStatus(jamSong));
   }, [jamSong]);
   const unanswered = status === 'unanswered' && !jamSong.played;
-  const youKnowIt = status === 'know';
-  // If this device knows it, the count includes at least this person
-  const knowCount = youKnowIt ? Math.max(jamSong.knows || 0, 1) : jamSong.knows || 0;
   
   const handleTogglePlayed = useCallback(async () => {
     await onTogglePlayed(jamSong._id);
@@ -92,12 +88,7 @@ export default function SongRow({
         additionalInfo={
           <>
             <CaptainBadges jamSong={jamSong} isNext={isNext} />
-            <KnowBar
-              knows={knowCount}
-              dontKnows={jamSong.dontKnows || 0}
-              maxAnswers={maxAnswers}
-              youKnowIt={youKnowIt}
-            />
+            <KnowBar jamSong={jamSong} maxAnswers={maxAnswers} status={status} />
           </>
         }
         highlight={highlight}
@@ -112,37 +103,5 @@ export default function SongRow({
         mode="edit"
       />
     </>
-  );
-}
-
-// How well the room knows this song: one small bar whose length is how many
-// people answered (scaled to the most-answered song in the jam), split into
-// "know it" (solid) and "don't know it" (faint). A check before it means you
-// know it. Hidden until anyone in the jam has answered.
-function KnowBar({ knows, dontKnows, maxAnswers, youKnowIt }) {
-  const scale = Math.max(maxAnswers, knows + dontKnows);
-  if (scale === 0) return null;
-  const answered = knows + dontKnows;
-  const label = `${knows} know it, ${dontKnows} don't`;
-
-  return (
-    <span className="inline-flex items-center gap-1" title={label}>
-      <CheckIcon
-        aria-hidden
-        className={cn('h-3.5 w-3.5 text-primary', !youKnowIt && 'invisible')}
-      />
-      <span aria-hidden className="flex h-1.5 w-14 overflow-hidden rounded-full bg-gray-200/70">
-        <span
-          className="flex h-full overflow-hidden rounded-full"
-          style={{ width: `${(answered / scale) * 100}%` }}
-        >
-          <span className="h-full bg-primary" style={{ width: answered ? `${(knows / answered) * 100}%` : 0 }} />
-          <span className="h-full flex-1 bg-primary/25" />
-        </span>
-      </span>
-      <span className="sr-only">
-        {label}{youKnowIt ? ', including you' : ''}
-      </span>
-    </span>
   );
 }
