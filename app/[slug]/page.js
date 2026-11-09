@@ -8,7 +8,7 @@ import JamHeader from '@/components/jam/JamHeader';
 import JamToolbar from '@/components/jam/JamToolbar';
 import JamSongList from '@/components/jam/JamSongList';
 import JamEmptyState from '@/components/jam/JamEmptyState';
-import { FireIcon, MusicalNoteIcon } from '@heroicons/react/24/solid';
+import { FireIcon, MusicalNoteIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
 import LoadingBlock from "@/components/LoadingBlock";
 import CreateSongModal from "@/components/CreateSongModal";
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -20,6 +20,9 @@ import { useState } from 'react';
 export default function JamPage() {
   const params = useParams();
   const [hostMode, setHostMode] = useState(false);
+  // Collapsed song-type sections, e.g. collapse Bangers to jump straight to Ballads
+  const [collapsed, setCollapsed] = useState({ banger: false, ballad: false });
+  const toggleSection = (type) => setCollapsed((prev) => ({ ...prev, [type]: !prev[type] }));
   const {
     jam,
     setJam,
@@ -128,34 +131,40 @@ export default function JamPage() {
             <>
               {/* Bangers Section */}
               <div className="border-b border-gray-200">
-                <div className="bg-indigo-800 px-4 py-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center">
-                    <FireIcon className="w-5 h-5 mr-2" /> Bangers
-                  </h3>
-                </div>
-                <ul className="divide-y divide-gray-200">
-                  {renderSongList({
-                    songs: groupedSongs.bangers,
-                    hideTypeBadge: true,
-                    type: "banger"
-                  })}
-                </ul>
+                <SectionHeader
+                  icon={FireIcon}
+                  label="Bangers"
+                  collapsed={collapsed.banger}
+                  onToggle={() => toggleSection('banger')}
+                />
+                {!collapsed.banger && (
+                  <ul className="divide-y divide-gray-200">
+                    {renderSongList({
+                      songs: groupedSongs.bangers,
+                      hideTypeBadge: true,
+                      type: "banger"
+                    })}
+                  </ul>
+                )}
               </div>
               
               {/* Ballads Section */}
               <div>
-                <div className="bg-indigo-800 px-4 py-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center">
-                    <MusicalNoteIcon className="w-5 h-5 mr-2" /> Ballads
-                  </h3>
-                </div>
-                <ul className="divide-y divide-gray-200">
-                  {renderSongList({
-                    songs: groupedSongs.ballads,
-                    hideTypeBadge: true,
-                    type: "ballad"
-                  })}
-                </ul>
+                <SectionHeader
+                  icon={MusicalNoteIcon}
+                  label="Ballads"
+                  collapsed={collapsed.ballad}
+                  onToggle={() => toggleSection('ballad')}
+                />
+                {!collapsed.ballad && (
+                  <ul className="divide-y divide-gray-200">
+                    {renderSongList({
+                      songs: groupedSongs.ballads,
+                      hideTypeBadge: true,
+                      type: "ballad"
+                    })}
+                  </ul>
+                )}
               </div>
             </>
           ) : (
@@ -221,4 +230,26 @@ export default function JamPage() {
       <StickyQRCode jamSlug={params.slug} />
     </JamProvider>
   );
-} 
+}
+
+// Bangers / Ballads section header; tap anywhere on it to collapse or expand
+function SectionHeader({ icon: Icon, label, collapsed, onToggle }) {
+  return (
+    <h3>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={!collapsed}
+        className="w-full bg-indigo-800 px-4 py-4 flex items-center justify-between text-left text-lg font-semibold text-white [@media(hover:hover)]:hover:bg-indigo-700 transition-colors"
+      >
+        <span className="flex items-center">
+          <Icon className="w-5 h-5 mr-2" /> {label}
+        </span>
+        <ChevronDownIcon
+          className={`w-5 h-5 text-white/80 transition-transform duration-200 ${collapsed ? '-rotate-90' : ''}`}
+          aria-hidden
+        />
+      </button>
+    </h3>
+  );
+}

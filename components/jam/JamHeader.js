@@ -1,5 +1,5 @@
 import { MoreVertical } from 'lucide-react';
-import { TrashIcon } from '@heroicons/react/24/solid';
+import { TrashIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/solid';
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,7 +14,7 @@ export default function JamHeader({ onDeleteClick, hostMode, setHostMode }) {
 
   return (
     <div className="mb-6 sm:mb-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+      <div className="flex items-start justify-between gap-3 sm:items-center">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-900">{jam.name}</h1>
           <div className="flex items-center gap-2">
@@ -29,12 +29,6 @@ export default function JamHeader({ onDeleteClick, hostMode, setHostMode }) {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button 
-            variant={hostMode ? "default" : "outline"}
-            onClick={() => setHostMode(!hostMode)}
-          >
-             {hostMode ? 'Disable' : 'Enable'} Host Tools
-          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -46,6 +40,10 @@ export default function JamHeader({ onDeleteClick, hostMode, setHostMode }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setHostMode(!hostMode)}>
+                <WrenchScrewdriverIcon className="h-4 w-4 mr-2" />
+                {hostMode ? 'Disable' : 'Enable'} Host Tools
+              </DropdownMenuItem>
               <DropdownMenuItem
                 variant="destructive"
                 onClick={onDeleteClick}
