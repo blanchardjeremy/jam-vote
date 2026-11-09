@@ -10,6 +10,8 @@ import { searchSongs } from '@/lib/services/songs';
 import { ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { StarIcon as StarOutline } from '@heroicons/react/24/outline';
+import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 
 export default function SongFormModal({ 
   isOpen, 
@@ -32,7 +34,8 @@ export default function SongFormModal({
       title: mode === 'add' ? initialTitle || '' : initialData.title || '',
       artist: initialData.artist || '',
       type: initialData.type || 'banger',
-      chordChart: initialData.chordChart || ''
+      chordChart: initialData.chordChart || '',
+      favorite: !!initialData.favorite
     }
   });
 
@@ -46,7 +49,8 @@ export default function SongFormModal({
       title: mode === 'add' ? initialTitle || '' : initialData.title || '',
       artist: initialData.artist || '',
       type: initialData.type || 'banger',
-      chordChart: initialData.chordChart || ''
+      chordChart: initialData.chordChart || '',
+      favorite: !!initialData.favorite
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -282,6 +286,32 @@ export default function SongFormModal({
                       )}
                     </div>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <FormField
+                control={form.control}
+                name="favorite"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <button
+                        type="button"
+                        aria-pressed={field.value}
+                        onClick={() => field.onChange(!field.value)}
+                        className="-ml-1 flex items-center gap-2 rounded-md px-1 py-1 text-sm font-medium leading-none cursor-pointer hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        {field.value ? (
+                          <StarSolid className="h-6 w-6 text-amber-400" />
+                        ) : (
+                          <StarOutline className="h-6 w-6 text-gray-400" />
+                        )}
+                        Favorite
+                      </button>
+                    </FormControl>
                   </FormItem>
                 )}
               />
