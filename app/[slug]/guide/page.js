@@ -189,9 +189,9 @@ export default function GuidedPickerPage() {
     ? Math.min(BEHIND.length, queue.slice(currentIndex + 1).filter(isAvailable).length)
     : 0;
 
-  // Animate the new top card in (on load too). It stays mounted from song to song (so a
-  // focused button keeps focus), which is why this uses the Web Animations
-  // API rather than a CSS class that would need a remount to replay.
+  // Animate the new top card in (on load too). It stays mounted from song
+  // to song (so a focused button keeps focus), which is why this uses the Web
+  // Animations API rather than a CSS class that would need a remount to replay.
   useLayoutEffect(() => {
     const el = topCardRef.current;
     if (!el?.animate) return;
@@ -407,7 +407,6 @@ export default function GuidedPickerPage() {
         ) : (
           <div className="flex-1" />
         )}
-
       </div>
 
       <ToggleGroup.Root
