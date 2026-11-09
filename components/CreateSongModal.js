@@ -10,6 +10,7 @@ import { searchSongs } from '@/lib/services/songs';
 import { ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function SongFormModal({ 
   isOpen, 
@@ -32,7 +33,8 @@ export default function SongFormModal({
       title: mode === 'add' ? initialTitle || '' : initialData.title || '',
       artist: initialData.artist || '',
       type: initialData.type || 'banger',
-      chordChart: initialData.chordChart || ''
+      chordChart: initialData.chordChart || '',
+      favorite: !!initialData.favorite
     }
   });
 
@@ -46,7 +48,8 @@ export default function SongFormModal({
       title: mode === 'add' ? initialTitle || '' : initialData.title || '',
       artist: initialData.artist || '',
       type: initialData.type || 'banger',
-      chordChart: initialData.chordChart || ''
+      chordChart: initialData.chordChart || '',
+      favorite: !!initialData.favorite
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -282,6 +285,26 @@ export default function SongFormModal({
                       )}
                     </div>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <FormField
+                control={form.control}
+                name="favorite"
+                render={({ field }) => (
+                  <FormItem>
+                    <label className="flex items-center gap-2 py-1 text-sm font-medium leading-none cursor-pointer">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(checked) => field.onChange(checked === true)}
+                        />
+                      </FormControl>
+                      Favorite
+                    </label>
                   </FormItem>
                 )}
               />
