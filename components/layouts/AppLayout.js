@@ -22,7 +22,7 @@ export default function AppLayout({ children }) {
       <Navigation />
       
       {/* Main content */}
-      <main className="flex-1 w-full bg-gray-50">
+      <main className="flex-1 w-full overflow-x-clip bg-gray-50">
         <div className={isFullWidth ? styleVariants.fullWidth : styleVariants.maxWidth}>
           {children}
         </div>
