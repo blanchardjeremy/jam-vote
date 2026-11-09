@@ -3,9 +3,9 @@ import SongFormModal from "@/components/CreateSongModal";
 import { useParams } from 'next/navigation';
 import SongRowButtonToolbar from "@/components/SongRowButtonToolbar";
 import SongVotingButton from "@/components/SongVotingButton";
-import SongKnowButton from "@/components/SongKnowButton";
 import CaptainBadges from "@/components/CaptainBadges";
 import BaseSongRow from "@/components/SongRowBase";
+import { alsoMarkKnownForLove } from "@/lib/services/jamSongs";
 
 export default function SongRow({ 
   jamSong, 
@@ -26,6 +26,15 @@ export default function SongRow({
     await onTogglePlayed(jamSong._id);
   }, [jamSong._id, jamSong.played, onTogglePlayed]);
   
+  // A heart also counts as "I know it" (once per person). Knowing a song
+  // without loving it is only marked from guided voting.
+  const handleVote = (id, action) => {
+    if (action === 'vote' && onKnow) {
+      alsoMarkKnownForLove(id, (songId) => onKnow(songId, 'know'));
+    }
+    return onVote(id, action);
+  };
+
   const handleEdit = async (updatedSong) => {
     onEdit?.(jamSong._id, updatedSong);
   };
@@ -38,10 +47,7 @@ export default function SongRow({
         hideType={hideType}
         className={jamSong.played ? 'bg-gray-200 opacity-50' : ''}
         leftControl={
-          <div className="flex items-start">
-            <SongVotingButton jamSong={jamSong} onVote={onVote} />
-            <SongKnowButton jamSong={jamSong} onKnow={onKnow} />
-          </div>
+          <SongVotingButton jamSong={jamSong} onVote={handleVote} />
         }
         rightActions={
           <SongRowButtonToolbar
@@ -54,7 +60,14 @@ export default function SongRow({
           />
         }
         additionalInfo={
-          <CaptainBadges jamSong={jamSong} isNext={isNext} />
+          <>
+            <CaptainBadges jamSong={jamSong} isNext={isNext} />
+            {jamSong.knows > 0 && (
+              <span className="text-xs text-gray-500 whitespace-nowrap">
+                <span className="text-foreground">{jamSong.knows}</span> know it
+              </span>
+            )}
+          </>
         }
         highlight={highlight}
       />
