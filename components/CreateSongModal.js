@@ -10,7 +10,8 @@ import { searchSongs } from '@/lib/services/songs';
 import { ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
+import { StarIcon as StarOutline } from '@heroicons/react/24/outline';
+import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 
 export default function SongFormModal({ 
   isOpen, 
@@ -296,15 +297,21 @@ export default function SongFormModal({
                 name="favorite"
                 render={({ field }) => (
                   <FormItem>
-                    <label className="flex items-center gap-2 py-1 text-sm font-medium leading-none cursor-pointer">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={(checked) => field.onChange(checked === true)}
-                        />
-                      </FormControl>
-                      Favorite
-                    </label>
+                    <FormControl>
+                      <button
+                        type="button"
+                        aria-pressed={field.value}
+                        onClick={() => field.onChange(!field.value)}
+                        className="-ml-1 flex items-center gap-2 rounded-md px-1 py-1 text-sm font-medium leading-none cursor-pointer hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        {field.value ? (
+                          <StarSolid className="h-6 w-6 text-amber-400" />
+                        ) : (
+                          <StarOutline className="h-6 w-6 text-gray-400" />
+                        )}
+                        Favorite
+                      </button>
+                    </FormControl>
                   </FormItem>
                 )}
               />
