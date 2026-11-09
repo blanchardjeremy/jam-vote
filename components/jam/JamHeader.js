@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MoreVertical, Check } from 'lucide-react';
-import { RectangleStackIcon } from '@heroicons/react/24/outline';
+import { RectangleStackIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { TrashIcon, WrenchScrewdriverIcon, StarIcon } from '@heroicons/react/24/solid';
 import { Button } from "@/components/ui/button";
 import {
@@ -10,14 +11,26 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useJam } from '@/components/JamContext';
+import { buildQueue } from '@/lib/utils/guideQueue';
 
 export default function JamHeader({ onDeleteClick, hostMode, setHostMode, showFavorites, setShowFavorites }) {
   const { jam } = useJam();
 
+  // Songs this device hasn't answered yet, counted the same way the guided
+  // picker builds its queue. Read after mount since it uses localStorage, and
+  // again whenever the jam changes (new songs, votes from this list).
+  const [songsLeft, setSongsLeft] = useState(null);
+  useEffect(() => {
+    setSongsLeft(buildQueue(jam.songs).length);
+  }, [jam.songs]);
+  const caughtUp = songsLeft === 0;
+
   return (
     <div className="mb-6 sm:mb-8">
-      <div className="flex items-start justify-between gap-3 sm:items-center">
-        <div className="min-w-0">
+      {/* Phones: title and menu share the top row, guided voting gets its own
+          full-width row below. Wider screens: one row, title then button then menu. */}
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-4 [grid-template-areas:'title_menu'_'cta_cta'] sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-x-2 sm:[grid-template-areas:'title_cta_menu']">
+        <div className="min-w-0 [grid-area:title]">
           <h1 className="text-2xl font-bold text-gray-900">{jam.name}</h1>
           <div className="flex items-center gap-2">
             <p className="text-gray-600">
@@ -30,19 +43,36 @@ export default function JamHeader({ onDeleteClick, hostMode, setHostMode, showFa
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button variant="primary" asChild>
-            <Link href={`/${jam.slug}/guide`}>
-              <RectangleStackIcon className="h-5 w-5" />
-              Guided voting
-            </Link>
-          </Button>
+        {caughtUp ? (
+            <Button variant="outline" asChild className="text-green-700 [grid-area:cta]">
+              <Link href={`/${jam.slug}/guide`} title="You've answered every song. Open guided voting.">
+                <CheckCircleIcon className="h-5 w-5" />
+                Caught up
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="primary" asChild className="[grid-area:cta]">
+              <Link
+                href={`/${jam.slug}/guide`}
+                aria-label={songsLeft ? `Guided voting, ${songsLeft} ${songsLeft === 1 ? 'song' : 'songs'} left` : undefined}
+              >
+                <RectangleStackIcon className="h-5 w-5" />
+                Guided voting
+                {songsLeft > 0 && (
+                  <span className="-mr-1 rounded-full bg-white/25 px-2 py-0.5 text-xs font-semibold tabular-nums">
+                    {songsLeft}
+                  </span>
+                )}
+              </Link>
+            </Button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
                 aria-label="Open jam options"
+                className="-mr-2 [grid-area:menu] sm:mr-0"
               >
                 <MoreVertical className="h-5 w-5 text-gray-500" />
               </Button>
@@ -70,7 +100,6 @@ export default function JamHeader({ onDeleteClick, hostMode, setHostMode, showFa
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
       </div>
     </div>
   );

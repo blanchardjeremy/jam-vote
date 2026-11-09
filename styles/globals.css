@@ -138,3 +138,85 @@
   animation: highlight 10s cubic-bezier(0.4, 0, 0.2, 1);
   animation-fill-mode: forwards;
 }
+
+/* Guided voting: progress feedback */
+@keyframes guide-glint {
+  0% { transform: translateX(-100%); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateX(250%); opacity: 0; }
+}
+.guide-glint {
+  animation: guide-glint 700ms ease-out forwards;
+}
+
+@keyframes guide-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+.guide-pop {
+  animation: guide-pop 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes guide-float-up {
+  0% { transform: translate(-50%, 0) scale(0.6); opacity: 0; }
+  20% { transform: translate(-50%, -6px) scale(1.1); opacity: 1; }
+  100% { transform: translate(-50%, -28px) scale(1); opacity: 0; }
+}
+.guide-float-up {
+  animation: guide-float-up 800ms ease-out forwards;
+}
+
+@keyframes guide-milestone {
+  0% { transform: translateY(6px) scale(0.85); opacity: 0; }
+  15% { transform: translateY(0) scale(1.05); opacity: 1; }
+  25% { transform: scale(1); }
+  80% { opacity: 1; }
+  100% { transform: translateY(-4px); opacity: 0; }
+}
+.guide-milestone {
+  animation: guide-milestone 1800ms ease-out forwards;
+}
+
+@keyframes guide-confetti {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.4) rotate(var(--rot));
+    opacity: 0;
+  }
+}
+.guide-confetti {
+  animation: guide-confetti 900ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+
+@keyframes guide-card-in {
+  0% { transform: translateX(24px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+.guide-card-in {
+  animation: guide-card-in 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guide-glint,
+  .guide-pop,
+  .guide-float-up,
+  .guide-confetti,
+  .guide-card-in {
+    animation: none;
+  }
+  .guide-float-up,
+  .guide-confetti {
+    display: none;
+  }
+  /* Still needs to fade away, just without moving */
+  .guide-milestone {
+    animation-name: guide-fade;
+  }
+}
+
+@keyframes guide-fade {
+  0% { opacity: 0; }
+  10%, 80% { opacity: 1; }
+  100% { opacity: 0; }
+}
