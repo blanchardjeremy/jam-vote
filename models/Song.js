@@ -24,6 +24,10 @@ const songSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  favorite: {
+    type: Boolean,
+    default: false,
+  },
   voteCount: {
     type: Number,
     default: 0,
