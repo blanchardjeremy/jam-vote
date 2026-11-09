@@ -9,7 +9,7 @@ export default function FavoriteSuggestions({ songs, hideTypeBadge = false }) {
   return (
     <div className="border-t-2 border-amber-200 bg-amber-50/40">
       <p className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
-        From favorites
+        From Favorites (Random)
       </p>
       <ul className="divide-y divide-amber-100">
         {songs.map((song) => (
