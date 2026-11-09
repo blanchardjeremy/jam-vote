@@ -16,7 +16,8 @@ export default function JamSongList({
   groupingEnabled, 
   lastAddedSongId,
   type,
-  hostMode = false
+  hostMode = false,
+  onVoteChange
 }) {
   // Know bars are scaled to the most-answered song across the whole jam, so
   // bars in the Bangers and Ballads lists compare fairly
@@ -66,6 +67,7 @@ export default function JamSongList({
           highlight={willHighlight}
           hostMode={hostMode}
           maxAnswers={maxAnswers}
+          onVoteChange={onVoteChange}
         />
       </li>
     );

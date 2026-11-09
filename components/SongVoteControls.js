@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { HeartIcon, CheckIcon } from "@heroicons/react/20/solid";
-import { QuestionMarkCircleIcon, EllipsisHorizontalIcon } from "@heroicons/react/24/outline";
+import {
+  QuestionMarkCircleIcon,
+  EllipsisHorizontalIcon,
+  HeartIcon as HeartOutline,
+} from "@heroicons/react/24/outline";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { alsoMarkKnownForLove } from "@/lib/services/jamSongs";
 import { answerStatus, keys, storage } from "@/lib/utils/guideQueue";
@@ -77,52 +81,78 @@ const VOTE_LABEL = {
   unanswered: 'not voted yet',
 };
 
-// How the button looks for each vote. "Not voted yet" is the only
-// solid one, so the songs you still need to vote on stand out.
-const STYLES = {
-  love: 'bg-rose-100 text-rose-500 hover:bg-rose-200/70',
-  know: 'text-primary ring-2 ring-inset ring-primary/70 hover:bg-primary/5',
-  dontKnow: 'text-gray-500 hover:bg-gray-100',
-  unsure: 'text-gray-500 hover:bg-gray-100',
-  unanswered: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
-};
-
-function VoteMark({ vote }) {
-  const iconClass = 'h-5 w-5 md:h-6 md:w-6';
-  if (vote === 'love') return <HeartIcon aria-hidden className={iconClass} />;
-  if (vote === 'know') return <CheckIcon aria-hidden className={iconClass} />;
-  if (vote === 'dontKnow') return <QuestionMarkCircleIcon aria-hidden className={iconClass} />;
-  if (vote === 'unsure') return <EllipsisHorizontalIcon aria-hidden className={iconClass} />;
-  return <span aria-hidden className="text-[11px] font-semibold uppercase tracking-wide">Vote</span>;
-}
-
-// Your own vote on a song. Tapping it opens a small menu to change your vote
-// in place. How the whole room voted is in the know bar on the right.
-export default function SongVotingButton({ jamSong, vote, onVote, onKnow, onChange }) {
-  const [open, setOpen] = useState(false);
-  const { played } = jamSong;
-  const shown = vote || 'unanswered';
-  const label = `Your vote: ${VOTE_LABEL[shown]}.`;
-
+// One tap to love a song, one tap to take it back. Taking back a love keeps
+// the know that came with it, since you still know the song.
+export default function HeartToggle({ jamSong, vote, onVote, onKnow, onChange }) {
+  const loved = vote === 'love';
+  const label = loved ? 'You love it. Remove love' : 'Love it';
   const box = cn(
     'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg md:h-11 md:w-11',
     // Wait for this device's vote to load so the first render matches the server
     !vote && 'invisible'
   );
 
-  // Played songs can't be voted on any more, so show your vote without a menu
-  if (played) {
-    if (shown === 'unanswered') return <div className={box} aria-hidden />;
+  // Played songs can't be voted on any more
+  if (jamSong.played) {
     return (
-      <div className={cn(box, shown === 'love' ? 'bg-rose-50 text-rose-500' : 'text-gray-500')} aria-label={label} role="img">
-        <VoteMark vote={shown} />
+      <div className={cn(box, loved ? 'bg-rose-50 text-rose-400' : 'text-gray-300')} aria-label={loved ? 'You loved it' : undefined} role={loved ? 'img' : undefined}>
+        {loved ? <HeartIcon aria-hidden className="h-5 w-5 md:h-6 md:w-6" /> : <HeartOutline aria-hidden className="h-5 w-5 md:h-6 md:w-6" />}
       </div>
+    );
+  }
+
+  const toggle = (e) => {
+    e.stopPropagation();
+    changeVote(jamSong._id, loved ? 'know' : 'love', { onVote, onKnow });
+    onChange?.();
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={loved}
+      onClick={toggle}
+      onKeyDown={(e) => e.stopPropagation()}
+      className={cn(
+        box,
+        'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+        loved ? 'bg-rose-100 text-rose-500 hover:bg-rose-200/70' : 'text-gray-400 hover:bg-rose-50 hover:text-rose-500'
+      )}
+    >
+      {loved ? <HeartIcon aria-hidden className="h-6 w-6" /> : <HeartOutline aria-hidden className="h-6 w-6" />}
+    </button>
+  );
+}
+
+function Mark({ vote }) {
+  if (vote === 'love' || vote === 'know') return <CheckIcon aria-hidden className="h-4 w-4 text-primary" />;
+  if (vote === 'dontKnow') return <QuestionMarkCircleIcon aria-hidden className="h-4 w-4 text-gray-500" />;
+  if (vote === 'unsure') return <EllipsisHorizontalIcon aria-hidden className="h-4 w-4 text-gray-500" />;
+  // Not voted yet: an empty ring to tap and answer
+  return <span aria-hidden className="h-3 w-3 rounded-full border-[1.5px] border-dashed border-primary/60" />;
+}
+
+// A small mark for your vote, shown before the know bar. Tapping it opens a
+// menu to give or change your vote in place.
+export function VoteMark({ jamSong, vote, onVote, onKnow, onChange }) {
+  const [open, setOpen] = useState(false);
+  if (!vote) return <span className="h-4 w-4" aria-hidden />;
+  const label = `Your vote: ${VOTE_LABEL[vote]}.`;
+
+  // Played songs can't be voted on any more, so the mark has no menu
+  if (jamSong.played) {
+    if (vote === 'unanswered') return <span className="h-4 w-4" aria-hidden />;
+    return (
+      <span className="inline-flex h-4 w-4 items-center justify-center" role="img" aria-label={label}>
+        <Mark vote={vote} />
+      </span>
     );
   }
 
   const pick = (next) => {
     setOpen(false);
-    if (next === shown) return;
+    if (next === vote) return;
     changeVote(jamSong._id, next, { onVote, onKnow });
     onChange?.();
   };
@@ -132,21 +162,20 @@ export default function SongVotingButton({ jamSong, vote, onVote, onKnow, onChan
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label={`${label} Change vote`}
+          aria-label={`${label} ${vote === 'unanswered' ? 'Vote' : 'Change vote'}`}
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
-          className={cn(
-            box,
-            'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-            STYLES[shown]
-          )}
+          // Bigger tap area than the mark itself
+          className="-m-2 inline-flex items-center justify-center rounded-md p-2 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <VoteMark vote={shown} />
+          <span className="inline-flex h-4 w-4 items-center justify-center">
+            <Mark vote={vote} />
+          </span>
         </button>
       </PopoverTrigger>
       <PopoverContent
         side="bottom"
-        align="start"
+        align="end"
         className="w-60 p-1.5"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
@@ -157,12 +186,12 @@ export default function SongVotingButton({ jamSong, vote, onVote, onKnow, onChan
         </div>
         <div role="menu" aria-label="Your vote">
           {OPTIONS.map(({ id, label: text, icon: Icon, iconClass }) => (
-            <VoteOption key={id} selected={shown === id} onSelect={() => pick(id)}>
+            <VoteOption key={id} selected={vote === id} onSelect={() => pick(id)}>
               <Icon aria-hidden className={cn('h-5 w-5', iconClass)} />
               <span className="flex-1">{text}</span>
             </VoteOption>
           ))}
-          <VoteOption small selected={shown === 'unsure'} onSelect={() => pick('unsure')}>
+          <VoteOption small selected={vote === 'unsure'} onSelect={() => pick('unsure')}>
             <EllipsisHorizontalIcon aria-hidden className="h-4 w-4 text-gray-400" />
             <span className="flex-1">Not sure</span>
           </VoteOption>
