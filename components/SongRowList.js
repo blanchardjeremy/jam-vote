@@ -40,7 +40,8 @@ export default function SongListRow({
   onDelete,
   isSelected,
   onSelectionChange,
-  hideType 
+  hideType,
+  additionalInfo
 }) {
   const handleCheckboxClick = (e) => {
     e.stopPropagation();
@@ -60,6 +61,7 @@ export default function SongListRow({
       song={song}
       isSelected={isSelected}
       hideType={hideType}
+      additionalInfo={additionalInfo}
       className="cursor-pointer select-none group"
       onClick={handleRowClick}
       leftControl={
