@@ -3,21 +3,12 @@ import { StarIcon } from '@heroicons/react/24/outline';
 import { Button } from "@/components/ui/button";
 import { useJam } from '@/components/JamContext';
 import SongAutocomplete from "@/components/SongAutocomplete";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export default function JamToolbar({ 
   songAutocompleteRef, 
   handleSelectExisting, 
   handleAddNew, 
-  currentSongs, 
-  groupingEnabled, 
-  setGroupingEnabled 
+  currentSongs
 }) {
   const { jam } = useJam();
 
@@ -40,19 +31,7 @@ export default function JamToolbar({
             Favorites
           </Link>
         </Button>
-
-        {currentSongs?.length > 0 && (
-          <Select value={groupingEnabled ? 'type' : 'none'} onValueChange={(value) => setGroupingEnabled(value === 'type')}>
-            <SelectTrigger className="w-auto border-none text-gray-500 focus:text-gray-900 text-sm focus:ring-0">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="type">Group by banger/ballad</SelectItem>
-              <SelectItem value="none">No grouping</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
       </div>
     </div>
   );
-} 
+}
