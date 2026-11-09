@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { MusicalNoteIcon, BookOpenIcon, PlusIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
+import { MusicalNoteIcon, BookOpenIcon, StarIcon, PlusIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -21,7 +21,8 @@ import { useRouter } from 'next/navigation'
 
 const icons = {
   music: MusicalNoteIcon,
-  library: BookOpenIcon
+  library: BookOpenIcon,
+  star: StarIcon
 }
 
 export function Navigation() {
