@@ -17,6 +17,8 @@ import { useJamPage } from '@/lib/hooks/useJamPage';
 import { useJamPusher } from '@/lib/hooks/useJamPusher';
 import { compareByVotes } from '@/lib/utils/songOrder';
 import { alsoMarkKnownForLove } from '@/lib/services/jamSongs';
+import { apiRequest } from '@/lib/services/apiHelpers';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import CaptainNameModal from '@/components/CaptainNameModal';
@@ -150,18 +152,25 @@ export default function GuidedPickerPage() {
   const currentIndex = queue ? firstAvailableIndex(queue, position, isAvailable) : 0;
   const currentSong = queue && currentIndex < queue.length ? songsById[queue[currentIndex]] : null;
 
+  // apiRequest throws on an error response (plain fetch doesn't), so a failed
+  // captain change is reported instead of silently dropped.
+  const songTitle = (jamSongId) => songsById[jamSongId]?.song?.title || 'this song';
+
   const signUpAsCaptain = (jamSongId, type, name) =>
-    fetch(`/api/jams/${jam._id}/captain`, {
+    apiRequest(`/api/jams/${jam._id}/captain`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, type, songId: jamSongId }),
+    }).catch((e) => {
+      toast.error(`Couldn't sign you up to captain "${songTitle(jamSongId)}": ${e.message}`);
     });
 
   const removeCaptain = (jamSongId, name) =>
-    fetch(
+    apiRequest(
       `/api/jams/${jam._id}/captain?songId=${jamSongId}&name=${encodeURIComponent(name)}`,
       { method: 'DELETE' }
-    );
+    ).catch((e) => {
+      toast.error(`Couldn't remove you as captain of "${songTitle(jamSongId)}": ${e.message}`);
+    });
 
   const markKnown = (jamSongId) => {
     storage.set(keys.know(jamSongId), 'true');
@@ -174,7 +183,7 @@ export default function GuidedPickerPage() {
   };
 
   const captain = (jamSongId, type, name) => {
-    inBackground(signUpAsCaptain(jamSongId, type, name));
+    signUpAsCaptain(jamSongId, type, name);
     markKnown(jamSongId);
     advance({ jamSongId, answer: 'captain', captainName: name });
   };
