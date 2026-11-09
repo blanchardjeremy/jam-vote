@@ -10,6 +10,7 @@ import {
   QuestionMarkCircleIcon,
   ArrowUturnLeftIcon,
   XMarkIcon,
+  ListBulletIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/outline';
 import { Piano } from 'lucide-react';
@@ -394,13 +395,14 @@ export default function GuidedPickerPage() {
         )}
 
         <Button
-          variant="ghost"
-          size="icon"
+          variant="outline"
+          size="sm"
           asChild
-          className="h-9 w-9 shrink-0 rounded-full text-gray-500"
+          className="h-9 shrink-0 gap-1 rounded-full pl-2.5 pr-3.5 text-gray-700"
         >
-          <Link href={`/${jam.slug}`} aria-label="Back to the song list">
-            <XMarkIcon className="h-5 w-5" />
+          <Link href={`/${jam.slug}`}>
+            <XMarkIcon className="h-4 w-4" />
+            Exit
           </Link>
         </Button>
       </div>
@@ -492,6 +494,19 @@ export default function GuidedPickerPage() {
         <p className="-mt-2 mb-4 text-center text-sm text-gray-500">
           Or swipe the card: right if you know it, up if you love it, left if you&apos;re not sure.
         </p>
+      )}
+
+      {/* A second way out, for anyone who misses Exit at the top. The
+          caught-up card already has its own. */}
+      {currentSong && (
+        <div className="text-center">
+          <Button variant="link" asChild className="text-gray-600">
+            <Link href={`/${jam.slug}`}>
+              <ListBulletIcon className="h-4 w-4" />
+              Back to the song list
+            </Link>
+          </Button>
+        </div>
       )}
 
       <CaptainNameModal
