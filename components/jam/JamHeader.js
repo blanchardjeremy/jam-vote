@@ -1,4 +1,6 @@
+import Link from 'next/link';
 import { MoreVertical } from 'lucide-react';
+import { RectangleStackIcon } from '@heroicons/react/24/outline';
 import { TrashIcon } from '@heroicons/react/24/solid';
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +31,12 @@ export default function JamHeader({ onDeleteClick, hostMode, setHostMode }) {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <Button variant="primary" asChild>
+            <Link href={`/${jam.slug}/guide`}>
+              <RectangleStackIcon className="h-5 w-5" />
+              Guided voting
+            </Link>
+          </Button>
           <Button 
             variant={hostMode ? "default" : "outline"}
             onClick={() => setHostMode(!hostMode)}
