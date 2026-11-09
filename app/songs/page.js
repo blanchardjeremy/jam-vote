@@ -240,7 +240,7 @@ export default function SongsPage() {
   }, []);
 
   // Get song operations from our service
-  const { handleEdit, handleDelete, handleBulkDelete } = useSongOperations({
+  const { handleEdit, handleDelete, handleBulkDelete, handleToggleFavorite } = useSongOperations({
     songs,
     setSongs,
     selectedSongs,
@@ -499,6 +499,7 @@ export default function SongsPage() {
                   song={song}
                   onEdit={handleEditSong}
                   onDelete={handleDeleteSong}
+                  onToggleFavorite={handleToggleFavorite}
                   isSelected={selectedSongs.has(song._id)}
                   onSelectionChange={(checked) => toggleSelection(song._id, index)}
                   hideType={filters.type !== 'all'}
