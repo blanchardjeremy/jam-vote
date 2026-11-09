@@ -8,8 +8,8 @@ import {
   AcademicCapIcon,
   UserIcon,
   QuestionMarkCircleIcon,
-  ArrowLeftIcon,
   ArrowUturnLeftIcon,
+  XMarkIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/outline';
 import { Piano } from 'lucide-react';
@@ -20,7 +20,7 @@ import { alsoMarkKnownForLove } from '@/lib/services/jamSongs';
 import { apiRequest } from '@/lib/services/apiHelpers';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import CaptainNameModal from '@/components/CaptainNameModal';
 import LoadingBlock from '@/components/LoadingBlock';
 import PageTitle from '@/components/ui/page-title';
@@ -126,19 +126,8 @@ export default function GuidedPickerPage() {
 
   useJamPusher({ jam, setJam, sortMethod, clearHighlightAfterDelay });
 
-  // Both types are included by default; unchecking one limits the picker to the other
-  const [includeTypes, setIncludeTypes] = useState({ banger: true, ballad: true });
-  const typeFilter = includeTypes.banger && includeTypes.ballad
-    ? null
-    : includeTypes.banger ? 'banger' : 'ballad';
-
-  const toggleType = (type, checked) => {
-    setIncludeTypes((prev) => {
-      const next = { ...prev, [type]: checked };
-      // Keep at least one type selected
-      return next.banger || next.ballad ? next : prev;
-    });
-  };
+  // null for every song, or 'banger' / 'ballad' to limit the picker to one type
+  const [typeFilter, setTypeFilter] = useState(null);
 
   const [queue, setQueue] = useState(null); // jamSong ids, fixed when built
   const [position, setPosition] = useState(0);
@@ -373,47 +362,71 @@ export default function GuidedPickerPage() {
     <div className="max-w-xl mx-auto">
       <PageTitle title={`${jam.name} – Guided voting`} />
 
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <Button variant="ghost" size="sm" asChild className="-ml-2 text-gray-600">
-          <Link href={`/${jam.slug}`}>
-            <ArrowLeftIcon className="h-4 w-4" />
-            Back to list
+      <h1 className="mb-2 truncate text-center text-sm font-medium text-gray-500">{jam.name}</h1>
+
+      {/* Undo on the left, progress in the middle, close on the right. Undo
+          keeps its space when there's nothing to undo so the bar doesn't jump. */}
+      <div className="mb-4 flex items-center gap-3">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={goBack}
+          disabled={history.length === 0}
+          aria-label="Undo last answer"
+          className={cn(
+            'h-9 w-9 shrink-0 rounded-full text-gray-600',
+            history.length === 0 && 'invisible'
+          )}
+        >
+          <ArrowUturnLeftIcon className="h-4 w-4" />
+        </Button>
+
+        {/* Nothing to show when there was nothing to answer */}
+        {total > 0 ? (
+          <ProgressBar
+            done={history.length}
+            total={total}
+            progress={currentSong ? progress : 1}
+            feedback={feedback}
+          />
+        ) : (
+          <div className="flex-1" />
+        )}
+
+        <Button
+          variant="ghost"
+          size="icon"
+          asChild
+          className="h-9 w-9 shrink-0 rounded-full text-gray-500"
+        >
+          <Link href={`/${jam.slug}`} aria-label="Back to the song list">
+            <XMarkIcon className="h-5 w-5" />
           </Link>
         </Button>
-        {history.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={goBack} className="text-gray-600">
-            <ArrowUturnLeftIcon className="h-4 w-4" />
-            Undo last
-          </Button>
-        )}
       </div>
 
-      {/* Nothing to show when there was nothing to answer */}
-      {total > 0 && (
-        <ProgressBar
-          done={history.length}
-          total={total}
-          progress={currentSong ? progress : 1}
-          feedback={feedback}
-        />
-      )}
-
-      <h1 className="text-xl font-bold text-gray-900 mb-2">{jam.name}</h1>
-
-      <div className="mb-3 flex flex-wrap items-center gap-5">
+      <ToggleGroup.Root
+        type="single"
+        value={typeFilter ?? 'all'}
+        // Tapping the selected option again would clear it; keep it selected
+        onValueChange={(value) => value && setTypeFilter(value === 'all' ? null : value)}
+        aria-label="Which songs to show"
+        className="mx-auto mb-4 flex w-fit rounded-full bg-gray-200/70 p-0.5"
+      >
         {[
-          { type: 'banger', label: 'Bangers' },
-          { type: 'ballad', label: 'Ballads' },
-        ].map(({ type, label }) => (
-          <label key={type} className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-            <Checkbox
-              checked={includeTypes[type]}
-              onCheckedChange={(checked) => toggleType(type, checked === true)}
-            />
+          { value: 'all', label: 'All' },
+          { value: 'banger', label: 'Bangers' },
+          { value: 'ballad', label: 'Ballads' },
+        ].map(({ value, label }) => (
+          <ToggleGroup.Item
+            key={value}
+            value={value}
+            className="rounded-full px-3.5 py-1 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+          >
             {label}
-          </label>
+          </ToggleGroup.Item>
         ))}
-      </div>
+      </ToggleGroup.Root>
 
       {/* The stack: cards waiting behind, then the top card, with the card
           that just left drawn over it (or under it, on undo) as it animates
@@ -756,35 +769,27 @@ function Confetti() {
   );
 }
 
-// Progress through this run. On each answer the bar grows, a glint sweeps
-// across it, the count pops and a "+1" floats up; crossing a quarter mark
-// adds a short message and a confetti burst.
+// Progress through this run, sized to sit between the undo and close
+// buttons. On each answer the bar grows, a glint sweeps across it, the count
+// pops and a "+1" floats up; crossing a quarter mark adds a short message
+// above the bar and a confetti burst.
 function ProgressBar({ done, total, progress, feedback }) {
   const pct = Math.round(progress * 100);
   const animate = feedback.key > 0;
 
   return (
-    <div className="mb-4">
-      <div className="relative mb-1.5 flex h-5 items-center justify-between text-xs font-medium text-gray-500">
-        <span>Your progress</span>
-        {feedback.milestone && (
-          // Centered by the wrapper, since the chip's own transform is animated
-          <span className="pointer-events-none absolute inset-x-0 flex justify-center">
-            <span
-              key={`m-${feedback.key}`}
-              className="guide-milestone rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800"
-            >
-              {feedback.milestone}
-            </span>
+    <div className="relative flex min-w-0 flex-1 items-center gap-2.5">
+      {feedback.milestone && (
+        // Centered by the wrapper, since the chip's own transform is animated
+        <span className="pointer-events-none absolute inset-x-0 bottom-full mb-2 flex justify-center">
+          <span
+            key={`m-${feedback.key}`}
+            className="guide-milestone rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800"
+          >
+            {feedback.milestone}
           </span>
-        )}
-        <span
-          key={`c-${feedback.key}`}
-          className={cn('tabular-nums text-gray-700', animate && 'guide-pop inline-block')}
-        >
-          {done} / {total}
         </span>
-      </div>
+      )}
 
       <div
         role="progressbar"
@@ -792,7 +797,7 @@ function ProgressBar({ done, total, progress, feedback }) {
         aria-valuemax={total}
         aria-valuenow={done}
         aria-label="Songs answered"
-        className="relative h-2.5 rounded-full bg-gray-200"
+        className="relative h-2.5 flex-1 rounded-full bg-gray-200"
       >
         <div
           className="relative h-full overflow-hidden rounded-full bg-gradient-to-r from-indigo-500 via-primary to-rose-500 transition-[width] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
@@ -827,6 +832,16 @@ function ProgressBar({ done, total, progress, feedback }) {
           </span>
         )}
       </div>
+
+      <span
+        key={`c-${feedback.key}`}
+        className={cn(
+          'shrink-0 text-sm font-medium tabular-nums text-gray-700',
+          animate && 'guide-pop inline-block'
+        )}
+      >
+        {done}/{total}
+      </span>
     </div>
   );
 }
