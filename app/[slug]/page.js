@@ -61,7 +61,6 @@ export default function JamPage() {
     jam, 
     setJam, 
     sortMethod, 
-    groupingEnabled,
     clearHighlightAfterDelay
   });
 

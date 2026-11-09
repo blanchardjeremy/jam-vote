@@ -99,14 +99,13 @@ export default function GuidedPickerPage() {
     setJam,
     error,
     isLoading,
-    groupingEnabled,
     sortMethod,
     handleVote,
     handleKnow,
     clearHighlightAfterDelay,
   } = useJamPage(params.slug);
 
-  useJamPusher({ jam, setJam, sortMethod, groupingEnabled, clearHighlightAfterDelay });
+  useJamPusher({ jam, setJam, sortMethod, clearHighlightAfterDelay });
 
   // Both types are included by default; unchecking one limits the picker to the other
   const [includeTypes, setIncludeTypes] = useState({ banger: true, ballad: true });
