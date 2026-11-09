@@ -192,10 +192,12 @@ function FavoritesContent() {
                   onDelete={(s) => setDeleteModalState({ isOpen: true, song: s })}
                   isSelected={selectedSongs.has(song._id)}
                   onSelectionChange={() => toggleSelection(song._id)}
+                  additionalInfo={songIdsInTargetJam.has(song._id) && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 whitespace-nowrap">
+                      In this jam
+                    </span>
+                  )}
                 />
-                {songIdsInTargetJam.has(song._id) && (
-                  <p className="px-4 pb-2 -mt-1 text-xs text-gray-500">Already in this jam</p>
-                )}
               </li>
             ))
           )}
