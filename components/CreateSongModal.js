@@ -316,9 +316,55 @@ export default function SongFormModal({
                 )}
               />
             </div>
+
+            {mode === 'edit' && (
+              <div className="sm:col-span-2">
+                <PlayHistory song={initialData.song || initialData} />
+              </div>
+            )}
           </div>
         </form>
       </Form>
     </Modal>
   );
-} 
+}
+
+const formatDate = (date) =>
+  new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+// Read-only play stats for the Edit Song form (moved here from the jam list).
+function PlayHistory({ song }) {
+  const timesPlayed = song?.timesPlayed || 0;
+  const history = [...(song?.playHistory || [])]
+    .filter((h) => h?.date)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  const MAX_SHOWN = 5;
+
+  return (
+    <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm">
+      <p className="font-medium text-gray-900">Play history</p>
+      {timesPlayed === 0 && history.length === 0 ? (
+        <p className="mt-1 text-gray-500">Not played yet</p>
+      ) : (
+        <>
+          <p className="mt-1 text-gray-600">
+            Played {timesPlayed} {timesPlayed === 1 ? 'time' : 'times'}
+            {song.lastPlayed && <> · Last played {formatDate(song.lastPlayed)}</>}
+          </p>
+          {history.length > 0 && (
+            <ul className="mt-1 space-y-0.5 text-gray-500">
+              {history.slice(0, MAX_SHOWN).map((h, i) => (
+                <li key={h._id || i}>
+                  {formatDate(h.date)}{h.event ? ` — ${h.event}` : ''}
+                </li>
+              ))}
+              {history.length > MAX_SHOWN && (
+                <li>and {history.length - MAX_SHOWN} more</li>
+              )}
+            </ul>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
