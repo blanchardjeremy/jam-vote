@@ -45,6 +45,8 @@ export default function SongRow({
         song={song}
         isNext={isNext}
         hideType={hideType}
+        // Plays / last played live in the Edit Song form to keep the jam list uncluttered
+        hidePlayStats
         className={jamSong.played ? 'bg-gray-200 opacity-50' : ''}
         leftControl={
           <SongVotingButton jamSong={jamSong} onVote={handleVote} />
