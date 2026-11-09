@@ -93,6 +93,19 @@ export default function JamPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showFavorites, jamId, allSongs]);
 
+  // After a suggested favorite is edited, show the changes; if it's no longer
+  // a favorite, drop it from the suggestions.
+  const handleSuggestionUpdated = (updated) => {
+    if (!updated?._id) return;
+    setFavoriteSuggestions((prev) => {
+      if (!prev) return prev;
+      const apply = (list) => (list || [])
+        .map((s) => (s._id === updated._id ? { ...s, ...updated } : s))
+        .filter((s) => s.favorite !== false);
+      return { banger: apply(prev.banger), ballad: apply(prev.ballad), any: apply(prev.any) };
+    });
+  };
+
   const forFavoritesView = (songs) =>
     showFavorites
       ? songs.filter((s) =>
@@ -186,7 +199,7 @@ export default function JamPage() {
                         ...(showFavorites && { emptyMessage: favoritesViewEmptyMessage })
                       })}
                     </ul>
-                    <FavoriteSuggestions songs={favoriteSuggestions?.banger} hideTypeBadge />
+                    <FavoriteSuggestions songs={favoriteSuggestions?.banger} hideTypeBadge onSongUpdated={handleSuggestionUpdated} />
                   </>
                 )}
               </div>
@@ -209,7 +222,7 @@ export default function JamPage() {
                         ...(showFavorites && { emptyMessage: favoritesViewEmptyMessage })
                       })}
                     </ul>
-                    <FavoriteSuggestions songs={favoriteSuggestions?.ballad} hideTypeBadge />
+                    <FavoriteSuggestions songs={favoriteSuggestions?.ballad} hideTypeBadge onSongUpdated={handleSuggestionUpdated} />
                   </>
                 )}
               </div>
@@ -224,7 +237,7 @@ export default function JamPage() {
                   ...(showFavorites && { emptyMessage: favoritesViewEmptyMessage })
                 })}
               </ul>
-              <FavoriteSuggestions songs={favoriteSuggestions?.any} />
+              <FavoriteSuggestions songs={favoriteSuggestions?.any} onSongUpdated={handleSuggestionUpdated} />
             </>
           )}
         </div>
