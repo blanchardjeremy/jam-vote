@@ -16,14 +16,13 @@ const pct = (part, whole) => (whole > 0 ? `${(part / whole) * 100}%` : '0%');
 
 const YOUR_ANSWER = {
   know: 'You know it',
-  dontKnow: "You don't know it",
-  unsure: "You're not sure",
+  dontKnow: "You're not sure",
   unanswered: "You haven't answered yet",
 };
 
 // How well the room knows a song: one small bar whose length is how many
 // people answered (scaled to the most-answered song in the jam). From the
-// left: loved it (rose), knows it without a heart (indigo), doesn't know it
+// left: loved it (rose), knows it without a heart (indigo), not sure
 // (slate), then light grey for everyone who hasn't answered. Hover or tap for
 // the numbers.
 export default function KnowBar({ jamSong, maxAnswers, status }) {
@@ -33,7 +32,7 @@ export default function KnowBar({ jamSong, maxAnswers, status }) {
   const scale = Math.max(maxAnswers, answered);
   if (scale === 0) return null;
 
-  const summary = `${loves} love it, ${knows} know it, ${dontKnows} don't know it`;
+  const summary = `${loves} love it, ${knows} know it, ${dontKnows} not sure`;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -75,7 +74,7 @@ export default function KnowBar({ jamSong, maxAnswers, status }) {
           </li>
           <li className="flex items-center gap-1.5">
             <QuestionMarkCircleIcon aria-hidden className="h-3.5 w-3.5 text-slate-400" />
-            <span className="font-semibold tabular-nums">{dontKnows}</span> don&apos;t know it
+            <span className="font-semibold tabular-nums">{dontKnows}</span> not sure
           </li>
         </ul>
         {status && YOUR_ANSWER[status] && (

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { HeartIcon, CheckIcon } from "@heroicons/react/20/solid";
 import {
   QuestionMarkCircleIcon,
-  EllipsisHorizontalIcon,
   HeartIcon as HeartOutline,
 } from "@heroicons/react/24/outline";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -10,7 +9,8 @@ import { alsoMarkKnownForLove } from "@/lib/services/jamSongs";
 import { answerStatus, keys, storage } from "@/lib/utils/guideQueue";
 import { cn } from "@/lib/utils";
 
-// This device's vote on a song: 'love' | 'know' | 'dontKnow' | 'unsure' | 'unanswered'
+// This device's vote on a song: 'love' | 'know' | 'dontKnow' | 'unanswered'.
+// 'dontKnow' is shown as "I'm not sure".
 export function yourVote(jamSong) {
   if (storage.get(keys.love(jamSong._id)) === 'true') return 'love';
   return answerStatus(jamSong);
@@ -22,16 +22,13 @@ const KEYS_FOR = {
   love: ['love', 'know'],
   know: ['know'],
   dontKnow: ['dontKnow'],
-  unsure: ['unsure'],
 };
 
-// What the server is told when a key is added or taken away. "Not sure" is
-// only remembered on this device.
+// What the server is told when a key is added or taken away
 const SERVER = {
   love: { add: ['vote', 'vote'], remove: ['vote', 'unvote'] },
   know: { add: ['know', 'know'], remove: ['know', 'unknow'] },
   dontKnow: { add: ['know', 'dontknow'], remove: ['know', 'undontknow'] },
-  unsure: null,
 };
 
 // Change this device's vote, undoing whatever the old vote added, so each
@@ -70,14 +67,13 @@ function changeVote(id, next, { onVote, onKnow }) {
 const OPTIONS = [
   { id: 'love', label: 'I love it', icon: HeartIcon, iconClass: 'text-rose-500' },
   { id: 'know', label: 'I know it', icon: CheckIcon, iconClass: 'text-primary' },
-  { id: 'dontKnow', label: "I don't know it", icon: QuestionMarkCircleIcon, iconClass: 'text-gray-500' },
+  { id: 'dontKnow', label: "I'm not sure", icon: QuestionMarkCircleIcon, iconClass: 'text-gray-500' },
 ];
 
 const VOTE_LABEL = {
   love: 'love it',
   know: 'know it',
-  dontKnow: "don't know it",
-  unsure: 'not sure',
+  dontKnow: 'not sure',
   unanswered: 'not voted yet',
 };
 
@@ -128,7 +124,6 @@ export default function HeartToggle({ jamSong, vote, onVote, onKnow, onChange })
 function Mark({ vote }) {
   if (vote === 'love' || vote === 'know') return <CheckIcon aria-hidden className="h-4 w-4 text-primary" />;
   if (vote === 'dontKnow') return <QuestionMarkCircleIcon aria-hidden className="h-4 w-4 text-gray-500" />;
-  if (vote === 'unsure') return <EllipsisHorizontalIcon aria-hidden className="h-4 w-4 text-gray-500" />;
   // Not voted yet: an empty ring to tap and answer
   return <span aria-hidden className="h-3 w-3 rounded-full border-[1.5px] border-dashed border-primary/60" />;
 }
@@ -191,10 +186,6 @@ export function VoteMark({ jamSong, vote, onVote, onKnow, onChange }) {
               <span className="flex-1">{text}</span>
             </VoteOption>
           ))}
-          <VoteOption small selected={vote === 'unsure'} onSelect={() => pick('unsure')}>
-            <EllipsisHorizontalIcon aria-hidden className="h-4 w-4 text-gray-400" />
-            <span className="flex-1">Not sure</span>
-          </VoteOption>
         </div>
       </PopoverContent>
     </Popover>
