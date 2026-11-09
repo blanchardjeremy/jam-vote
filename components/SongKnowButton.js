@@ -17,7 +17,7 @@ export default function SongKnowButton({ jamSong, onKnow }) {
 
   useEffect(() => {
     setKnowsSong(localStorage.getItem(storageKey) === 'true');
-  }, [storageKey]);
+  }, [storageKey, jamSong.knows]);
 
   const handleClick = useCallback(async () => {
     if (isSaving || !onKnow) return;

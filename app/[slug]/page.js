@@ -15,7 +15,13 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import PageTitle from '@/components/ui/page-title';
 import { JamProvider } from '@/components/JamContext';
 import StickyQRCode from "@/components/StickyQRCode";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import FavoriteSuggestions, { pickRandomFavorites } from '@/components/jam/FavoriteSuggestions';
+
+// With host tools on, only songs with at least this many hearts are listed
+// (played songs always stay visible so the host can see what's done).
+const HOST_MIN_HEARTS = 6;
+const FAVORITE_SUGGESTION_COUNT = 5;
 
 export default function JamPage() {
   const params = useParams();
@@ -49,6 +55,7 @@ export default function JamPage() {
     handleRemove,
     handleVote,
     handleKnow,
+    allSongs,
     handleTogglePlayed,
     handleDeleteJam,
     handleSelectExisting,
@@ -65,6 +72,30 @@ export default function JamPage() {
     groupingEnabled,
     clearHighlightAfterDelay
   });
+
+  // Host view: random favorites (not already in the jam) to show under each
+  // section. Picked once each time host tools are turned on, so they don't
+  // reshuffle on every vote.
+  const [favoriteSuggestions, setFavoriteSuggestions] = useState(null);
+  const jamId = jam?._id;
+  useEffect(() => {
+    if (!hostMode || !jamId) {
+      setFavoriteSuggestions(null);
+      return;
+    }
+    const inJam = new Set((jam.songs || []).map((s) => s.song?._id || s.song));
+    setFavoriteSuggestions({
+      banger: pickRandomFavorites(allSongs, 'banger', inJam, FAVORITE_SUGGESTION_COUNT),
+      ballad: pickRandomFavorites(allSongs, 'ballad', inJam, FAVORITE_SUGGESTION_COUNT),
+      any: pickRandomFavorites(allSongs, null, inJam, FAVORITE_SUGGESTION_COUNT),
+    });
+    // Only re-pick when host tools are toggled (or the song library loads)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hostMode, jamId, allSongs]);
+
+  const forHostView = (songs) =>
+    hostMode ? songs.filter((s) => s.played || s.votes >= HOST_MIN_HEARTS) : songs;
+  const hostEmptyMessage = `No songs with ${HOST_MIN_HEARTS}+ hearts yet`;
 
   // Helper function to render song list with common props
   const renderSongList = ({ songs, hideTypeBadge = false, emptyMessage = "No songs yet - add some tunes!", type }) => (
@@ -125,6 +156,12 @@ export default function JamPage() {
         setGroupingEnabled={setGroupingEnabled}
       />
 
+      {hostMode && jam.songs?.length > 0 && (
+        <p className="mb-3 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
+          Host view: showing songs with {HOST_MIN_HEARTS}+ hearts, plus a few favorites at the bottom of each section.
+        </p>
+      )}
+
       {(!jam.songs || jam.songs.length === 0) ? (
         <JamEmptyState />
       ) : (
@@ -140,13 +177,17 @@ export default function JamPage() {
                   onToggle={() => toggleSection('banger')}
                 />
                 {!collapsed.banger && (
-                  <ul className="divide-y divide-gray-200">
-                    {renderSongList({
-                      songs: groupedSongs.bangers,
-                      hideTypeBadge: true,
-                      type: "banger"
-                    })}
-                  </ul>
+                  <>
+                    <ul className="divide-y divide-gray-200">
+                      {renderSongList({
+                        songs: forHostView(groupedSongs.bangers),
+                        hideTypeBadge: true,
+                        type: "banger",
+                        ...(hostMode && { emptyMessage: hostEmptyMessage })
+                      })}
+                    </ul>
+                    <FavoriteSuggestions songs={favoriteSuggestions?.banger} hideTypeBadge />
+                  </>
                 )}
               </div>
               
@@ -159,24 +200,32 @@ export default function JamPage() {
                   onToggle={() => toggleSection('ballad')}
                 />
                 {!collapsed.ballad && (
-                  <ul className="divide-y divide-gray-200">
-                    {renderSongList({
-                      songs: groupedSongs.ballads,
-                      hideTypeBadge: true,
-                      type: "ballad"
-                    })}
-                  </ul>
+                  <>
+                    <ul className="divide-y divide-gray-200">
+                      {renderSongList({
+                        songs: forHostView(groupedSongs.ballads),
+                        hideTypeBadge: true,
+                        type: "ballad",
+                        ...(hostMode && { emptyMessage: hostEmptyMessage })
+                      })}
+                    </ul>
+                    <FavoriteSuggestions songs={favoriteSuggestions?.ballad} hideTypeBadge />
+                  </>
                 )}
               </div>
             </>
           ) : (
-            <ul className="divide-y divide-gray-200">
-              {renderSongList({
-                songs: groupedSongs.ungrouped,
-                hideTypeBadge: false,
-                type: "all"
-              })}
-            </ul>
+            <>
+              <ul className="divide-y divide-gray-200">
+                {renderSongList({
+                  songs: forHostView(groupedSongs.ungrouped),
+                  hideTypeBadge: false,
+                  type: "all",
+                  ...(hostMode && { emptyMessage: hostEmptyMessage })
+                })}
+              </ul>
+              <FavoriteSuggestions songs={favoriteSuggestions?.any} />
+            </>
           )}
         </div>
       )}

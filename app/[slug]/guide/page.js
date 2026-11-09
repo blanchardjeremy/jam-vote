@@ -16,6 +16,7 @@ import { Piano } from 'lucide-react';
 import { useJamPage } from '@/lib/hooks/useJamPage';
 import { useJamPusher } from '@/lib/hooks/useJamPusher';
 import { compareByVotes } from '@/lib/utils/songOrder';
+import { alsoMarkKnownForLove } from '@/lib/services/jamSongs';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import CaptainNameModal from '@/components/CaptainNameModal';
@@ -187,7 +188,9 @@ export default function GuidedPickerPage() {
     if (answerId === 'love') {
       storage.set(keys.love(id), 'true');
       inBackground(handleVote(id, 'vote'));
-      advance({ jamSongId: id, answer: 'love' });
+      // A heart also counts as a know (once per person)
+      const addedKnow = alsoMarkKnownForLove(id, (songId) => handleKnow(songId, 'know'));
+      advance({ jamSongId: id, answer: 'love', addedKnow });
     } else if (answerId === 'know') {
       markKnown(id);
       advance({ jamSongId: id, answer: 'know' });
@@ -220,6 +223,11 @@ export default function GuidedPickerPage() {
     if (last.answer === 'love') {
       storage.remove(keys.love(id));
       inBackground(handleVote(id, 'unvote'));
+      // Undo also takes back a know that this heart added
+      if (last.addedKnow) {
+        storage.remove(keys.know(id));
+        inBackground(handleKnow(id, 'unknow'));
+      }
     } else if (last.answer === 'know' || last.answer === 'captain') {
       storage.remove(keys.know(id));
       inBackground(handleKnow(id, 'unknow'));

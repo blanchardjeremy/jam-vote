@@ -6,6 +6,7 @@ import SongVotingButton from "@/components/SongVotingButton";
 import SongKnowButton from "@/components/SongKnowButton";
 import CaptainBadges from "@/components/CaptainBadges";
 import BaseSongRow from "@/components/SongRowBase";
+import { alsoMarkKnownForLove } from "@/lib/services/jamSongs";
 
 export default function SongRow({ 
   jamSong, 
@@ -26,6 +27,14 @@ export default function SongRow({
     await onTogglePlayed(jamSong._id);
   }, [jamSong._id, jamSong.played, onTogglePlayed]);
   
+  // A heart also marks the song as known (once per person)
+  const handleVote = (id, action) => {
+    if (action === 'vote' && onKnow) {
+      alsoMarkKnownForLove(id, (songId) => onKnow(songId, 'know'));
+    }
+    return onVote(id, action);
+  };
+
   const handleEdit = async (updatedSong) => {
     onEdit?.(jamSong._id, updatedSong);
   };
@@ -39,7 +48,7 @@ export default function SongRow({
         className={jamSong.played ? 'bg-gray-200 opacity-50' : ''}
         leftControl={
           <div className="flex items-start">
-            <SongVotingButton jamSong={jamSong} onVote={onVote} />
+            <SongVotingButton jamSong={jamSong} onVote={handleVote} />
             <SongKnowButton jamSong={jamSong} onKnow={onKnow} />
           </div>
         }
