@@ -39,7 +39,7 @@ const BaseSongRow = forwardRef(({
         data-variant={highlight}
       >
         <div className="flex items-center gap-2 md:gap-4">
-          {/* Left Control (Heart/Checkbox) */}
+          {/* Left Control (vote count button/checkbox) */}
           {leftControl}
 
           {/* Main Content */}
