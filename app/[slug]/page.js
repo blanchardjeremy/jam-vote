@@ -15,11 +15,19 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import PageTitle from '@/components/ui/page-title';
 import { JamProvider } from '@/components/JamContext';
 import StickyQRCode from "@/components/StickyQRCode";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import FavoriteSuggestions, { pickRandomFavorites } from '@/components/jam/FavoriteSuggestions';
+
+// With "Include favorites" on (⋮ menu), only songs with at least this many
+// hearts OR at least this many "know it" are listed (played songs always stay
+// visible), and a few favorites are suggested under each section.
+const FAVORITES_VIEW_MIN_COUNT = 5;
+const FAVORITE_SUGGESTION_COUNT = 5;
 
 export default function JamPage() {
   const params = useParams();
   const [hostMode, setHostMode] = useState(false);
+  const [showFavorites, setShowFavorites] = useState(false);
   // Collapsed song-type sections, e.g. collapse Bangers to jump straight to Ballads
   const [collapsed, setCollapsed] = useState({ banger: false, ballad: false });
   const toggleSection = (type) => setCollapsed((prev) => ({ ...prev, [type]: !prev[type] }));
@@ -48,6 +56,7 @@ export default function JamPage() {
     handleRemove,
     handleVote,
     handleKnow,
+    allSongs,
     handleTogglePlayed,
     handleDeleteJam,
     handleSelectExisting,
@@ -63,6 +72,36 @@ export default function JamPage() {
     sortMethod, 
     clearHighlightAfterDelay
   });
+
+  // "Include favorites": random favorites (not already in the jam) to show under
+  // each section. Picked once each time it's turned on, so they don't
+  // reshuffle on every vote.
+  const [favoriteSuggestions, setFavoriteSuggestions] = useState(null);
+  const jamId = jam?._id;
+  useEffect(() => {
+    if (!showFavorites || !jamId) {
+      setFavoriteSuggestions(null);
+      return;
+    }
+    const inJam = new Set((jam.songs || []).map((s) => s.song?._id || s.song));
+    setFavoriteSuggestions({
+      banger: pickRandomFavorites(allSongs, 'banger', inJam, FAVORITE_SUGGESTION_COUNT),
+      ballad: pickRandomFavorites(allSongs, 'ballad', inJam, FAVORITE_SUGGESTION_COUNT),
+      any: pickRandomFavorites(allSongs, null, inJam, FAVORITE_SUGGESTION_COUNT),
+    });
+    // Only re-pick when host tools are toggled (or the song library loads)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showFavorites, jamId, allSongs]);
+
+  const forFavoritesView = (songs) =>
+    showFavorites
+      ? songs.filter((s) =>
+          s.played ||
+          s.votes >= FAVORITES_VIEW_MIN_COUNT ||
+          (s.knows || 0) >= FAVORITES_VIEW_MIN_COUNT
+        )
+      : songs;
+  const favoritesViewEmptyMessage = `No songs with ${FAVORITES_VIEW_MIN_COUNT}+ hearts or ${FAVORITES_VIEW_MIN_COUNT}+ "know it" yet`;
 
   // Helper function to render song list with common props
   const renderSongList = ({ songs, hideTypeBadge = false, emptyMessage = "No songs yet - add some tunes!", type }) => (
@@ -112,6 +151,8 @@ export default function JamPage() {
         onDeleteClick={() => setShowDeleteDialog(true)} 
         hostMode={hostMode}
         setHostMode={setHostMode}
+        showFavorites={showFavorites}
+        setShowFavorites={setShowFavorites}
       />
 
       <JamToolbar 
@@ -136,13 +177,17 @@ export default function JamPage() {
                   onToggle={() => toggleSection('banger')}
                 />
                 {!collapsed.banger && (
-                  <ul className="divide-y divide-gray-200">
-                    {renderSongList({
-                      songs: groupedSongs.bangers,
-                      hideTypeBadge: true,
-                      type: "banger"
-                    })}
-                  </ul>
+                  <>
+                    <ul className="divide-y divide-gray-200">
+                      {renderSongList({
+                        songs: forFavoritesView(groupedSongs.bangers),
+                        hideTypeBadge: true,
+                        type: "banger",
+                        ...(showFavorites && { emptyMessage: favoritesViewEmptyMessage })
+                      })}
+                    </ul>
+                    <FavoriteSuggestions songs={favoriteSuggestions?.banger} hideTypeBadge />
+                  </>
                 )}
               </div>
               
@@ -155,24 +200,32 @@ export default function JamPage() {
                   onToggle={() => toggleSection('ballad')}
                 />
                 {!collapsed.ballad && (
-                  <ul className="divide-y divide-gray-200">
-                    {renderSongList({
-                      songs: groupedSongs.ballads,
-                      hideTypeBadge: true,
-                      type: "ballad"
-                    })}
-                  </ul>
+                  <>
+                    <ul className="divide-y divide-gray-200">
+                      {renderSongList({
+                        songs: forFavoritesView(groupedSongs.ballads),
+                        hideTypeBadge: true,
+                        type: "ballad",
+                        ...(showFavorites && { emptyMessage: favoritesViewEmptyMessage })
+                      })}
+                    </ul>
+                    <FavoriteSuggestions songs={favoriteSuggestions?.ballad} hideTypeBadge />
+                  </>
                 )}
               </div>
             </>
           ) : (
-            <ul className="divide-y divide-gray-200">
-              {renderSongList({
-                songs: groupedSongs.ungrouped,
-                hideTypeBadge: false,
-                type: "all"
-              })}
-            </ul>
+            <>
+              <ul className="divide-y divide-gray-200">
+                {renderSongList({
+                  songs: forFavoritesView(groupedSongs.ungrouped),
+                  hideTypeBadge: false,
+                  type: "all",
+                  ...(showFavorites && { emptyMessage: favoritesViewEmptyMessage })
+                })}
+              </ul>
+              <FavoriteSuggestions songs={favoriteSuggestions?.any} />
+            </>
           )}
         </div>
       )}

@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import { MoreVertical } from 'lucide-react';
+import { MoreVertical, Check } from 'lucide-react';
 import { RectangleStackIcon } from '@heroicons/react/24/outline';
-import { TrashIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/solid';
+import { TrashIcon, WrenchScrewdriverIcon, StarIcon } from '@heroicons/react/24/solid';
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useJam } from '@/components/JamContext';
 
-export default function JamHeader({ onDeleteClick, hostMode, setHostMode }) {
+export default function JamHeader({ onDeleteClick, hostMode, setHostMode, showFavorites, setShowFavorites }) {
   const { jam } = useJam();
 
   return (
@@ -48,6 +48,15 @@ export default function JamHeader({ onDeleteClick, hostMode, setHostMode }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => setShowFavorites(!showFavorites)}
+                role="menuitemcheckbox"
+                aria-checked={showFavorites}
+              >
+                <StarIcon className="h-4 w-4 mr-2" />
+                Include favorites
+                {showFavorites && <Check className="h-4 w-4 ml-auto pl-1" aria-hidden />}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setHostMode(!hostMode)}>
                 <WrenchScrewdriverIcon className="h-4 w-4 mr-2" />
                 {hostMode ? 'Disable' : 'Enable'} Host Tools
