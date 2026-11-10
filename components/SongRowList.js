@@ -7,10 +7,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import SongRowButton from "@/components/SongRowButton";
-import { PencilIcon, TrashIcon, EllipsisVerticalIcon, StarIcon as StarOutline } from "@heroicons/react/24/outline";
+import { PencilIcon, TrashIcon, EllipsisVerticalIcon, MusicalNoteIcon, PlusIcon, CheckIcon, StarIcon as StarOutline } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolid } from "@heroicons/react/24/solid";
 import BaseSongRow from "@/components/SongRowBase";
-import SongChordsButton from "@/components/SongChordsButton";
+import SongChordsButton, { chordUrl } from "@/components/SongChordsButton";
 
 function FavoriteStarButton({ song, onToggleFavorite }) {
   return (
@@ -26,7 +26,30 @@ function FavoriteStarButton({ song, onToggleFavorite }) {
   );
 }
 
-function SongRowActions({ song, onEdit, onDelete, onToggleFavorite }) {
+// "+" adds this one song to the jam. Songs already in it show a check.
+function AddToJamButton({ song, inJam, onAddToJam }) {
+  if (inJam) {
+    return (
+      <span
+        role="img"
+        aria-label="Already in this jam"
+        className="p-0.5 text-green-600 sm:p-1"
+      >
+        <CheckIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+      </span>
+    );
+  }
+  return (
+    <SongRowButton
+      icon={PlusIcon}
+      onClick={() => onAddToJam(song)}
+      tooltip="Add to jam"
+      className="text-primary hover:text-primary hover:bg-primary/10"
+    />
+  );
+}
+
+function SongRowActions({ song, onEdit, onDelete, onToggleFavorite, actionsInMenu, onAddToJam, inJam }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const tapStart = useRef(null);
 
@@ -56,13 +79,21 @@ function SongRowActions({ song, onEdit, onDelete, onToggleFavorite }) {
       className="flex items-center gap-1 md:gap-2"
       onClick={(e) => e.stopPropagation()}
     >
-      <SongChordsButton song={song} />
-      <SongRowButton
-        icon={PencilIcon}
-        onClick={onEdit}
-        tooltip="Edit song"
-      />
-      {onToggleFavorite && (
+      {/* With actionsInMenu, Chords, Edit and the star move into the ⋮ menu */}
+      {!actionsInMenu && (
+        <>
+          <SongChordsButton song={song} />
+          <SongRowButton
+            icon={PencilIcon}
+            onClick={onEdit}
+            tooltip="Edit song"
+          />
+        </>
+      )}
+      {onAddToJam && (
+        <AddToJamButton song={song} inJam={inJam} onAddToJam={onAddToJam} />
+      )}
+      {onToggleFavorite && !actionsInMenu && (
         <FavoriteStarButton song={song} onToggleFavorite={onToggleFavorite} />
       )}
       <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
@@ -77,6 +108,38 @@ function SongRowActions({ song, onEdit, onDelete, onToggleFavorite }) {
           </div>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          {actionsInMenu && (
+            <>
+              <DropdownMenuItem asChild>
+                <a href={chordUrl(song)} target="_blank" rel="noopener noreferrer">
+                  <MusicalNoteIcon className="h-4 w-4 mr-2" />
+                  <span>Chords & lyrics</span>
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  onEdit();
+                }}
+              >
+                <PencilIcon className="h-4 w-4 mr-2" />
+                <span>Edit song</span>
+              </DropdownMenuItem>
+              {onToggleFavorite && (
+                <DropdownMenuItem
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    onToggleFavorite(song._id, !song.favorite);
+                  }}
+                >
+                  {song.favorite
+                    ? <StarSolid className="h-4 w-4 mr-2 text-amber-500" />
+                    : <StarOutline className="h-4 w-4 mr-2" />}
+                  <span>{song.favorite ? 'Remove from favorites' : 'Add to favorites'}</span>
+                </DropdownMenuItem>
+              )}
+            </>
+          )}
           <DropdownMenuItem
             onClick={() => {
               setIsMenuOpen(false);
@@ -101,7 +164,10 @@ export default function SongListRow({
   isSelected,
   onSelectionChange,
   hideType,
-  additionalInfo
+  additionalInfo,
+  actionsInMenu = false,
+  onAddToJam,
+  inJam = false,
 }) {
   const handleCheckboxClick = (e) => {
     e.stopPropagation();
@@ -123,21 +189,24 @@ export default function SongListRow({
       isSelected={isSelected}
       hideType={hideType}
       additionalInfo={additionalInfo}
-      className="cursor-pointer select-none group"
-      onClick={handleRowClick}
-      leftControl={
+      // Rows are selectable only when the page passes onSelectionChange
+      className={onSelectionChange ? "cursor-pointer select-none group" : "group"}
+      onClick={onSelectionChange ? handleRowClick : undefined}
+      leftControl={onSelectionChange && (
         <Checkbox
           checked={isSelected}
           onClick={handleCheckboxClick}
         />
-      }
+      )}
       rightActions={
         <SongRowActions
           song={song}
           onEdit={() => onEdit?.(song)}
           onDelete={() => onDelete?.(song)}
           onToggleFavorite={onToggleFavorite}
-          isSelected={isSelected}
+          actionsInMenu={actionsInMenu}
+          onAddToJam={onAddToJam}
+          inJam={inJam}
         />
       }
     />
