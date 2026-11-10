@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Jam from '@/models/Jam';
 import Song from '@/models/Song';
 import { ObjectId } from 'mongodb';
 import { compareByVotes } from '@/lib/utils/songOrder';
+import { fillMissingArtwork } from '@/lib/songArtwork';
 
 export async function GET(request, context) {
   try {
@@ -22,6 +23,9 @@ export async function GET(request, context) {
 
     // Sort the songs by votes in descending order
     jam.songs.sort(compareByVotes);
+
+    // Retry art for songs whose lookup failed when they were added
+    after(() => fillMissingArtwork(jam.songs.map((s) => s.song)));
 
     return NextResponse.json(jam);
   } catch (error) {
