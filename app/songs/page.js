@@ -14,6 +14,8 @@ import {
   TrashIcon, 
   CalendarDaysIcon,
   HashtagIcon,
+  MusicalNoteIcon,
+  UserIcon,
 } from "@heroicons/react/24/outline";
 import { fetchSongs, useSongOperations } from '@/lib/services/songs';
 import { addSongsToJam } from '@/lib/services/jams';
@@ -66,6 +68,16 @@ const SORT_OPTIONS = [
     value: 'lastPlayed_asc',
     label: 'Not recently played',
     icon: CalendarDaysIcon,
+  },
+  {
+    value: 'title_asc',
+    label: 'Title (A–Z)',
+    icon: MusicalNoteIcon,
+  },
+  {
+    value: 'artist_asc',
+    label: 'Artist (A–Z)',
+    icon: UserIcon,
   },
 ];
 
