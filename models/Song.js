@@ -24,6 +24,19 @@ const songSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  // Album art found by lib/artwork.mjs, or set by hand in the Edit Song form.
+  // artworkCheckedAt is set once a lookup got an answer (art or no art), or
+  // the art was set by hand, so a song is never searched again unless its
+  // title or artist changes.
+  artworkUrl: {
+    type: String,
+    trim: true,
+    default: null,
+  },
+  artworkCheckedAt: {
+    type: Date,
+    default: null,
+  },
   favorite: {
     type: Boolean,
     default: false,

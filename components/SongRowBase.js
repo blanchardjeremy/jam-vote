@@ -1,5 +1,6 @@
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import AlbumArt from "@/components/AlbumArt";
 import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 
 const BaseSongRow = forwardRef(({
@@ -43,6 +44,8 @@ const BaseSongRow = forwardRef(({
         <div className="flex items-center gap-2 md:gap-4">
           {/* Left Control (heart/checkbox) */}
           {leftControl}
+
+          <AlbumArt url={song.artworkUrl} lazy className="h-10 w-10 rounded md:h-12 md:w-12" />
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">

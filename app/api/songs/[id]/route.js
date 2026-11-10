@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Song from '@/models/Song';
 import Jam from '@/models/Jam';
 import { pusherServer } from '@/lib/pusher';
+import { artworkFields } from '@/lib/songArtwork';
 
 export async function DELETE(request, context) {
   try {
@@ -65,8 +66,23 @@ export async function PUT(request, context) {
     }
 
     const data = await request.json();
+
+    // Art set or removed by hand is kept as is. Otherwise a new title or
+    // artist gets its art looked up again.
+    if ('artworkUrl' in data) {
+      data.artworkUrl = data.artworkUrl?.trim() || null;
+      data.artworkCheckedAt = new Date();
+    } else if (data.title !== undefined || data.artist !== undefined) {
+      const current = await Song.findById(songId, 'title artist').lean();
+      const title = data.title ?? current?.title;
+      const artist = data.artist ?? current?.artist;
+      if (current && (title !== current.title || artist !== current.artist)) {
+        Object.assign(data, await artworkFields(title, artist));
+      }
+    }
+
     const song = await Song.findByIdAndUpdate(songId, data, { new: true });
-    
+
     if (!song) {
       return NextResponse.json(
         { error: 'Song not found' },

@@ -7,11 +7,12 @@ import { useState, useEffect } from 'react';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { SongResults } from '@/components/SongResults';
 import { searchSongs } from '@/lib/services/songs';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { StarIcon as StarOutline } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
+import AlbumArt from '@/components/AlbumArt';
 
 export default function SongFormModal({ 
   isOpen, 
@@ -35,7 +36,8 @@ export default function SongFormModal({
       artist: initialData.artist || '',
       type: initialData.type || 'banger',
       chordChart: initialData.chordChart || '',
-      favorite: !!initialData.favorite
+      favorite: !!initialData.favorite,
+      artworkUrl: (initialData.song || initialData).artworkUrl || ''
     }
   });
 
@@ -50,7 +52,8 @@ export default function SongFormModal({
       artist: initialData.artist || '',
       type: initialData.type || 'banger',
       chordChart: initialData.chordChart || '',
-      favorite: !!initialData.favorite
+      favorite: !!initialData.favorite,
+      artworkUrl: (initialData.song || initialData).artworkUrl || ''
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -119,13 +122,21 @@ export default function SongFormModal({
         ? `/api/songs/${initialData._id || initialData.song?._id}` 
         : '/api/songs';
 
+      // Only send the art when it was changed here, so the server keeps it
+      // as set by hand. Left alone, a new title or artist gets new art.
+      const { artworkUrl = '', ...fields } = formData;
+      const initialArt = (initialData.song || initialData).artworkUrl || '';
+      if (mode === 'edit' && artworkUrl.trim() !== initialArt) {
+        fields.artworkUrl = artworkUrl.trim();
+      }
+
       const response = await fetch(endpoint, {
         method: mode === 'edit' ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...formData,
+          ...fields,
           _id: mode === 'edit' ? (initialData._id || initialData.song?._id) : undefined
         }),
       });
@@ -316,6 +327,49 @@ export default function SongFormModal({
                 )}
               />
             </div>
+
+            {mode === 'edit' && (
+              <div className="sm:col-span-2">
+                <FormField
+                  control={form.control}
+                  name="artworkUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Album art URL</FormLabel>
+                      <div className="flex items-center gap-2">
+                        <AlbumArt url={field.value} px={160} className="h-16 w-16 rounded" />
+                        <FormControl>
+                          <Input
+                            type="url"
+                            inputMode="url"
+                            autoCapitalize="none"
+                            autoCorrect="off"
+                            autoComplete="off"
+                            placeholder="Paste an image link"
+                            {...field}
+                          />
+                        </FormControl>
+                        {field.value && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => field.onChange('')}
+                            title="Remove album art"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Found automatically. Wrong cover? Paste a better image link, or remove it to show none.
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
 
             {mode === 'edit' && (
               <div className="sm:col-span-2">
