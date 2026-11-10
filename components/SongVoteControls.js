@@ -13,7 +13,6 @@ export function yourVote(jamSong) {
 // The localStorage keys each vote keeps set. Loving a song also counts as
 // knowing it, so a love keeps the know key too.
 const KEYS_FOR = {
-  unanswered: [],
   love: ['love', 'know'],
   know: ['know'],
   dontKnow: ['dontKnow'],
@@ -42,9 +41,6 @@ function changeVote(id, next, { onVote, onKnow }) {
     if (SERVER[key]) send(...SERVER[key].remove);
   }
 
-  // Back to no vote: everything above was taken back already
-  if (wanted.length === 0) return;
-
   if (next === 'love') {
     storage.set(keys.love(id), 'true');
     send('vote', 'vote');
@@ -63,13 +59,14 @@ function changeVote(id, next, { onVote, onKnow }) {
 }
 
 
-// Each tap moves to the next step: no vote -> I know it -> I love it -> no
-// vote. "I'm not sure" (from guided voting) starts the cycle like no vote.
+// Each tap moves to the next step: empty heart -> I know it -> I love it ->
+// empty heart. Going back to empty saves "I don't know it", so the song still
+// counts as seen (no new-song dot, not offered again in guided voting).
 const NEXT_VOTE = {
   unanswered: 'know',
   dontKnow: 'know',
   know: 'love',
-  love: 'unanswered',
+  love: 'dontKnow',
 };
 
 const HEART_PATH =
@@ -103,15 +100,15 @@ export function VoteHeart({ fill = 'none', className }) {
 const HEART_STYLE = {
   love: { fill: 'full', color: 'text-rose-500', label: 'You love it. Tap to clear your vote' },
   know: { fill: 'half', color: 'text-blue-500', label: 'You know it. Tap to love it' },
-  dontKnow: { fill: 'none', color: 'text-gray-400', label: "You're not sure. Tap if you know it" },
+  dontKnow: { fill: 'none', color: 'text-gray-400', label: "You don't know it. Tap if you know it" },
   unanswered: { fill: 'none', color: 'text-gray-400', label: 'Not voted. Tap if you know it' },
 };
 
 // Swipe to know (left) or swipe to love (right). Swiping the same way again
-// clears your vote, like tapping the heart round to No vote.
+// empties the heart and saves "I don't know it", like the third tap.
 export function swipeVote(jamSong, vote, direction, { onVote, onKnow, onChange }) {
   const target = direction === 'left' ? 'know' : 'love';
-  changeVote(jamSong._id, vote === target ? 'unanswered' : target, { onVote, onKnow });
+  changeVote(jamSong._id, vote === target ? 'dontKnow' : target, { onVote, onKnow });
   onChange?.();
 }
 

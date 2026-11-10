@@ -68,7 +68,7 @@ export default function SwipeToVote({ vote, disabled, onSwipe, children }) {
   const target = swipingLeft ? 'know' : 'love';
   const clearing = vote === target;
   const ready = Math.abs(dx) >= SWIPE_DISTANCE;
-  const label = clearing ? 'No vote' : swipingLeft ? 'Know' : 'Love';
+  const label = clearing ? 'Clear' : swipingLeft ? 'Know' : 'Love';
 
   return (
     <div className="relative overflow-hidden">
