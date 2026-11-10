@@ -36,10 +36,21 @@ export default function JamToolbar({
 
     {open && (
     <div className="sticky top-0 z-10 mb-4 bg-white shadow-sm rounded-lg p-2 sm:p-3 border border-gray-200">
-      {/* Phones: search box and close on one line, "Pick from favorites"
-          below. Wider screens: all three on one line. */}
-      <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-4">
-        <div className="min-w-0 flex-1 sm:max-w-xl">
+      <div className="mb-1.5 flex items-center justify-between pl-1">
+        <h2 className="text-sm font-semibold text-gray-700">Add Song</h2>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-label="Close Add Song"
+          className="-my-1 rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <XMarkIcon className="h-5 w-5" aria-hidden />
+        </button>
+      </div>
+      {/* Phones: search box, then "Pick from favorites" below. Wider
+          screens: side by side. */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+        <div className="w-full sm:flex-1 sm:max-w-xl">
           <SongAutocomplete 
             ref={songAutocompleteRef}
             onSelect={handleSelectExisting} 
@@ -53,20 +64,12 @@ export default function JamToolbar({
             screens: a small link beside it. */}
         <Link
           href={`/favorites?jam=${encodeURIComponent(jam.slug)}`}
-          className="order-last flex h-12 w-full items-center justify-center gap-2 rounded-full border border-primary text-base font-medium text-primary transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:order-none sm:ml-auto sm:h-9 sm:w-auto sm:shrink-0 sm:rounded-md sm:border-0 sm:px-3 sm:text-sm sm:text-gray-500 sm:hover:bg-accent sm:hover:text-gray-900"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-full border border-primary text-base font-medium text-primary transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:ml-auto sm:h-9 sm:w-auto sm:shrink-0 sm:rounded-md sm:border-0 sm:px-3 sm:text-sm sm:text-gray-500 sm:hover:bg-accent sm:hover:text-gray-900"
         >
           <StarIcon className="h-5 w-5 sm:h-4 sm:w-4" />
           Pick from favorites
         </Link>
 
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          aria-label="Close Add Songs"
-          className="shrink-0 rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <XMarkIcon className="h-5 w-5" aria-hidden />
-        </button>
       </div>
     </div>
     )}
