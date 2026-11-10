@@ -25,8 +25,9 @@ import { cn } from '@/lib/utils';
 import FavoriteSuggestions, { pickRandomFavorites } from '@/components/jam/FavoriteSuggestions';
 
 // With "Include favorites" on (⋮ menu), only songs with at least this many
-// hearts OR at least this many "know it" are listed (played songs always stay
-// visible), and a few favorites are suggested under each section.
+// loves are listed (played songs always stay visible), and a few favorites
+// are suggested under each section. Knows don't count: plenty of people
+// knowing a song doesn't mean the room wants to play it.
 const FAVORITES_VIEW_MIN_COUNT = 5;
 const FAVORITE_SUGGESTION_COUNT = 5;
 
@@ -133,13 +134,9 @@ export default function JamPage() {
 
   const forFavoritesView = (songs) =>
     showFavorites
-      ? songs.filter((s) =>
-          s.played ||
-          s.votes >= FAVORITES_VIEW_MIN_COUNT ||
-          (s.knows || 0) >= FAVORITES_VIEW_MIN_COUNT
-        )
+      ? songs.filter((s) => s.played || s.votes >= FAVORITES_VIEW_MIN_COUNT)
       : songs;
-  const favoritesViewEmptyMessage = `No songs with ${FAVORITES_VIEW_MIN_COUNT}+ hearts or ${FAVORITES_VIEW_MIN_COUNT}+ "know it" yet`;
+  const favoritesViewEmptyMessage = `No songs with ${FAVORITES_VIEW_MIN_COUNT}+ loves yet`;
 
   // Helper function to render song list with common props
   const renderSongList = ({ songs, hideTypeBadge = false, emptyMessage = "No songs yet - add some tunes!", type }) => (
