@@ -13,8 +13,8 @@ export default function JamToolbar({
   const { jam } = useJam();
 
   return (
-    <div className="sticky top-0 z-10 mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4 bg-white shadow-sm rounded-lg p-2 sm:p-3 border border-gray-200">
-      <div className="w-full sm:flex-1 sm:max-w-xl">
+    <div className="sticky top-0 z-10 mb-4 flex items-center justify-between gap-2 sm:gap-4 bg-white shadow-sm rounded-lg p-2 sm:p-3 border border-gray-200">
+      <div className="min-w-0 flex-1 sm:max-w-xl">
         <SongAutocomplete 
           ref={songAutocompleteRef}
           onSelect={handleSelectExisting} 
@@ -24,14 +24,13 @@ export default function JamToolbar({
         />
       </div>
 
-      <div className="flex items-center justify-end gap-1">
-        <Button variant="ghost" size="sm" asChild className="text-gray-500 hover:text-gray-900">
-          <Link href={`/favorites?jam=${encodeURIComponent(jam.slug)}`}>
-            <StarIcon className="h-4 w-4" />
-            Favorites
-          </Link>
-        </Button>
-      </div>
+      {/* Beside the search box; just the star on phones, with its label on wider screens */}
+      <Button variant="ghost" size="sm" asChild className="shrink-0 px-2 text-gray-500 hover:text-gray-900 sm:px-3">
+        <Link href={`/favorites?jam=${encodeURIComponent(jam.slug)}`} aria-label="Favorites">
+          <StarIcon className="h-5 w-5 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Favorites</span>
+        </Link>
+      </Button>
     </div>
   );
 }
