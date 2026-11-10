@@ -1,12 +1,15 @@
 import { useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import Link from 'next/link';
-import { StarIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { StarIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useJam } from '@/components/JamContext';
 import SongAutocomplete from "@/components/SongAutocomplete";
+import { Button } from "@/components/ui/button";
+import GuidedVotingButton, { jamActionButtonClass } from '@/components/jam/GuidedVotingButton';
 
-// Adding songs: an "Add Songs" button that opens the search box and "Pick
-// from favorites". Starts open for a jam with no songs yet.
+// The jam's two main actions side by side: "Add Songs" (opens the search box
+// and "Pick from favorites" below) and Guided voting. The add panel starts
+// open for a jam with no songs yet.
 export default function JamToolbar({ 
   songAutocompleteRef, 
   handleSelectExisting, 
@@ -17,40 +20,29 @@ export default function JamToolbar({
   const [open, setOpen] = useState(() => !currentSongs?.length);
   const panelRef = useRef(null);
 
-  const openPanel = () => {
+  const togglePanel = () => {
+    if (open) {
+      setOpen(false);
+      return;
+    }
     // Render the search box now so it can be focused inside the tap, which
     // is what lets phones show the keyboard
     flushSync(() => setOpen(true));
     panelRef.current?.querySelector('input')?.focus();
   };
 
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={openPanel}
-        aria-expanded={false}
-        className="mb-4 flex h-12 w-full items-center justify-center gap-2 rounded-full border border-primary bg-white text-base font-medium text-primary transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-auto sm:px-6"
-      >
+  return (
+    <>
+    <div className="mb-3 grid grid-cols-2 gap-2 sm:flex sm:justify-start">
+      <Button variant="outline" onClick={togglePanel} aria-expanded={open} className={jamActionButtonClass}>
         <PlusIcon className="h-5 w-5" aria-hidden />
         Add Songs
-      </button>
-    );
-  }
+      </Button>
+      {currentSongs?.length > 0 && <GuidedVotingButton />}
+    </div>
 
-  return (
+    {open && (
     <div ref={panelRef} className="sticky top-0 z-10 mb-4 bg-white shadow-sm rounded-lg p-2 sm:p-3 border border-gray-200">
-      <div className="mb-1.5 flex items-center justify-between px-1">
-        <h2 className="text-sm font-semibold text-gray-700">Add Songs</h2>
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          aria-label="Close Add Songs"
-          className="-my-1 -mr-1 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-        >
-          <XMarkIcon className="h-5 w-5" aria-hidden />
-        </button>
-      </div>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="w-full sm:flex-1 sm:max-w-xl">
           <SongAutocomplete 
@@ -73,5 +65,7 @@ export default function JamToolbar({
         </Link>
       </div>
     </div>
+    )}
+    </>
   );
 }
