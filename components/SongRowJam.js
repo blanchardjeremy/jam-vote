@@ -5,7 +5,6 @@ import HeartToggle, { yourVote, swipeVote } from "@/components/SongVoteControls"
 import SwipeToVote from "@/components/SwipeToVote";
 import CaptainBadges from "@/components/CaptainBadges";
 import BaseSongRow from "@/components/SongRowBase";
-import KnowBar from "@/components/jam/KnowBar";
 
 export default function SongRow({ 
   jamSong, 
@@ -18,7 +17,6 @@ export default function SongRow({
   hideType,
   highlight,
   hostMode,
-  maxAnswers = 0,
   onVoteChange
 }) {
   const { song } = jamSong;
@@ -78,17 +76,7 @@ export default function SongRow({
             hostMode={hostMode}
           />
         }
-        additionalInfo={
-          <>
-            <CaptainBadges jamSong={jamSong} isNext={isNext} />
-            {/* How the whole room voted */}
-            <KnowBar
-              jamSong={jamSong}
-              maxAnswers={maxAnswers}
-              status={vote === 'love' ? 'know' : vote}
-            />
-          </>
-        }
+        additionalInfo={<CaptainBadges jamSong={jamSong} isNext={isNext} />}
         highlight={highlight}
       />
       </SwipeToVote>

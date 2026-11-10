@@ -79,7 +79,7 @@ export default function SwipeToVote({ vote, disabled, onSwipe, children }) {
             'absolute inset-0 flex items-center px-5 text-sm font-semibold text-white transition-colors',
             swipingLeft ? 'justify-end' : 'justify-start',
             clearing ? (ready ? 'bg-gray-500' : 'bg-gray-400')
-              : swipingLeft ? (ready ? 'bg-blue-500' : 'bg-blue-300')
+              : swipingLeft ? (ready ? 'bg-primary' : 'bg-primary/60')
               : (ready ? 'bg-rose-500' : 'bg-rose-300')
           )}
         >

@@ -3,6 +3,15 @@ import { alsoMarkKnownForLove } from "@/lib/services/jamSongs";
 import { answerStatus, keys, storage } from "@/lib/utils/guideQueue";
 import { cn } from "@/lib/utils";
 
+// The room's counts for a song. Every heart also counts as a know, so
+// `loves` is always part of `knows`, even for hearts given before knows were
+// tracked. `youKnowIt` makes sure this device is counted at least once.
+export function knowCounts(jamSong, youKnowIt = false) {
+  const loves = jamSong.votes || 0;
+  const knows = Math.max(jamSong.knows || 0, loves, youKnowIt ? 1 : 0);
+  return { loves, knows };
+}
+
 // This device's vote on a song: 'love' | 'know' | 'dontKnow' | 'unanswered'.
 // 'dontKnow' is shown as "I'm not sure".
 export function yourVote(jamSong) {
@@ -72,7 +81,7 @@ const NEXT_VOTE = {
 const HEART_PATH =
   'M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z';
 
-// A heart outline, filled per vote: empty (no vote), left half blue
+// A heart outline, filled per vote: empty (no vote), left half purple
 // (know it) or all rose (love it). Color comes from the parent's text color.
 export function VoteHeart({ fill = 'none', className }) {
   const clipId = useId();
@@ -99,7 +108,7 @@ export function VoteHeart({ fill = 'none', className }) {
 
 const HEART_STYLE = {
   love: { fill: 'full', color: 'text-rose-500', label: 'You love it. Tap to clear your vote' },
-  know: { fill: 'half', color: 'text-blue-500', label: 'You know it. Tap to love it' },
+  know: { fill: 'half', color: 'text-primary', label: 'You know it. Tap to love it' },
   dontKnow: { fill: 'none', color: 'text-gray-400', label: "You don't know it. Tap if you know it" },
   unanswered: { fill: 'none', color: 'text-gray-400', label: 'Not voted. Tap if you know it' },
 };
@@ -112,22 +121,25 @@ export function swipeVote(jamSong, vote, direction, { onVote, onKnow, onChange }
   onChange?.();
 }
 
-// The heart on each jam song, with the number of hearts under it. Tap to
-// cycle your vote: know it (half blue) -> love it (full rose) -> no vote.
+// The heart on each jam song, with "loves/knows" for the whole room under it
+// (e.g. 5/9: 5 love it, 9 know it). Tap to
+// cycle your vote: know it (half purple) -> love it (full rose) -> empty (don't know).
 export default function HeartToggle({ jamSong, vote, onVote, onKnow, onChange }) {
   const style = HEART_STYLE[vote] || HEART_STYLE.unanswered;
-  const count = jamSong.votes || 0;
-  const countText = `${count} ${count === 1 ? 'heart' : 'hearts'}`;
+  const { loves, knows } = knowCounts(jamSong, vote === 'love' || vote === 'know');
+  const countText = `${loves} love it, ${knows} know it`;
   const box = cn(
-    'flex w-10 shrink-0 flex-col items-center justify-center rounded-lg py-1 md:w-11',
+    'flex min-w-10 shrink-0 flex-col items-center justify-center rounded-lg py-1 md:w-11',
     // Wait for this device's vote to load so the first render matches the server
     !vote && 'invisible'
   );
   const content = (
     <>
       <VoteHeart fill={style.fill} className={cn('h-6 w-6', style.color)} />
-      <span className={cn('text-xs font-medium tabular-nums', vote === 'love' ? 'text-rose-600' : 'text-gray-500')}>
-        {count}
+      <span aria-hidden className="whitespace-nowrap text-xs font-medium tabular-nums">
+        <span className="text-rose-500">{loves}</span>
+        <span className="text-gray-400">/</span>
+        <span className="text-primary">{knows}</span>
       </span>
     </>
   );
@@ -168,18 +180,20 @@ export default function HeartToggle({ jamSong, vote, onVote, onKnow, onChange })
 export function HeartLegend({ className }) {
   const items = [
     { fill: 'none', color: 'text-gray-400', text: 'Not voted' },
-    { fill: 'half', color: 'text-blue-500', text: 'I know it' },
+    { fill: 'half', color: 'text-primary', text: 'I know it' },
     { fill: 'full', color: 'text-rose-500', text: 'I love it' },
   ];
   return (
-    <div className={cn('flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600', className)}>
-      {items.map(({ fill, color, text }) => (
-        <span key={text} className="inline-flex items-center gap-1.5">
-          <VoteHeart fill={fill} className={cn('h-5 w-5', color)} />
-          {text}
-        </span>
-      ))}
-      <span className="text-gray-500">Tap a heart, or swipe a song left to know or right to love</span>
+    <div className={cn('space-y-1 text-sm text-gray-600', className)}>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        {items.map(({ fill, color, text }) => (
+          <span key={text} className="inline-flex items-center gap-1.5">
+            <VoteHeart fill={fill} className={cn('h-5 w-5', color)} />
+            {text}
+          </span>
+        ))}
+      </div>
+      <p className="text-gray-500">Tap a heart, or swipe a song left to know or right to love</p>
     </div>
   );
 }
