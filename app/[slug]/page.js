@@ -6,6 +6,7 @@ import { useJamPusher } from '@/lib/hooks/useJamPusher';
 import { getGroupedSongs } from '@/lib/utils/songGrouping';
 import JamHeader from '@/components/jam/JamHeader';
 import JamToolbar from '@/components/jam/JamToolbar';
+import GuidedVotingButton from '@/components/jam/GuidedVotingButton';
 import JamSongList from '@/components/jam/JamSongList';
 import JamEmptyState from '@/components/jam/JamEmptyState';
 import { FireIcon, MusicalNoteIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
@@ -373,19 +374,22 @@ function SectionHeader({ icon: Icon, label, collapsed, onToggle }) {
 // "All" or just the songs you haven't voted on yet
 function ListFilter({ notVotedCount, showNotVoted, onChange }) {
   const chip = (active) => cn(
-    'rounded-full border px-3 py-1 text-sm font-medium transition-colors',
+    'whitespace-nowrap rounded-full border px-3 py-1 text-sm font-medium transition-colors',
     active
       ? 'border-primary/40 bg-primary/10 text-primary'
       : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
   );
   return (
-    <div className="mb-3 flex gap-2" role="group" aria-label="Show songs">
-      <button type="button" aria-pressed={!showNotVoted} className={chip(!showNotVoted)} onClick={() => onChange(false)}>
-        All
-      </button>
-      <button type="button" aria-pressed={showNotVoted} className={chip(showNotVoted)} onClick={() => onChange(true)}>
-        Not voted ({notVotedCount})
-      </button>
+    <div className="mb-3 flex items-center justify-between gap-2">
+      <div className="flex gap-2" role="group" aria-label="Show songs">
+        <button type="button" aria-pressed={!showNotVoted} className={chip(!showNotVoted)} onClick={() => onChange(false)}>
+          All
+        </button>
+        <button type="button" aria-pressed={showNotVoted} className={chip(showNotVoted)} onClick={() => onChange(true)}>
+          Not voted ({notVotedCount})
+        </button>
+      </div>
+      <GuidedVotingButton className="shrink-0" />
     </div>
   );
 }
