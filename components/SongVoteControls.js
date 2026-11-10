@@ -121,6 +121,14 @@ export function swipeVote(jamSong, vote, direction, { onVote, onKnow, onChange }
   onChange?.();
 }
 
+// Tapping an unvoted song marks it seen: saved as "I don't know it", so it
+// loses its new-song dot without changing the (still empty) heart.
+export function markSeen(jamSong, vote, { onVote, onKnow, onChange }) {
+  if (vote !== 'unanswered' || jamSong.played) return;
+  changeVote(jamSong._id, 'dontKnow', { onVote, onKnow });
+  onChange?.();
+}
+
 // The heart on each jam song, with the room's love count under it. Tap to
 // cycle your vote: know it (half purple) -> love it (full rose) -> empty (don't know).
 export default function HeartToggle({ jamSong, vote, onVote, onKnow, onChange }) {

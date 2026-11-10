@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import SongFormModal from "@/components/CreateSongModal";
 import SongRowButtonToolbar from "@/components/SongRowButtonToolbar";
-import HeartToggle, { yourVote, swipeVote, knowCounts } from "@/components/SongVoteControls";
+import HeartToggle, { yourVote, swipeVote, markSeen, knowCounts } from "@/components/SongVoteControls";
 import SwipeToVote from "@/components/SwipeToVote";
 import CaptainBadges from "@/components/CaptainBadges";
 import BaseSongRow from "@/components/SongRowBase";
@@ -61,6 +61,8 @@ export default function SongRow({
         hideType={hideType}
         // Plays / last played live in the Edit Song form to keep the jam list uncluttered
         hidePlayStats
+        // Tapping a new song marks it seen
+        onClick={isNew ? () => markSeen(jamSong, vote, voteProps) : undefined}
         titleClassName={isNew && 'text-primary'}
         artistAdornment={knows > 0 && <span className="whitespace-nowrap text-primary">{knows} know it</span>}
         titleAdornment={isNew && (
