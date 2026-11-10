@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { StarIcon as StarOutline } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
-import { MusicalNoteIcon } from '@heroicons/react/24/outline';
+import AlbumArt from '@/components/AlbumArt';
 
 export default function SongFormModal({ 
   isOpen, 
@@ -337,7 +337,7 @@ export default function SongFormModal({
                     <FormItem>
                       <FormLabel>Album art URL</FormLabel>
                       <div className="flex items-center gap-2">
-                        <ArtPreview url={field.value} />
+                        <AlbumArt url={field.value} px={160} className="h-16 w-16 rounded" />
                         <FormControl>
                           <Input
                             type="url"
@@ -380,21 +380,6 @@ export default function SongFormModal({
         </form>
       </Form>
     </Modal>
-  );
-}
-
-// A small preview of the album art link being edited
-function ArtPreview({ url }) {
-  const [failed, setFailed] = useState(null);
-  return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded bg-gray-100 ring-1 ring-black/5">
-      {url && failed !== url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img key={url} src={url} alt="" onError={() => setFailed(url)} className="h-full w-full object-cover" />
-      ) : (
-        <MusicalNoteIcon aria-hidden className="h-5 w-5 text-gray-300" />
-      )}
-    </div>
   );
 }
 

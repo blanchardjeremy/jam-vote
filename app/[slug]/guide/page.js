@@ -12,7 +12,6 @@ import {
   XMarkIcon,
   ListBulletIcon,
   CheckCircleIcon,
-  MusicalNoteIcon,
 } from '@heroicons/react/24/outline';
 import { Piano } from 'lucide-react';
 import { useJamPage } from '@/lib/hooks/useJamPage';
@@ -23,6 +22,7 @@ import { apiRequest } from '@/lib/services/apiHelpers';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
+import AlbumArt from '@/components/AlbumArt';
 import CaptainNameModal from '@/components/CaptainNameModal';
 import LoadingBlock from '@/components/LoadingBlock';
 import PageTitle from '@/components/ui/page-title';
@@ -667,7 +667,7 @@ function SongCard({ ref, song, onAnswer, onSwipe, className, ...props }) {
           area takes drags in every direction; the button area leaves vertical
           drags to page scrolling. */}
       <div className="relative flex min-h-40 touch-none flex-col items-center justify-center px-5 py-4 text-center">
-        <AlbumArt url={song.song.artworkUrl} />
+        <AlbumArt url={song.song.artworkUrl} px={600} className="mb-3 h-28 w-28 rounded-lg shadow-sm" />
         <h2
           className={cn(
             'font-bold leading-tight text-gray-900 [overflow-wrap:anywhere]',
@@ -773,31 +773,6 @@ function OutgoingCard({ outgoing, onDone }) {
         if (e.target === e.currentTarget) onDone();
       }}
     />
-  );
-}
-
-// The song's album cover, or a note on a plain square when it has none (or
-// it fails to load), so the title and buttons sit in the same place either
-// way. Keyed by URL so the last song's cover never shows while the next loads.
-function AlbumArt({ url }) {
-  const [failed, setFailed] = useState(null);
-  const showArt = url && failed !== url;
-  return (
-    <div className="mb-3 flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100 shadow-sm ring-1 ring-black/5">
-      {showArt ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={url}
-          src={url}
-          alt=""
-          draggable={false}
-          onError={() => setFailed(url)}
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        <MusicalNoteIcon aria-hidden className="h-10 w-10 text-gray-300" />
-      )}
-    </div>
   );
 }
 
