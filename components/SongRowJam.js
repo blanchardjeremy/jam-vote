@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
 import SongFormModal from "@/components/CreateSongModal";
 import SongRowButtonToolbar from "@/components/SongRowButtonToolbar";
-import HeartToggle, { VoteMark, yourVote } from "@/components/SongVoteControls";
+import HeartToggle, { yourVote, swipeVote } from "@/components/SongVoteControls";
+import SwipeToVote from "@/components/SwipeToVote";
 import CaptainBadges from "@/components/CaptainBadges";
 import BaseSongRow from "@/components/SongRowBase";
 import KnowBar from "@/components/jam/KnowBar";
@@ -49,6 +50,12 @@ export default function SongRow({
   
   return (
     <>
+      <SwipeToVote
+        vote={vote}
+        // Played songs can't be voted on any more
+        disabled={jamSong.played || !vote}
+        onSwipe={(direction) => swipeVote(jamSong, vote, direction, voteProps)}
+      >
       <BaseSongRow
         song={song}
         isNext={isNext}
@@ -74,19 +81,17 @@ export default function SongRow({
         additionalInfo={
           <>
             <CaptainBadges jamSong={jamSong} isNext={isNext} />
-            {/* Your vote, then how the whole room voted */}
-            <div className="flex items-center gap-1.5">
-              <VoteMark {...voteProps} />
-              <KnowBar
-                jamSong={jamSong}
-                maxAnswers={maxAnswers}
-                status={vote === 'love' ? 'know' : vote}
-              />
-            </div>
+            {/* How the whole room voted */}
+            <KnowBar
+              jamSong={jamSong}
+              maxAnswers={maxAnswers}
+              status={vote === 'love' ? 'know' : vote}
+            />
           </>
         }
         highlight={highlight}
       />
+      </SwipeToVote>
 
       {/* Modals */}
       <SongFormModal

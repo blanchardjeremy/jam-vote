@@ -6,6 +6,7 @@ import { useJamPusher } from '@/lib/hooks/useJamPusher';
 import { getGroupedSongs } from '@/lib/utils/songGrouping';
 import JamHeader from '@/components/jam/JamHeader';
 import JamToolbar from '@/components/jam/JamToolbar';
+import { HeartLegend } from '@/components/SongVoteControls';
 import JamSongList from '@/components/jam/JamSongList';
 import JamEmptyState from '@/components/jam/JamEmptyState';
 import { FireIcon, MusicalNoteIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
@@ -203,6 +204,8 @@ export default function JamPage() {
         showFavorites={showFavorites}
         setShowFavorites={setShowFavorites}
       />
+
+      {jam.songs?.length > 0 && <HeartLegend className="-mt-2 mb-4 sm:-mt-4" />}
 
       <JamToolbar 
         songAutocompleteRef={songAutocompleteRef}

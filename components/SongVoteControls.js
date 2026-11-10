@@ -1,10 +1,4 @@
-import { useState } from "react";
-import { HeartIcon, CheckIcon } from "@heroicons/react/20/solid";
-import {
-  QuestionMarkCircleIcon,
-  HeartIcon as HeartOutline,
-} from "@heroicons/react/24/outline";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { useId } from "react";
 import { alsoMarkKnownForLove } from "@/lib/services/jamSongs";
 import { answerStatus, keys, storage } from "@/lib/utils/guideQueue";
 import { cn } from "@/lib/utils";
@@ -19,6 +13,7 @@ export function yourVote(jamSong) {
 // The localStorage keys each vote keeps set. Loving a song also counts as
 // knowing it, so a love keeps the know key too.
 const KEYS_FOR = {
+  unanswered: [],
   love: ['love', 'know'],
   know: ['know'],
   dontKnow: ['dontKnow'],
@@ -41,11 +36,14 @@ function changeVote(id, next, { onVote, onKnow }) {
   const wanted = KEYS_FOR[next];
 
   // Take back what the new vote doesn't keep
-  for (const key of Object.keys(KEYS_FOR)) {
+  for (const key of Object.keys(keys)) {
     if (wanted.includes(key) || storage.get(keys[key](id)) !== 'true') continue;
     storage.remove(keys[key](id));
     if (SERVER[key]) send(...SERVER[key].remove);
   }
+
+  // Back to no vote: everything above was taken back already
+  if (wanted.length === 0) return;
 
   if (next === 'love') {
     storage.set(keys.love(id), 'true');
@@ -64,149 +62,126 @@ function changeVote(id, next, { onVote, onKnow }) {
   if (SERVER[key]) send(...SERVER[key].add);
 }
 
-const OPTIONS = [
-  { id: 'love', label: 'I love it', icon: HeartIcon, iconClass: 'text-rose-500' },
-  { id: 'know', label: 'I know it', icon: CheckIcon, iconClass: 'text-primary' },
-  { id: 'dontKnow', label: "I'm not sure", icon: QuestionMarkCircleIcon, iconClass: 'text-gray-500' },
-];
 
-const VOTE_LABEL = {
-  love: 'love it',
-  know: 'know it',
-  dontKnow: 'not sure',
-  unanswered: 'not voted yet',
+// Each tap moves to the next step: no vote -> I know it -> I love it -> no
+// vote. "I'm not sure" (from guided voting) starts the cycle like no vote.
+const NEXT_VOTE = {
+  unanswered: 'know',
+  dontKnow: 'know',
+  know: 'love',
+  love: 'unanswered',
 };
 
-// One tap to love a song, one tap to take it back. Taking back a love keeps
-// the know that came with it, since you still know the song.
+const HEART_PATH =
+  'M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z';
+
+// A heart outline, filled per vote: empty (no vote), left half blue
+// (know it) or all rose (love it). Color comes from the parent's text color.
+export function VoteHeart({ fill = 'none', className }) {
+  const clipId = useId();
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden className={className}>
+      {fill === 'half' && (
+        <defs>
+          <clipPath id={clipId}>
+            <rect x="0" y="0" width="12" height="24" />
+          </clipPath>
+        </defs>
+      )}
+      {fill !== 'none' && (
+        <path
+          d={HEART_PATH}
+          fill="currentColor"
+          clipPath={fill === 'half' ? `url(#${clipId})` : undefined}
+        />
+      )}
+      <path d={HEART_PATH} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+const HEART_STYLE = {
+  love: { fill: 'full', color: 'text-rose-500', label: 'You love it. Tap to clear your vote' },
+  know: { fill: 'half', color: 'text-blue-500', label: 'You know it. Tap to love it' },
+  dontKnow: { fill: 'none', color: 'text-gray-400', label: "You're not sure. Tap if you know it" },
+  unanswered: { fill: 'none', color: 'text-gray-400', label: 'Not voted. Tap if you know it' },
+};
+
+// Swipe to know (left) or swipe to love (right). Swiping the same way again
+// clears your vote, like tapping the heart round to No vote.
+export function swipeVote(jamSong, vote, direction, { onVote, onKnow, onChange }) {
+  const target = direction === 'left' ? 'know' : 'love';
+  changeVote(jamSong._id, vote === target ? 'unanswered' : target, { onVote, onKnow });
+  onChange?.();
+}
+
+// The heart on each jam song, with the number of hearts under it. Tap to
+// cycle your vote: know it (half blue) -> love it (full rose) -> no vote.
 export default function HeartToggle({ jamSong, vote, onVote, onKnow, onChange }) {
-  const loved = vote === 'love';
-  const label = loved ? 'You love it. Remove love' : 'Love it';
+  const style = HEART_STYLE[vote] || HEART_STYLE.unanswered;
+  const count = jamSong.votes || 0;
   const box = cn(
-    'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg md:h-11 md:w-11',
+    'flex w-10 shrink-0 flex-col items-center justify-center rounded-lg py-1 md:w-11',
     // Wait for this device's vote to load so the first render matches the server
     !vote && 'invisible'
+  );
+  const content = (
+    <>
+      <VoteHeart fill={style.fill} className={cn('h-6 w-6', style.color)} />
+      <span className={cn('text-xs font-medium tabular-nums', vote === 'love' ? 'text-rose-600' : 'text-gray-500')}>
+        {count}
+      </span>
+    </>
   );
 
   // Played songs can't be voted on any more
   if (jamSong.played) {
     return (
-      <div className={cn(box, loved ? 'bg-rose-50 text-rose-400' : 'text-gray-300')} aria-label={loved ? 'You loved it' : undefined} role={loved ? 'img' : undefined}>
-        {loved ? <HeartIcon aria-hidden className="h-5 w-5 md:h-6 md:w-6" /> : <HeartOutline aria-hidden className="h-5 w-5 md:h-6 md:w-6" />}
+      <div className={box} role="img" aria-label={`${count} hearts`}>
+        {content}
       </div>
     );
   }
 
-  const toggle = (e) => {
+  const tap = (e) => {
     e.stopPropagation();
-    changeVote(jamSong._id, loved ? 'know' : 'love', { onVote, onKnow });
+    changeVote(jamSong._id, NEXT_VOTE[vote] || 'know', { onVote, onKnow });
     onChange?.();
   };
 
   return (
     <button
       type="button"
-      aria-label={label}
-      aria-pressed={loved}
-      onClick={toggle}
+      aria-label={`${style.label}. ${count} hearts`}
+      onClick={tap}
       onKeyDown={(e) => e.stopPropagation()}
       className={cn(
         box,
         'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-        loved ? 'bg-rose-100 text-rose-500 hover:bg-rose-200/70' : 'text-gray-400 hover:bg-rose-50 hover:text-rose-500'
+        '[@media(hover:hover)]:hover:bg-gray-100'
       )}
     >
-      {loved ? <HeartIcon aria-hidden className="h-6 w-6" /> : <HeartOutline aria-hidden className="h-6 w-6" />}
+      {content}
     </button>
   );
 }
 
-function Mark({ vote }) {
-  if (vote === 'love' || vote === 'know') return <CheckIcon aria-hidden className="h-4 w-4 text-primary" />;
-  if (vote === 'dontKnow') return <QuestionMarkCircleIcon aria-hidden className="h-4 w-4 text-gray-500" />;
-  // Not voted yet: an empty ring to tap and answer
-  return <span aria-hidden className="h-3 w-3 rounded-full border-[1.5px] border-dashed border-primary/60" />;
-}
-
-// A small mark for your vote, shown before the know bar. Tapping it opens a
-// menu to give or change your vote in place.
-export function VoteMark({ jamSong, vote, onVote, onKnow, onChange }) {
-  const [open, setOpen] = useState(false);
-  if (!vote) return <span className="h-4 w-4" aria-hidden />;
-  const label = `Your vote: ${VOTE_LABEL[vote]}.`;
-
-  // Played songs can't be voted on any more, so the mark has no menu
-  if (jamSong.played) {
-    if (vote === 'unanswered') return <span className="h-4 w-4" aria-hidden />;
-    return (
-      <span className="inline-flex h-4 w-4 items-center justify-center" role="img" aria-label={label}>
-        <Mark vote={vote} />
-      </span>
-    );
-  }
-
-  const pick = (next) => {
-    setOpen(false);
-    if (next === vote) return;
-    changeVote(jamSong._id, next, { onVote, onKnow });
-    onChange?.();
-  };
-
+// Explains the heart icons; shown above the jam list
+export function HeartLegend({ className }) {
+  const items = [
+    { fill: 'none', color: 'text-gray-400', text: 'Not voted' },
+    { fill: 'half', color: 'text-blue-500', text: 'I know it' },
+    { fill: 'full', color: 'text-rose-500', text: 'I love it' },
+  ];
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          aria-label={`${label} ${vote === 'unanswered' ? 'Vote' : 'Change vote'}`}
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-          // Bigger tap area than the mark itself
-          className="-m-2 inline-flex items-center justify-center rounded-md p-2 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <span className="inline-flex h-4 w-4 items-center justify-center">
-            <Mark vote={vote} />
-          </span>
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        side="bottom"
-        align="end"
-        className="w-60 p-1.5"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
-      >
-        <div className="px-2 pb-1.5 pt-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Your vote</p>
-          <p className="truncate text-sm font-medium">{jamSong.song?.title}</p>
-        </div>
-        <div role="menu" aria-label="Your vote">
-          {OPTIONS.map(({ id, label: text, icon: Icon, iconClass }) => (
-            <VoteOption key={id} selected={vote === id} onSelect={() => pick(id)}>
-              <Icon aria-hidden className={cn('h-5 w-5', iconClass)} />
-              <span className="flex-1">{text}</span>
-            </VoteOption>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function VoteOption({ selected, small, onSelect, children }) {
-  return (
-    <button
-      type="button"
-      role="menuitemradio"
-      aria-checked={selected}
-      onClick={onSelect}
-      className={cn(
-        'flex w-full items-center gap-2.5 rounded-md px-2 text-left transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none',
-        small ? 'mt-0.5 py-1.5 text-xs text-muted-foreground' : 'py-2 text-sm font-medium',
-        selected && 'bg-primary/5'
-      )}
-    >
-      {children}
-      <CheckIcon aria-hidden className={cn('h-4 w-4 text-primary', !selected && 'invisible')} />
-    </button>
+    <div className={cn('flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600', className)}>
+      {items.map(({ fill, color, text }) => (
+        <span key={text} className="inline-flex items-center gap-1.5">
+          <VoteHeart fill={fill} className={cn('h-5 w-5', color)} />
+          {text}
+        </span>
+      ))}
+      <span className="text-gray-500">Tap a heart, or swipe a song left to know or right to love</span>
+    </div>
   );
 }
