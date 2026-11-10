@@ -1,11 +1,13 @@
 'use client';
 
 import { useParams } from 'next/navigation';
+import { useHeldOrder } from '@/lib/hooks/useHeldOrder';
 import { useJamPage } from '@/lib/hooks/useJamPage';
 import { useJamPusher } from '@/lib/hooks/useJamPusher';
 import { getGroupedSongs } from '@/lib/utils/songGrouping';
 import JamHeader from '@/components/jam/JamHeader';
 import JamToolbar from '@/components/jam/JamToolbar';
+import { HeartLegend } from '@/components/SongVoteControls';
 import JamSongList from '@/components/jam/JamSongList';
 import JamEmptyState from '@/components/jam/JamEmptyState';
 import { FireIcon, MusicalNoteIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
@@ -83,6 +85,9 @@ export default function JamPage() {
     clearHighlightAfterDelay
   });
 
+  // Wait 5s after your last vote before re-sorting the list
+  const { hold, applyHeld } = useHeldOrder(5000);
+
   // Songs added by other people since you opened the page, that you haven't
   // voted on yet. Songs you add get your heart, so they never count.
   const seenIdsRef = useRef(null);
@@ -140,7 +145,7 @@ export default function JamPage() {
   const renderSongList = ({ songs, hideTypeBadge = false, emptyMessage = "No songs yet - add some tunes!", type }) => (
     <JamSongList 
       songs={songs}
-      nextSongId={getGroupedSongs(jam.songs, groupingEnabled).nextSongId}
+      nextSongId={nextSongId}
       onVote={handleVote}
       onKnow={handleKnow}
       onRemove={setSongToDelete}
@@ -152,7 +157,10 @@ export default function JamPage() {
       lastAddedSongId={lastAddedSongId}
       type={type}
       hostMode={hostMode}
-      onVoteChange={voteChanged}
+      onVoteChange={() => {
+        voteChanged();
+        hold(shownIds);
+      }}
     />
   );
 
@@ -175,7 +183,16 @@ export default function JamPage() {
     return <LoadingBlock />;
   }
 
-  const groupedSongs = getGroupedSongs(jam.songs, groupingEnabled);
+  const sortedSongs = getGroupedSongs(jam.songs, groupingEnabled);
+  const groupedSongs = groupingEnabled
+    ? { bangers: applyHeld(sortedSongs.bangers), ballads: applyHeld(sortedSongs.ballads) }
+    : { ungrouped: applyHeld(sortedSongs.ungrouped) };
+  const shownSongs = groupingEnabled
+    ? [...groupedSongs.bangers, ...groupedSongs.ballads]
+    : groupedSongs.ungrouped;
+  const shownIds = shownSongs.map((s) => s._id);
+  // The top unplayed song, as shown (bangers first when grouped)
+  const nextSongId = shownSongs.find((s) => !s.played)?._id;
   const notVotedQueue = buildQueue(jam.songs);
   // Songs added since you opened the page. They join the "Not voted" list
   // and stay there after you vote, like the rest of it.
@@ -203,6 +220,8 @@ export default function JamPage() {
         showFavorites={showFavorites}
         setShowFavorites={setShowFavorites}
       />
+
+      {jam.songs?.length > 0 && <HeartLegend className="-mt-2 mb-4 sm:-mt-4" />}
 
       <JamToolbar 
         songAutocompleteRef={songAutocompleteRef}

@@ -13,6 +13,7 @@ const BaseSongRow = forwardRef(({
   hidePlayStats = false,
   titleAdornment,
   titleClassName,
+  artistAdornment,
   additionalInfo,
   className,
   onClick,
@@ -68,8 +69,10 @@ const BaseSongRow = forwardRef(({
                     </span>
                   )}
                 </div>
-                <p className="text-sm md:text-md text-muted-foreground font-medium">
-                  {song.artist}
+                <p className="flex flex-wrap gap-x-2 text-sm md:text-md text-muted-foreground font-medium">
+                  <span>{song.artist}</span>
+                  {/* Extra info after the artist; wraps to its own line when there's no room */}
+                  {artistAdornment && <span className="whitespace-nowrap">{artistAdornment}</span>}
                 </p>
               </div>
 
