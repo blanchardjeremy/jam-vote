@@ -13,6 +13,7 @@ const BaseSongRow = forwardRef(({
   hidePlayStats = false,
   titleAdornment,
   titleClassName,
+  artistAdornment,
   additionalInfo,
   className,
   onClick,
@@ -70,6 +71,7 @@ const BaseSongRow = forwardRef(({
                 </div>
                 <p className="text-sm md:text-md text-muted-foreground font-medium">
                   {song.artist}
+                  {artistAdornment && <> · {artistAdornment}</>}
                 </p>
               </div>
 

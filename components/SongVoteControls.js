@@ -83,7 +83,8 @@ const HEART_PATH =
 
 // A heart outline, filled per vote: empty (no vote), left half purple
 // (know it) or all rose (love it). Color comes from the parent's text color.
-export function VoteHeart({ fill = 'none', className }) {
+// An optional `count` is written in the middle of the heart.
+export function VoteHeart({ fill = 'none', count, className }) {
   const clipId = useId();
   return (
     <svg viewBox="0 0 24 24" aria-hidden className={className}>
@@ -102,6 +103,25 @@ export function VoteHeart({ fill = 'none', className }) {
         />
       )}
       <path d={HEART_PATH} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinejoin="round" />
+      {count != null && (
+        <text
+          x="12"
+          y="12.5"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize={String(count).length > 2 ? 6 : 8}
+          fontWeight="700"
+          // Full heart: white number. Half heart: white with a colored edge so
+          // it reads on both halves. Empty heart: the outline's color.
+          fill={fill === 'none' ? 'currentColor' : 'white'}
+          stroke={fill === 'half' ? 'currentColor' : 'none'}
+          strokeWidth={fill === 'half' ? 2 : 0}
+          paintOrder="stroke"
+          className="tabular-nums"
+        >
+          {count}
+        </text>
+      )}
     </svg>
   );
 }
@@ -109,8 +129,8 @@ export function VoteHeart({ fill = 'none', className }) {
 const HEART_STYLE = {
   love: { fill: 'full', color: 'text-rose-500', label: 'You love it. Tap to clear your vote' },
   know: { fill: 'half', color: 'text-primary', label: 'You know it. Tap to love it' },
-  dontKnow: { fill: 'none', color: 'text-gray-400', label: "You don't know it. Tap if you know it" },
-  unanswered: { fill: 'none', color: 'text-gray-400', label: 'Not voted. Tap if you know it' },
+  dontKnow: { fill: 'none', color: 'text-gray-500', label: "You don't know it. Tap if you know it" },
+  unanswered: { fill: 'none', color: 'text-gray-500', label: 'Not voted. Tap if you know it' },
 };
 
 // Swipe to know (left) or swipe to love (right). Swiping the same way again
@@ -121,26 +141,20 @@ export function swipeVote(jamSong, vote, direction, { onVote, onKnow, onChange }
   onChange?.();
 }
 
-// The heart on each jam song, with "loves/knows" for the whole room under it
-// (e.g. 5/9: 5 love it, 9 know it). Tap to
+// The heart on each jam song, with the room's love count inside it. Tap to
 // cycle your vote: know it (half purple) -> love it (full rose) -> empty (don't know).
 export default function HeartToggle({ jamSong, vote, onVote, onKnow, onChange }) {
   const style = HEART_STYLE[vote] || HEART_STYLE.unanswered;
   const { loves, knows } = knowCounts(jamSong, vote === 'love' || vote === 'know');
   const countText = `${loves} love it, ${knows} know it`;
   const box = cn(
-    'flex min-w-10 shrink-0 flex-col items-center justify-center rounded-lg py-1 md:w-11',
+    'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg md:h-11 md:w-11',
     // Wait for this device's vote to load so the first render matches the server
     !vote && 'invisible'
   );
   const content = (
     <>
-      <VoteHeart fill={style.fill} className={cn('h-6 w-6', style.color)} />
-      <span aria-hidden className="whitespace-nowrap text-xs font-medium tabular-nums">
-        <span className="text-rose-500">{loves}</span>
-        <span className="text-gray-400">/</span>
-        <span className="text-primary">{knows}</span>
-      </span>
+      <VoteHeart fill={style.fill} count={loves} className={cn('h-9 w-9', style.color)} />
     </>
   );
 

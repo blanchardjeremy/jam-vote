@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import SongFormModal from "@/components/CreateSongModal";
 import SongRowButtonToolbar from "@/components/SongRowButtonToolbar";
-import HeartToggle, { yourVote, swipeVote } from "@/components/SongVoteControls";
+import HeartToggle, { yourVote, swipeVote, knowCounts } from "@/components/SongVoteControls";
 import SwipeToVote from "@/components/SwipeToVote";
 import CaptainBadges from "@/components/CaptainBadges";
 import BaseSongRow from "@/components/SongRowBase";
@@ -37,6 +37,7 @@ export default function SongRow({
   const voteProps = { jamSong, vote, onVote, onKnow, onChange };
   // Songs you haven't voted on yet get a dot, like an unread email
   const isNew = vote === 'unanswered' && !jamSong.played;
+  const { knows } = knowCounts(jamSong, vote === 'love' || vote === 'know');
 
   const handleTogglePlayed = useCallback(async () => {
     await onTogglePlayed(jamSong._id);
@@ -61,6 +62,7 @@ export default function SongRow({
         // Plays / last played live in the Edit Song form to keep the jam list uncluttered
         hidePlayStats
         titleClassName={isNew && 'text-primary'}
+        artistAdornment={knows > 0 && <span className="whitespace-nowrap text-primary">{knows} know it</span>}
         titleAdornment={isNew && (
           <span className="h-2 w-2 shrink-0 rounded-full bg-primary" role="img" aria-label="Not voted yet" />
         )}
