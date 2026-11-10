@@ -120,6 +120,7 @@ export function swipeVote(jamSong, vote, direction, { onVote, onKnow, onChange }
 export default function HeartToggle({ jamSong, vote, onVote, onKnow, onChange }) {
   const style = HEART_STYLE[vote] || HEART_STYLE.unanswered;
   const count = jamSong.votes || 0;
+  const countText = `${count} ${count === 1 ? 'heart' : 'hearts'}`;
   const box = cn(
     'flex w-10 shrink-0 flex-col items-center justify-center rounded-lg py-1 md:w-11',
     // Wait for this device's vote to load so the first render matches the server
@@ -137,7 +138,7 @@ export default function HeartToggle({ jamSong, vote, onVote, onKnow, onChange })
   // Played songs can't be voted on any more
   if (jamSong.played) {
     return (
-      <div className={box} role="img" aria-label={`${count} hearts`}>
+      <div className={box} role="img" aria-label={countText}>
         {content}
       </div>
     );
@@ -152,7 +153,7 @@ export default function HeartToggle({ jamSong, vote, onVote, onKnow, onChange })
   return (
     <button
       type="button"
-      aria-label={`${style.label}. ${count} hearts`}
+      aria-label={`${style.label}. ${countText}`}
       onClick={tap}
       onKeyDown={(e) => e.stopPropagation()}
       className={cn(
