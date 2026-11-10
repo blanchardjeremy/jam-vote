@@ -1,4 +1,3 @@
-import { useId } from "react";
 import { alsoMarkKnownForLove } from "@/lib/services/jamSongs";
 import { answerStatus, keys, storage } from "@/lib/utils/guideQueue";
 import { cn } from "@/lib/utils";
@@ -81,28 +80,19 @@ const NEXT_VOTE = {
 const HEART_PATH =
   'M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z';
 
-// A heart outline, filled per vote: empty (no vote), left half purple
-// (know it) or all rose (love it). Color comes from the parent's text color.
-// An optional `count` is written in the middle of the heart.
+// A heart, drawn per vote: an outline (gray for no vote, purple for know it)
+// or filled (love it). Color comes from the parent's text color. An optional
+// `count` is written in the middle of the heart.
 export function VoteHeart({ fill = 'none', count, className }) {
-  const clipId = useId();
   return (
     <svg viewBox="0 0 24 24" aria-hidden className={className}>
-      {fill === 'half' && (
-        <defs>
-          <clipPath id={clipId}>
-            <rect x="0" y="0" width="12" height="24" />
-          </clipPath>
-        </defs>
-      )}
-      {fill !== 'none' && (
-        <path
-          d={HEART_PATH}
-          fill="currentColor"
-          clipPath={fill === 'half' ? `url(#${clipId})` : undefined}
-        />
-      )}
-      <path d={HEART_PATH} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinejoin="round" />
+      <path
+        d={HEART_PATH}
+        fill={fill === 'full' ? 'currentColor' : 'none'}
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+      />
       {count != null && (
         <text
           x="12"
@@ -111,12 +101,8 @@ export function VoteHeart({ fill = 'none', count, className }) {
           dominantBaseline="middle"
           fontSize={String(count).length > 2 ? 6 : 8}
           fontWeight="700"
-          // Full heart: white number. Half heart: white with a colored edge so
-          // it reads on both halves. Empty heart: the outline's color.
-          fill={fill === 'none' ? 'currentColor' : 'white'}
-          stroke={fill === 'half' ? 'currentColor' : 'none'}
-          strokeWidth={fill === 'half' ? 2 : 0}
-          paintOrder="stroke"
+          // White on a filled heart, otherwise the heart's color
+          fill={fill === 'full' ? 'white' : 'currentColor'}
           className="tabular-nums"
         >
           {count}
@@ -128,7 +114,7 @@ export function VoteHeart({ fill = 'none', count, className }) {
 
 const HEART_STYLE = {
   love: { fill: 'full', color: 'text-rose-500', label: 'You love it. Tap to clear your vote' },
-  know: { fill: 'half', color: 'text-primary', label: 'You know it. Tap to love it' },
+  know: { fill: 'none', color: 'text-primary', label: 'You know it. Tap to love it' },
   dontKnow: { fill: 'none', color: 'text-gray-500', label: "You don't know it. Tap if you know it" },
   unanswered: { fill: 'none', color: 'text-gray-500', label: 'Not voted. Tap if you know it' },
 };
@@ -142,7 +128,7 @@ export function swipeVote(jamSong, vote, direction, { onVote, onKnow, onChange }
 }
 
 // The heart on each jam song, with the room's love count inside it. Tap to
-// cycle your vote: know it (half purple) -> love it (full rose) -> empty (don't know).
+// cycle your vote: know it (purple outline) -> love it (full rose) -> empty (don't know).
 export default function HeartToggle({ jamSong, vote, onVote, onKnow, onChange }) {
   const style = HEART_STYLE[vote] || HEART_STYLE.unanswered;
   const { loves, knows } = knowCounts(jamSong, vote === 'love' || vote === 'know');
@@ -194,7 +180,7 @@ export default function HeartToggle({ jamSong, vote, onVote, onKnow, onChange })
 export function HeartLegend({ className }) {
   const items = [
     { fill: 'none', color: 'text-gray-400', text: 'Not voted' },
-    { fill: 'half', color: 'text-primary', text: 'I know it' },
+    { fill: 'none', color: 'text-primary', text: 'I know it' },
     { fill: 'full', color: 'text-rose-500', text: 'I love it' },
   ];
   return (

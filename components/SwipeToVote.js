@@ -84,7 +84,7 @@ export default function SwipeToVote({ vote, disabled, onSwipe, children }) {
           )}
         >
           <span className={cn('flex items-center gap-1.5 transition-transform', ready && 'scale-110')}>
-            <VoteHeart fill={clearing ? 'none' : swipingLeft ? 'half' : 'full'} className="h-6 w-6" />
+            <VoteHeart fill={swipingLeft || clearing ? 'none' : 'full'} className="h-6 w-6" />
             {label}
           </span>
         </div>
