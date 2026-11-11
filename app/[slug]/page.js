@@ -9,7 +9,7 @@ import JamHeader from '@/components/jam/JamHeader';
 import JamToolbar from '@/components/jam/JamToolbar';
 import JamSongList from '@/components/jam/JamSongList';
 import JamEmptyState from '@/components/jam/JamEmptyState';
-import { FireIcon, MusicalNoteIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
+import { FireIcon, MusicalNoteIcon, ChevronDownIcon, CheckCircleIcon } from '@heroicons/react/24/solid';
 import LoadingBlock from "@/components/LoadingBlock";
 import CreateSongModal from "@/components/CreateSongModal";
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -34,7 +34,7 @@ export default function JamPage() {
   const [hostMode, setHostMode] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   // Collapsed song-type sections, e.g. collapse Bangers to jump straight to Ballads
-  const [collapsed, setCollapsed] = useState({ banger: false, ballad: false });
+  const [collapsed, setCollapsed] = useState({ banger: false, ballad: false, sung: false });
   const toggleSection = (type) => setCollapsed((prev) => ({ ...prev, [type]: !prev[type] }));
   // Votes live in localStorage, so re-render the page when this device votes
   // to keep the "Not voted" count and the new songs pill current
@@ -180,9 +180,17 @@ export default function JamPage() {
   const groupedSongs = groupingEnabled
     ? { bangers: applyHeld(sortedSongs.bangers), ballads: applyHeld(sortedSongs.ballads) }
     : { ungrouped: applyHeld(sortedSongs.ungrouped) };
-  const shownSongs = groupingEnabled
-    ? [...groupedSongs.bangers, ...groupedSongs.ballads]
-    : groupedSongs.ungrouped;
+  // Sung songs get their own section at the bottom
+  const sungSongs = sortedSongs.sung;
+  const shownSongs = [
+    ...(groupingEnabled ? [...groupedSongs.bangers, ...groupedSongs.ballads] : groupedSongs.ungrouped),
+    ...sungSongs,
+  ];
+  // A section that's empty because everything in it was sung says so
+  const allSungMessage = (type) =>
+    sungSongs.some((s) => s.song.type === type)
+      ? { emptyMessage: `Every ${type} has been sung` }
+      : {};
   const shownIds = shownSongs.map((s) => s._id);
   // The top unplayed song, as shown (bangers first when grouped)
   const nextSongId = shownSongs.find((s) => !s.played)?._id;
@@ -251,6 +259,7 @@ export default function JamPage() {
                         songs: forView(groupedSongs.bangers),
                         hideTypeBadge: true,
                         type: "banger",
+                        ...allSungMessage('banger'),
                         ...viewEmptyMessage
                       })}
                     </ul>
@@ -274,6 +283,7 @@ export default function JamPage() {
                         songs: forView(groupedSongs.ballads),
                         hideTypeBadge: true,
                         type: "ballad",
+                        ...allSungMessage('ballad'),
                         ...viewEmptyMessage
                       })}
                     </ul>
@@ -294,6 +304,24 @@ export default function JamPage() {
               </ul>
               <FavoriteSuggestions songs={favoriteSuggestions?.any} onSongUpdated={handleSuggestionUpdated} />
             </>
+          )}
+
+          {/* Sung songs, in the order they were sung */}
+          {sungSongs.length > 0 && (
+            <div className="border-t border-gray-200">
+              <SectionHeader
+                icon={CheckCircleIcon}
+                label={`Sung (${sungSongs.length})`}
+                collapsed={collapsed.sung}
+                onToggle={() => toggleSection('sung')}
+                muted
+              />
+              {!collapsed.sung && (
+                <ul className="divide-y divide-gray-200">
+                  {renderSongList({ songs: sungSongs, hideTypeBadge: false, type: "sung" })}
+                </ul>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -360,14 +388,20 @@ export default function JamPage() {
 }
 
 // Bangers / Ballads section header; tap anywhere on it to collapse or expand
-function SectionHeader({ icon: Icon, label, collapsed, onToggle }) {
+// `muted` is for the Sung section, so it doesn't compete with what's next
+function SectionHeader({ icon: Icon, label, collapsed, onToggle, muted = false }) {
   return (
     <h3>
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={!collapsed}
-        className="w-full bg-indigo-800 px-4 py-4 flex items-center justify-between text-left text-lg font-semibold text-white [@media(hover:hover)]:hover:bg-indigo-700 transition-colors"
+        className={cn(
+          'w-full px-4 py-4 flex items-center justify-between text-left text-lg font-semibold text-white transition-colors',
+          muted
+            ? 'bg-gray-500 [@media(hover:hover)]:hover:bg-gray-600'
+            : 'bg-indigo-800 [@media(hover:hover)]:hover:bg-indigo-700'
+        )}
       >
         <span className="flex items-center">
           <Icon className="w-5 h-5 mr-2" /> {label}
