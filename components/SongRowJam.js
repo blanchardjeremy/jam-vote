@@ -97,7 +97,12 @@ export default function SongRow({
       icon: otherType === 'banger' ? <FireIcon className="h-6 w-6" /> : <MusicalNoteIcon className="h-6 w-6" />,
       color: otherType === 'banger' ? 'bg-orange-400' : 'bg-sky-400',
       readyColor: otherType === 'banger' ? 'bg-orange-500' : 'bg-sky-600',
-      onSwipe: () => onEdit?.(jamSong._id, { type: otherType }, `Moved ${song.title} to ${otherSection}`),
+      onSwipe: () => {
+        // The list updates right away, so confirm right away too. If the
+        // save fails, an error shows and the move is undone.
+        toast.success(`Moved ${song.title} to ${otherSection}`);
+        Promise.resolve(onEdit?.(jamSong._id, { type: otherType }, null)).catch(() => {});
+      },
     },
     right: null,
   };
@@ -118,7 +123,9 @@ export default function SongRow({
       toast(`${song.title} is already a favorite`);
       return;
     }
-    onEdit?.(jamSong._id, { favorite: true }, `Added ${song.title} to favorites`);
+    // Confirm right away; if the save fails, an error shows instead
+    toast.success(`Added ${song.title} to favorites`);
+    Promise.resolve(onEdit?.(jamSong._id, { favorite: true }, null)).catch(() => {});
   };
 
   const handleEdit = async (updatedSong) => {
