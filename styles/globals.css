@@ -139,6 +139,21 @@
   animation-fill-mode: forwards;
 }
 
+/* Host double-tap favorite: a star pops up over the song row and fades */
+@keyframes favorite-star-pop {
+  0% { transform: scale(0.3); opacity: 0; }
+  25% { transform: scale(1.25); opacity: 1; }
+  45% { transform: scale(0.95); opacity: 1; }
+  75% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+.favorite-star-pop {
+  animation: favorite-star-pop 900ms ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .favorite-star-pop { animation: guide-fade-out 600ms ease-out forwards; }
+}
+
 /* Guided voting: progress feedback */
 @keyframes guide-glint {
   0% { transform: translateX(-100%); opacity: 0; }

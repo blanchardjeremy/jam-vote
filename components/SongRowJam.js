@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import SongFormModal from "@/components/CreateSongModal";
 import SongRowButtonToolbar from "@/components/SongRowButtonToolbar";
 import { toast } from "sonner";
-import { UserIcon, FireIcon, MusicalNoteIcon } from "@heroicons/react/24/solid";
+import { UserIcon, FireIcon, MusicalNoteIcon, StarIcon } from "@heroicons/react/24/solid";
 import { UserIcon as UserOutline } from "@heroicons/react/24/outline";
 import HeartToggle, { yourVote, toggleVote, VoteHeart } from "@/components/SongVoteControls";
 import SwipeActions from "@/components/SwipeActions";
@@ -110,6 +110,8 @@ export default function SongRow({
   // Host tools: double-tap a song to add it to favorites. It only adds, so a
   // stray double tap can't take a favorite away.
   const lastTap = useRef(0);
+  // Bumped on each favorite double tap to replay the star pop over the row
+  const [starPop, setStarPop] = useState(0);
   const handleDoubleTap = (e) => {
     // Taps on the row's buttons and links don't count
     if (e.target.closest('button, a')) return;
@@ -119,6 +121,7 @@ export default function SongRow({
       return;
     }
     lastTap.current = 0;
+    setStarPop((n) => n + 1);
     if (song.favorite) {
       toast(`${song.title} is already a favorite`);
       return;
@@ -136,7 +139,18 @@ export default function SongRow({
     <>
       {/* Swipe left to vote (the easy thumb motion), right to captain.
           With host tools on: left moves it to the other section (banger <-> ballad). */}
-      <div ref={rowRef}>
+      <div ref={rowRef} className="relative">
+        {/* The star that pops up when the host double-taps to favorite */}
+        {starPop > 0 && (
+          <div
+            key={starPop}
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"
+            onAnimationEnd={() => setStarPop(0)}
+          >
+            <StarIcon className="favorite-star-pop h-14 w-14 text-amber-400 drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)]" />
+          </div>
+        )}
       <SwipeActions
         // Played songs can't be voted on or captained, but the host can
         // still move them between Bangers and Ballads
