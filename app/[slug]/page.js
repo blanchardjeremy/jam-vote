@@ -311,8 +311,9 @@ export default function JamPage() {
             </>
           )}
 
-          {/* Sung songs, in the order they were sung */}
-          {sungSongs.length > 0 && (
+          {/* Sung songs, in the order they were sung. Hidden under the New
+              filter, since a sung song is never new. */}
+          {sungSongs.length > 0 && !newFilterIds && (
             <div className="border-t border-gray-200">
               <SectionHeader
                 icon={CheckCircleIcon}
