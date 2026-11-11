@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import SongRowButton from "@/components/SongRowButton";
-import CaptainSignupButton from "@/components/CaptainSignupButton";
+import CaptainButtons from "@/components/CaptainButtons";
 import SongChordsButton from "@/components/SongChordsButton";
 import { cn } from "@/lib/utils";
 
@@ -46,7 +46,9 @@ export default function SongRowButtonToolbar({
     <>
       <div className="flex items-center gap-1">
         <SongChordsButton song={song} />
-        <CaptainSignupButton jamSong={jamSong} />
+        {/* Host mode swaps the captain buttons for the sung button, to keep
+            the row from getting crowded */}
+        {!hostMode && <CaptainButtons jamSong={jamSong} />}
         {hostMode && (
           <SongRowButton
             icon={jamSong.played ? CheckCircleSolid : CheckCircleIcon}
