@@ -1,140 +1,50 @@
-import { useId } from "react";
-import { alsoMarkKnownForLove } from "@/lib/services/jamSongs";
-import { answerStatus, keys, storage } from "@/lib/utils/guideQueue";
+import { keys, storage, voteStatus } from "@/lib/utils/guideQueue";
 import { cn } from "@/lib/utils";
 
-// The room's counts for a song. Every heart also counts as a know, so
-// `loves` is always part of `knows`, even for hearts given before knows were
-// tracked. `youKnowIt` makes sure this device is counted at least once.
-export function knowCounts(jamSong, youKnowIt = false) {
-  const loves = jamSong.votes || 0;
-  const knows = Math.max(jamSong.knows || 0, loves, youKnowIt ? 1 : 0);
-  return { loves, knows };
-}
+// This device's vote on a song: 'voted' | 'seen' | 'new'
+export const yourVote = voteStatus;
 
-// This device's vote on a song: 'love' | 'know' | 'dontKnow' | 'unanswered'.
-// 'dontKnow' is shown as "I'm not sure".
-export function yourVote(jamSong) {
-  if (storage.get(keys.love(jamSong._id)) === 'true') return 'love';
-  return answerStatus(jamSong);
-}
-
-// The localStorage keys each vote keeps set. Loving a song also counts as
-// knowing it, so a love keeps the know key too.
-const KEYS_FOR = {
-  love: ['love', 'know'],
-  know: ['know'],
-  dontKnow: ['dontKnow'],
-};
-
-// What the server is told when a key is added or taken away
-const SERVER = {
-  love: { add: ['vote', 'vote'], remove: ['vote', 'unvote'] },
-  know: { add: ['know', 'know'], remove: ['know', 'unknow'] },
-  dontKnow: { add: ['know', 'dontknow'], remove: ['know', 'undontknow'] },
-};
-
-// Change this device's vote, undoing whatever the old vote added, so each
-// person is counted once. Matches how guided voting records answers.
-function changeVote(id, next, { onVote, onKnow }) {
-  const send = (kind, action) => {
-    const fn = kind === 'vote' ? onVote : onKnow;
-    if (fn) Promise.resolve(fn(id, action)).catch(() => {});
-  };
-  const wanted = KEYS_FOR[next];
-
-  // Take back what the new vote doesn't keep
-  for (const key of Object.keys(keys)) {
-    if (wanted.includes(key) || storage.get(keys[key](id)) !== 'true') continue;
-    storage.remove(keys[key](id));
-    if (SERVER[key]) send(...SERVER[key].remove);
+// Vote for a song, or take the vote back. Taking it back still leaves the
+// song marked seen, so it doesn't come back as new.
+export function toggleVote(jamSong, vote, { onVote, onChange }) {
+  const id = jamSong._id;
+  const voted = vote === 'voted';
+  if (voted) {
+    storage.remove(keys.vote(id));
+    storage.set(keys.seen(id), 'true');
+  } else {
+    storage.set(keys.vote(id), 'true');
   }
-
-  if (next === 'love') {
-    storage.set(keys.love(id), 'true');
-    send('vote', 'vote');
-    // A heart also counts as a know (once per person)
-    alsoMarkKnownForLove(
-      id,
-      (songId) => onKnow?.(songId, 'know'),
-      (songId) => onKnow?.(songId, 'undontknow')
-    );
-    return;
-  }
-  const [key] = wanted;
-  if (storage.get(keys[key](id)) === 'true') return;
-  storage.set(keys[key](id), 'true');
-  if (SERVER[key]) send(...SERVER[key].add);
+  if (onVote) Promise.resolve(onVote(id, voted ? 'unvote' : 'vote')).catch(() => {});
+  onChange?.();
 }
 
-
-// Each tap moves to the next step: empty heart -> I know it -> I love it ->
-// empty heart. Going back to empty saves "I don't know it", so the song still
-// counts as seen (no new-song dot, not offered again in guided voting).
-const NEXT_VOTE = {
-  unanswered: 'know',
-  dontKnow: 'know',
-  know: 'love',
-  love: 'dontKnow',
-};
+// Tapping a new song's row marks it seen, so it loses its new-song dot
+export function markSeen(jamSong, vote, { onChange }) {
+  if (vote !== 'new' || jamSong.played) return;
+  storage.set(keys.seen(jamSong._id), 'true');
+  onChange?.();
+}
 
 const HEART_PATH =
   'M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z';
 
-// A heart outline, filled per vote: empty (no vote), left half purple
-// (know it) or all rose (love it). Color comes from the parent's text color.
-export function VoteHeart({ fill = 'none', className }) {
-  const clipId = useId();
+// A heart outline, filled when `filled`. Color comes from the parent's text color.
+export function VoteHeart({ filled = false, className }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden className={className}>
-      {fill === 'half' && (
-        <defs>
-          <clipPath id={clipId}>
-            <rect x="0" y="0" width="12" height="24" />
-          </clipPath>
-        </defs>
-      )}
-      {fill !== 'none' && (
-        <path
-          d={HEART_PATH}
-          fill="currentColor"
-          clipPath={fill === 'half' ? `url(#${clipId})` : undefined}
-        />
-      )}
+      {filled && <path d={HEART_PATH} fill="currentColor" />}
       <path d={HEART_PATH} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinejoin="round" />
     </svg>
   );
 }
 
-const HEART_STYLE = {
-  love: { fill: 'full', color: 'text-rose-500', label: 'You love it. Tap to clear your vote' },
-  know: { fill: 'half', color: 'text-primary', label: 'You know it. Tap to love it' },
-  dontKnow: { fill: 'none', color: 'text-gray-500', label: "You don't know it. Tap if you know it" },
-  unanswered: { fill: 'none', color: 'text-gray-500', label: 'Not voted. Tap if you know it' },
-};
-
-// Swipe to know (left) or swipe to love (right). Swiping the same way again
-// empties the heart and saves "I don't know it", like the third tap.
-export function swipeVote(jamSong, vote, direction, { onVote, onKnow, onChange }) {
-  const target = direction === 'left' ? 'know' : 'love';
-  changeVote(jamSong._id, vote === target ? 'dontKnow' : target, { onVote, onKnow });
-  onChange?.();
-}
-
-// Tapping an unvoted song marks it seen: saved as "I don't know it", so it
-// loses its new-song dot without changing the (still empty) heart.
-export function markSeen(jamSong, vote, { onVote, onKnow, onChange }) {
-  if (vote !== 'unanswered' || jamSong.played) return;
-  changeVote(jamSong._id, 'dontKnow', { onVote, onKnow });
-  onChange?.();
-}
-
-// The heart on each jam song, with the room's love count under it. Tap to
-// cycle your vote: know it (half purple) -> love it (full rose) -> empty (don't know).
-export default function HeartToggle({ jamSong, vote, onVote, onKnow, onChange }) {
-  const style = HEART_STYLE[vote] || HEART_STYLE.unanswered;
-  const { loves, knows } = knowCounts(jamSong, vote === 'love' || vote === 'know');
-  const countText = `${loves} love it, ${knows} know it`;
+// The heart on each jam song, with the vote count under it. One tap votes,
+// another takes the vote back.
+export default function HeartToggle({ jamSong, vote, onVote, onChange }) {
+  const voted = vote === 'voted';
+  const votes = jamSong.votes || 0;
+  const countText = `${votes} ${votes === 1 ? 'vote' : 'votes'}`;
   const box = cn(
     'flex w-10 shrink-0 flex-col items-center justify-center rounded-lg py-1 md:w-11',
     // Wait for this device's vote to load so the first render matches the server
@@ -142,9 +52,9 @@ export default function HeartToggle({ jamSong, vote, onVote, onKnow, onChange })
   );
   const content = (
     <>
-      <VoteHeart fill={style.fill} className={cn('h-6 w-6', style.color)} />
-      <span aria-hidden className={cn('text-xs font-medium tabular-nums', vote === 'love' ? 'text-rose-600' : 'text-gray-500')}>
-        {loves}
+      <VoteHeart filled={voted} className={cn('h-6 w-6', voted ? 'text-rose-500' : 'text-gray-500')} />
+      <span aria-hidden className={cn('text-xs font-medium tabular-nums', voted ? 'text-rose-600' : 'text-gray-500')}>
+        {votes}
       </span>
     </>
   );
@@ -158,17 +68,15 @@ export default function HeartToggle({ jamSong, vote, onVote, onKnow, onChange })
     );
   }
 
-  const tap = (e) => {
-    e.stopPropagation();
-    changeVote(jamSong._id, NEXT_VOTE[vote] || 'know', { onVote, onKnow });
-    onChange?.();
-  };
-
   return (
     <button
       type="button"
-      aria-label={`${style.label}. ${countText}`}
-      onClick={tap}
+      aria-label={`${voted ? 'Remove your vote' : 'Vote'}. ${countText}`}
+      aria-pressed={voted}
+      onClick={(e) => {
+        e.stopPropagation();
+        toggleVote(jamSong, vote, { onVote, onChange });
+      }}
       onKeyDown={(e) => e.stopPropagation()}
       className={cn(
         box,
@@ -178,27 +86,5 @@ export default function HeartToggle({ jamSong, vote, onVote, onKnow, onChange })
     >
       {content}
     </button>
-  );
-}
-
-// Explains the heart icons; shown above the jam list
-export function HeartLegend({ className }) {
-  const items = [
-    { fill: 'none', color: 'text-gray-400', text: 'Not voted' },
-    { fill: 'half', color: 'text-primary', text: 'I know it' },
-    { fill: 'full', color: 'text-rose-500', text: 'I love it' },
-  ];
-  return (
-    <div className={cn('space-y-1 text-sm text-gray-600', className)}>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-        {items.map(({ fill, color, text }) => (
-          <span key={text} className="inline-flex items-center gap-1.5">
-            <VoteHeart fill={fill} className={cn('h-5 w-5', color)} />
-            {text}
-          </span>
-        ))}
-      </div>
-      <p className="text-gray-500">Tap a heart, or swipe a song left to know or right to love</p>
-    </div>
   );
 }
