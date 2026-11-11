@@ -90,6 +90,23 @@ export async function PUT(request, context) {
       );
     }
 
+    // Tell everyone looking at a jam with this song, so an edit (like a host
+    // moving it between Bangers and Ballads) shows up on their phones too.
+    // A failed notice doesn't fail the save.
+    try {
+      const jams = await Jam.find({ 'songs.song': songId }, '_id').lean();
+      const channels = jams.map((jam) => `jam-${jam._id}`);
+      // Pusher takes up to 100 channels per call
+      for (let i = 0; i < channels.length; i += 100) {
+        await pusherServer.trigger(channels.slice(i, i + 100), 'song-edited', {
+          songId,
+          updatedSong: song,
+        });
+      }
+    } catch (error) {
+      console.error('[Song PUT] Failed to send song-edited:', error);
+    }
+
     return NextResponse.json(song);
   } catch (error) {
     console.error('Error in PUT /api/songs/[id]:', error);

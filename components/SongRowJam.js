@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import SongFormModal from "@/components/CreateSongModal";
 import SongRowButtonToolbar from "@/components/SongRowButtonToolbar";
 import { toast } from "sonner";
-import { UserIcon } from "@heroicons/react/24/solid";
+import { UserIcon, FireIcon, MusicalNoteIcon } from "@heroicons/react/24/solid";
 import { UserIcon as UserOutline } from "@heroicons/react/24/outline";
 import HeartToggle, { yourVote, toggleVote, VoteHeart } from "@/components/SongVoteControls";
 import SwipeActions from "@/components/SwipeActions";
@@ -86,21 +86,56 @@ export default function SongRow({
     await onTogglePlayed(jamSong._id);
   }, [jamSong._id, jamSong.played, onTogglePlayed]);
   
+  // Host tools: swipe right to make it a banger, left to make it a ballad.
+  // Works on sung songs too, since that's often when you notice. Only the
+  // swipe toward the other type does anything.
+  const setType = (type) =>
+    onEdit?.(jamSong._id, { type }, `Moved ${song.title} to ${type === 'banger' ? 'Bangers' : 'Ballads'}`);
+  const hostSwipes = {
+    left: song.type !== 'ballad'
+      ? { label: 'Ballad', icon: <MusicalNoteIcon className="h-6 w-6" />, color: 'bg-sky-400', readyColor: 'bg-sky-600', onSwipe: () => setType('ballad') }
+      : null,
+    right: song.type !== 'banger'
+      ? { label: 'Banger', icon: <FireIcon className="h-6 w-6" />, color: 'bg-orange-400', readyColor: 'bg-orange-500', onSwipe: () => setType('banger') }
+      : null,
+  };
+
+  // Host tools: double-tap a song to add it to favorites. It only adds, so a
+  // stray double tap can't take a favorite away.
+  const lastTap = useRef(0);
+  const handleDoubleTap = (e) => {
+    // Taps on the row's buttons and links don't count
+    if (e.target.closest('button, a')) return;
+    const now = Date.now();
+    if (now - lastTap.current > 350) {
+      lastTap.current = now;
+      return;
+    }
+    lastTap.current = 0;
+    if (song.favorite) {
+      toast(`${song.title} is already a favorite`);
+      return;
+    }
+    onEdit?.(jamSong._id, { favorite: true }, `Added ${song.title} to favorites`);
+  };
+
   const handleEdit = async (updatedSong) => {
     onEdit?.(jamSong._id, updatedSong);
   };
   
   return (
     <>
-      {/* Swipe left to vote (the easy thumb motion), right to captain */}
+      {/* Swipe left to vote (the easy thumb motion), right to captain.
+          With host tools on: right makes it a banger, left a ballad. */}
       <div ref={rowRef}>
       <SwipeActions
-        // Played songs can't be voted on or captained any more
-        disabled={jamSong.played || !vote}
-        left={vote === 'voted'
+        // Played songs can't be voted on or captained, but the host can
+        // still move them between Bangers and Ballads
+        disabled={hostMode ? false : jamSong.played || !vote}
+        left={hostMode ? hostSwipes.left : vote === 'voted'
           ? { label: 'Unvote', icon: <VoteHeart className="h-6 w-6" />, color: 'bg-gray-400', readyColor: 'bg-gray-500', onSwipe: () => toggleVote(jamSong, vote, voteProps) }
           : { label: 'Vote', icon: <VoteHeart filled className="h-6 w-6" />, color: 'bg-rose-300', readyColor: 'bg-rose-500', onSwipe: () => toggleVote(jamSong, vote, voteProps) }}
-        right={isCaptain
+        right={hostMode ? hostSwipes.right : isCaptain
           ? { label: 'Uncaptain', icon: <UserOutline className="h-6 w-6" />, color: 'bg-gray-400', readyColor: 'bg-gray-500', onSwipe: toggleCaptain }
           : { label: 'Captain', icon: <UserIcon className="h-6 w-6" />, color: 'bg-indigo-400', readyColor: 'bg-indigo-600', onSwipe: toggleCaptain }}
       >
@@ -110,6 +145,7 @@ export default function SongRow({
         hideType={hideType}
         // Plays / last played live in the Edit Song form to keep the jam list uncluttered
         hidePlayStats
+        onClick={hostMode ? handleDoubleTap : undefined}
         className={jamSong.played ? 'bg-gray-200 opacity-50' : ''}
         leftControl={<HeartToggle {...voteProps} />}
         rightActions={
