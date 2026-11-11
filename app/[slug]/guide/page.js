@@ -234,8 +234,8 @@ export default function GuidedPickerPage() {
       toast.error(`Couldn't remove you as captain of "${songTitle(jamSongId)}": ${e.message}`);
     });
 
-  // Seen songs aren't offered again (kept on this device only)
-  const markSeen = (jamSongId) => storage.set(keys.seen(jamSongId), 'true');
+  // Skipped songs aren't offered again (kept on this device only)
+  const markSkipped = (jamSongId) => storage.set(keys.skipped(jamSongId), 'true');
 
   // Progress through this run: answered so far vs. answered + still to go
   const remaining = queue
@@ -272,7 +272,7 @@ export default function GuidedPickerPage() {
 
   const captain = (jamSongId, type, name) => {
     signUpAsCaptain(jamSongId, type, name);
-    markSeen(jamSongId);
+    markSkipped(jamSongId);
     advance({ jamSongId, answer: 'captain', captainName: name });
   };
 
@@ -287,7 +287,7 @@ export default function GuidedPickerPage() {
       inBackground(handleVote(id, 'vote'));
       advance({ jamSongId: id, answer: 'vote' });
     } else if (answerId === 'skip') {
-      markSeen(id);
+      markSkipped(id);
       advance({ jamSongId: id, answer: 'skip' });
     } else if (answerId === 'captain') {
       const name = storage.get('userFirstName');
@@ -316,7 +316,7 @@ export default function GuidedPickerPage() {
       storage.remove(keys.vote(id));
       inBackground(handleVote(id, 'unvote'));
     } else {
-      storage.remove(keys.seen(id));
+      storage.remove(keys.skipped(id));
       if (last.answer === 'captain') inBackground(removeCaptain(id, last.captainName));
     }
     setHistory((prev) => prev.slice(0, -1));

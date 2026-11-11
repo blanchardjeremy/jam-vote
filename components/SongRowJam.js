@@ -4,11 +4,13 @@ import SongRowButtonToolbar from "@/components/SongRowButtonToolbar";
 import { toast } from "sonner";
 import { UserIcon } from "@heroicons/react/24/solid";
 import { UserIcon as UserOutline } from "@heroicons/react/24/outline";
-import HeartToggle, { yourVote, toggleVote, markSeen, VoteHeart } from "@/components/SongVoteControls";
+import HeartToggle, { yourVote, toggleVote, VoteHeart } from "@/components/SongVoteControls";
 import SwipeActions from "@/components/SwipeActions";
 import CaptainNameModal from "@/components/CaptainNameModal";
 import { useJam } from "@/components/JamContext";
 import { signUpAsCaptain, removeAsCaptain } from "@/lib/services/captains";
+import { markViewed } from "@/lib/utils/guideQueue";
+import { useSeenOnScreen } from "@/lib/hooks/useSeenOnScreen";
 import CaptainBadges from "@/components/CaptainBadges";
 import BaseSongRow from "@/components/SongRowBase";
 
@@ -22,7 +24,8 @@ export default function SongRow({
   hideType,
   highlight,
   hostMode,
-  onVoteChange
+  onVoteChange,
+  onViewed
 }) {
   const { song } = jamSong;
   const { jam } = useJam();
@@ -42,8 +45,15 @@ export default function SongRow({
     onVoteChange?.();
   };
   const voteProps = { jamSong, vote, onVote, onChange };
-  // Songs you haven't seen yet get a dot, like an unread email
+  // Once a new song's row has been on screen for a second it counts as
+  // viewed, quietly in the background. This drives the "New" filter only;
+  // there's nothing to see on the row itself.
   const isNew = vote === 'new' && !jamSong.played;
+  const rowRef = useSeenOnScreen(isNew, () => {
+    markViewed(jamSong._id);
+    refreshVote();
+    onViewed?.();
+  });
 
   // Your first name (saved on this device once you've given it), and whether
   // you already captain this song. Read after mount, like the vote.
@@ -83,6 +93,7 @@ export default function SongRow({
   return (
     <>
       {/* Swipe left to vote (the easy thumb motion), right to captain */}
+      <div ref={rowRef}>
       <SwipeActions
         // Played songs can't be voted on or captained any more
         disabled={jamSong.played || !vote}
@@ -99,12 +110,6 @@ export default function SongRow({
         hideType={hideType}
         // Plays / last played live in the Edit Song form to keep the jam list uncluttered
         hidePlayStats
-        // Tapping a new song marks it seen
-        onClick={isNew ? () => markSeen(jamSong, vote, voteProps) : undefined}
-        titleClassName={isNew && 'text-primary'}
-        titleAdornment={isNew && (
-          <span className="h-2 w-2 shrink-0 rounded-full bg-primary" role="img" aria-label="Not voted yet" />
-        )}
         className={jamSong.played ? 'bg-gray-200 opacity-50' : ''}
         leftControl={<HeartToggle {...voteProps} />}
         rightActions={
@@ -121,6 +126,7 @@ export default function SongRow({
         highlight={highlight}
       />
       </SwipeActions>
+      </div>
 
       {/* Modals */}
       <CaptainNameModal

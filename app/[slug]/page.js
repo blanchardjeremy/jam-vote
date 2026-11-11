@@ -19,7 +19,7 @@ import StickyQRCode from "@/components/StickyQRCode";
 import { useState, useEffect, useReducer, useRef } from 'react';
 import Link from 'next/link';
 import { XMarkIcon } from '@heroicons/react/20/solid';
-import { buildQueue } from '@/lib/utils/guideQueue';
+import { buildQueue, isNewToYou } from '@/lib/utils/guideQueue';
 import { cn } from '@/lib/utils';
 import FavoriteSuggestions, { pickRandomFavorites } from '@/components/jam/FavoriteSuggestions';
 
@@ -36,12 +36,13 @@ export default function JamPage() {
   // Collapsed song-type sections, e.g. collapse Bangers to jump straight to Ballads
   const [collapsed, setCollapsed] = useState({ banger: false, ballad: false, sung: false });
   const toggleSection = (type) => setCollapsed((prev) => ({ ...prev, [type]: !prev[type] }));
-  // Votes live in localStorage, so re-render the page when this device votes
-  // to keep the "Not voted" count and the new songs pill current
+  // Votes and viewed songs live in localStorage, so re-render the page when
+  // they change to keep the "New" count and the new songs pill current
   const [, voteChanged] = useReducer((n) => n + 1, 0);
-  // "Not voted" filter: the songs you hadn't voted on when you turned it on.
-  // They stay listed after you vote so you can see your answers.
-  const [notVotedIds, setNotVotedIds] = useState(null);
+  // "New" filter: the songs that were new to you when you turned it on (plus
+  // any added after). They stay listed as their dots fade, so the list
+  // doesn't empty itself while you read it.
+  const [newFilterIds, setNewFilterIds] = useState(null);
   const {
     jam,
     setJam,
@@ -154,6 +155,7 @@ export default function JamPage() {
         voteChanged();
         hold(shownIds);
       }}
+      onViewed={voteChanged}
     />
   );
 
@@ -194,21 +196,24 @@ export default function JamPage() {
   const shownIds = shownSongs.map((s) => s._id);
   // The top unplayed song, as shown (bangers first when grouped)
   const nextSongId = shownSongs.find((s) => !s.played)?._id;
-  const notVotedQueue = buildQueue(jam.songs);
-  // Songs added since you opened the page. They join the "Not voted" list
-  // and stay there after you vote, like the rest of it.
+  // Songs guided voting would still offer you
+  const guideQueue = buildQueue(jam.songs);
+  // Songs new to you: not on screen yet in this list, or answered elsewhere
+  const newIds = jam.songs.filter(isNewToYou).map((s) => s._id);
+  // Songs added since you opened the page. They join the "New" list and stay
+  // there, like the rest of it.
   const arrivedIds = seenIdsRef.current
     ? jam.songs.map((s) => s._id).filter((id) => !seenIdsRef.current.has(id))
     : [];
-  const forNotVotedView = (songs) =>
-    notVotedIds ? songs.filter((s) => notVotedIds.has(s._id) || arrivedIds.includes(s._id)) : songs;
-  const forView = (songs) => forNotVotedView(forFavoritesView(songs));
-  const notVotedEmptyMessage = "You've voted on every song";
-  const viewEmptyMessage = notVotedIds
-    ? { emptyMessage: notVotedEmptyMessage }
+  const forNewView = (songs) =>
+    newFilterIds ? songs.filter((s) => newFilterIds.has(s._id) || arrivedIds.includes(s._id)) : songs;
+  const forView = (songs) => forNewView(forFavoritesView(songs));
+  const newEmptyMessage = "No new songs. You're all caught up.";
+  const viewEmptyMessage = newFilterIds
+    ? { emptyMessage: newEmptyMessage }
     : showFavorites && { emptyMessage: favoritesViewEmptyMessage };
-  // The ones you haven't voted on yet get the pill
-  const newSongIds = notVotedQueue.filter((id) => arrivedIds.includes(id) && !dismissedNewIds.has(id));
+  // Added by others since you opened the page and still to decide on: the pill
+  const newSongIds = guideQueue.filter((id) => arrivedIds.includes(id) && !dismissedNewIds.has(id));
 
   return (
     <JamProvider initialJam={jam} setJam={setJam}>
@@ -232,9 +237,9 @@ export default function JamPage() {
 
       {jam.songs?.length > 0 && (
         <ListFilter
-          notVotedCount={notVotedQueue.length}
-          showNotVoted={!!notVotedIds}
-          onChange={(notVoted) => setNotVotedIds(notVoted ? new Set(notVotedQueue) : null)}
+          newCount={newIds.length}
+          showNew={!!newFilterIds}
+          onChange={(showNew) => setNewFilterIds(showNew ? new Set(newIds) : null)}
         />
       )}
 
@@ -415,8 +420,8 @@ function SectionHeader({ icon: Icon, label, collapsed, onToggle, muted = false }
   );
 }
 
-// "All" or just the songs you haven't voted on yet
-function ListFilter({ notVotedCount, showNotVoted, onChange }) {
+// "All" or just the songs that are new to you
+function ListFilter({ newCount, showNew, onChange }) {
   const chip = (active) => cn(
     'rounded-full border px-3 py-1 text-sm font-medium transition-colors',
     active
@@ -425,11 +430,11 @@ function ListFilter({ notVotedCount, showNotVoted, onChange }) {
   );
   return (
     <div className="mb-3 flex gap-2" role="group" aria-label="Show songs">
-      <button type="button" aria-pressed={!showNotVoted} className={chip(!showNotVoted)} onClick={() => onChange(false)}>
+      <button type="button" aria-pressed={!showNew} className={chip(!showNew)} onClick={() => onChange(false)}>
         All
       </button>
-      <button type="button" aria-pressed={showNotVoted} className={chip(showNotVoted)} onClick={() => onChange(true)}>
-        Not voted ({notVotedCount})
+      <button type="button" aria-pressed={showNew} className={chip(showNew)} onClick={() => onChange(true)}>
+        New ({newCount})
       </button>
     </div>
   );

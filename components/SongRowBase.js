@@ -11,8 +11,6 @@ const BaseSongRow = forwardRef(({
   isNext,
   hideType,
   hidePlayStats = false,
-  titleAdornment,
-  titleClassName,
   additionalInfo,
   className,
   onClick,
@@ -54,8 +52,7 @@ const BaseSongRow = forwardRef(({
               {/* Title and Artist Area */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1 md:gap-2 flex-wrap">
-                  {titleAdornment}
-                  <h2 className={cn('text-base md:text-lg font-semibold', isNext && 'text-primary', titleClassName)}>
+                  <h2 className={cn('text-base md:text-lg font-semibold', isNext && 'text-primary')}>
                     {song.title}
                   </h2>
                   {!hideType && (

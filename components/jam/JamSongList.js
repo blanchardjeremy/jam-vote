@@ -14,7 +14,8 @@ export default function JamSongList({
   lastAddedSongId,
   type,
   hostMode = false,
-  onVoteChange
+  onVoteChange,
+  onViewed
 }) {
   // Add ref for the newly added song
   const lastAddedRef = useRef(null);
@@ -58,6 +59,7 @@ export default function JamSongList({
           highlight={willHighlight}
           hostMode={hostMode}
           onVoteChange={onVoteChange}
+          onViewed={onViewed}
         />
       </li>
     );
