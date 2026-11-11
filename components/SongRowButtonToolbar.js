@@ -46,7 +46,9 @@ export default function SongRowButtonToolbar({
     <>
       <div className="flex items-center gap-1">
         <SongChordsButton song={song} />
-        <CaptainButtons jamSong={jamSong} />
+        {/* Host mode swaps the captain buttons for the sung button, to keep
+            the row from getting crowded */}
+        {!hostMode && <CaptainButtons jamSong={jamSong} />}
         {hostMode && (
           <SongRowButton
             icon={jamSong.played ? CheckCircleSolid : CheckCircleIcon}
