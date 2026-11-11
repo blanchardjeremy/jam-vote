@@ -86,18 +86,20 @@ export default function SongRow({
     await onTogglePlayed(jamSong._id);
   }, [jamSong._id, jamSong.played, onTogglePlayed]);
   
-  // Host tools: swipe right to make it a banger, left to make it a ballad.
-  // Works on sung songs too, since that's often when you notice. Only the
-  // swipe toward the other type does anything.
-  const setType = (type) =>
-    onEdit?.(jamSong._id, { type }, `Moved ${song.title} to ${type === 'banger' ? 'Bangers' : 'Ballads'}`);
+  // Host tools: swipe left to switch the song to the other type (banger <->
+  // ballad). Always the same direction, whichever type it is now. Works on
+  // sung songs too, since that's often when you notice.
+  const otherType = song.type === 'banger' ? 'ballad' : 'banger';
+  const otherSection = otherType === 'banger' ? 'Bangers' : 'Ballads';
   const hostSwipes = {
-    left: song.type !== 'ballad'
-      ? { label: 'Ballad', icon: <MusicalNoteIcon className="h-6 w-6" />, color: 'bg-sky-400', readyColor: 'bg-sky-600', onSwipe: () => setType('ballad') }
-      : null,
-    right: song.type !== 'banger'
-      ? { label: 'Banger', icon: <FireIcon className="h-6 w-6" />, color: 'bg-orange-400', readyColor: 'bg-orange-500', onSwipe: () => setType('banger') }
-      : null,
+    left: {
+      label: `Move to ${otherSection}`,
+      icon: otherType === 'banger' ? <FireIcon className="h-6 w-6" /> : <MusicalNoteIcon className="h-6 w-6" />,
+      color: otherType === 'banger' ? 'bg-orange-400' : 'bg-sky-400',
+      readyColor: otherType === 'banger' ? 'bg-orange-500' : 'bg-sky-600',
+      onSwipe: () => onEdit?.(jamSong._id, { type: otherType }, `Moved ${song.title} to ${otherSection}`),
+    },
+    right: null,
   };
 
   // Host tools: double-tap a song to add it to favorites. It only adds, so a
@@ -126,7 +128,7 @@ export default function SongRow({
   return (
     <>
       {/* Swipe left to vote (the easy thumb motion), right to captain.
-          With host tools on: right makes it a banger, left a ballad. */}
+          With host tools on: left moves it to the other section (banger <-> ballad). */}
       <div ref={rowRef}>
       <SwipeActions
         // Played songs can't be voted on or captained, but the host can
