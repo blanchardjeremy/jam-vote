@@ -5,9 +5,8 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
   HeartIcon,
-  AcademicCapIcon,
+  ForwardIcon,
   UserIcon,
-  QuestionMarkCircleIcon,
   ArrowUturnLeftIcon,
   XMarkIcon,
   ListBulletIcon,
@@ -17,7 +16,6 @@ import { Piano } from 'lucide-react';
 import { useJamPage } from '@/lib/hooks/useJamPage';
 import { useJamPusher } from '@/lib/hooks/useJamPusher';
 import { storage, keys, buildQueue } from '@/lib/utils/guideQueue';
-import { alsoMarkKnownForLove } from '@/lib/services/jamSongs';
 import { apiRequest } from '@/lib/services/apiHelpers';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -38,10 +36,10 @@ function firstAvailableIndex(queue, from, isAvailable) {
 // Lucide's piano, drawn at Heroicons' outline stroke width so it matches the others
 const PianoIcon = (props) => <Piano strokeWidth={1.5} {...props} />;
 
+// A vote means "I want to sing this one". Skip moves on without voting.
 const MAIN_ANSWERS = [
-  { id: 'love', label: 'I love it', icon: HeartIcon, className: 'text-rose-600 border-rose-200 bg-rose-50/40 hover:bg-rose-50' },
-  { id: 'know', label: 'I know it', icon: AcademicCapIcon, className: 'text-primary border-primary/30 bg-primary/[0.03] hover:bg-primary/5' },
-  { id: 'dontKnow', label: "I'm not sure", icon: QuestionMarkCircleIcon, className: 'text-gray-600 border-gray-200 hover:bg-gray-50' },
+  { id: 'vote', label: 'Vote', icon: HeartIcon, className: 'text-rose-600 border-rose-200 bg-rose-50/40 hover:bg-rose-50' },
+  { id: 'skip', label: 'Skip', icon: ForwardIcon, className: 'text-gray-600 border-gray-200 hover:bg-gray-50' },
 ];
 const CAPTAIN_ANSWERS = [
   { id: 'captain', captainType: 'regular', label: "I'll captain it", icon: UserIcon },
@@ -50,9 +48,8 @@ const CAPTAIN_ANSWERS = [
 
 // Color of the little "+1" that floats off the progress bar, per answer
 const ANSWER_ACCENT = {
-  love: 'text-rose-500',
-  know: 'text-primary',
-  dontKnow: 'text-gray-500',
+  vote: 'text-rose-500',
+  skip: 'text-gray-500',
   captain: 'text-indigo-600',
 };
 
@@ -84,13 +81,12 @@ const BEHIND = [
 ];
 // Which way each answer sends the card. Swiping that way gives the answer too
 // (captaining is buttons only).
-const FLY_DIRECTION = { love: 'up', know: 'right', dontKnow: 'left', captain: 'right' };
-const SWIPE_ANSWER = { up: 'love', right: 'know', left: 'dontKnow' };
+const FLY_DIRECTION = { vote: 'right', skip: 'left', captain: 'right' };
+const SWIPE_ANSWER = { right: 'vote', left: 'skip' };
 // How far (px) a card has to be dragged before letting go answers
 const SWIPE_DISTANCE = 100;
 // Off-screen transforms for each direction, for the top card's return on undo
 const OFFSCREEN = {
-  up: 'translateY(-110%)',
   right: 'translateX(110%) rotate(8deg)',
   left: 'translateX(-110%) rotate(-8deg)',
 };
@@ -122,7 +118,6 @@ export default function GuidedPickerPage() {
     isLoading,
     sortMethod,
     handleVote,
-    handleKnow,
     clearHighlightAfterDelay,
   } = useJamPage(params.slug);
 
@@ -239,10 +234,8 @@ export default function GuidedPickerPage() {
       toast.error(`Couldn't remove you as captain of "${songTitle(jamSongId)}": ${e.message}`);
     });
 
-  const markKnown = (jamSongId) => {
-    storage.set(keys.know(jamSongId), 'true');
-    inBackground(handleKnow(jamSongId, 'know'));
-  };
+  // Seen songs aren't offered again (kept on this device only)
+  const markSeen = (jamSongId) => storage.set(keys.seen(jamSongId), 'true');
 
   // Progress through this run: answered so far vs. answered + still to go
   const remaining = queue
@@ -279,7 +272,7 @@ export default function GuidedPickerPage() {
 
   const captain = (jamSongId, type, name) => {
     signUpAsCaptain(jamSongId, type, name);
-    markKnown(jamSongId);
+    markSeen(jamSongId);
     advance({ jamSongId, answer: 'captain', captainName: name });
   };
 
@@ -289,19 +282,13 @@ export default function GuidedPickerPage() {
     if (!currentSong) return;
     const id = currentSong._id;
 
-    if (answerId === 'love') {
-      storage.set(keys.love(id), 'true');
+    if (answerId === 'vote') {
+      storage.set(keys.vote(id), 'true');
       inBackground(handleVote(id, 'vote'));
-      // A heart also counts as a know (once per person)
-      const addedKnow = alsoMarkKnownForLove(id, (songId) => handleKnow(songId, 'know'));
-      advance({ jamSongId: id, answer: 'love', addedKnow });
-    } else if (answerId === 'know') {
-      markKnown(id);
-      advance({ jamSongId: id, answer: 'know' });
-    } else if (answerId === 'dontKnow') {
-      storage.set(keys.dontKnow(id), 'true');
-      inBackground(handleKnow(id, 'dontknow'));
-      advance({ jamSongId: id, answer: 'dontKnow' });
+      advance({ jamSongId: id, answer: 'vote' });
+    } else if (answerId === 'skip') {
+      markSeen(id);
+      advance({ jamSongId: id, answer: 'skip' });
     } else if (answerId === 'captain') {
       const name = storage.get('userFirstName');
       if (!name) {
@@ -325,21 +312,12 @@ export default function GuidedPickerPage() {
     const last = history[history.length - 1];
     if (!last) return;
     const id = last.jamSongId;
-    if (last.answer === 'love') {
-      storage.remove(keys.love(id));
+    if (last.answer === 'vote') {
+      storage.remove(keys.vote(id));
       inBackground(handleVote(id, 'unvote'));
-      // Undo also takes back a know that this heart added
-      if (last.addedKnow) {
-        storage.remove(keys.know(id));
-        inBackground(handleKnow(id, 'unknow'));
-      }
-    } else if (last.answer === 'know' || last.answer === 'captain') {
-      storage.remove(keys.know(id));
-      inBackground(handleKnow(id, 'unknow'));
+    } else {
+      storage.remove(keys.seen(id));
       if (last.answer === 'captain') inBackground(removeCaptain(id, last.captainName));
-    } else if (last.answer === 'dontKnow') {
-      storage.remove(keys.dontKnow(id));
-      inBackground(handleKnow(id, 'undontknow'));
     }
     setHistory((prev) => prev.slice(0, -1));
     setPosition(queue.indexOf(id));
@@ -506,7 +484,7 @@ export default function GuidedPickerPage() {
 
       {currentSong && history.length === 0 && (
         <p className="-mt-2 mb-4 text-center text-sm text-gray-500">
-          Or swipe the card: right if you know it, up if you love it, left if you&apos;re not sure.
+          Or swipe the card: right to vote, left to skip.
         </p>
       )}
 
@@ -535,16 +513,14 @@ export default function GuidedPickerPage() {
 // Stamps that fade in as a card is dragged toward an answer. Each one's
 // opacity comes from a CSS variable set while dragging (0 to 1).
 const STAMPS = [
-  { dir: 'right', answer: 'know', position: 'left-4 top-4 -rotate-12', tint: 'bg-primary/10', className: 'text-primary border-primary bg-white' },
-  { dir: 'left', answer: 'dontKnow', position: 'right-4 top-4 rotate-12', tint: 'bg-gray-500/10', className: 'text-gray-600 border-gray-500 bg-white' },
-  { dir: 'up', answer: 'love', position: 'inset-x-0 top-4 mx-auto w-fit', tint: 'bg-rose-500/10', className: 'text-rose-600 border-rose-500 bg-white' },
+  { dir: 'right', answer: 'vote', position: 'left-4 top-4 -rotate-12', tint: 'bg-rose-500/10', className: 'text-rose-600 border-rose-500 bg-white' },
+  { dir: 'left', answer: 'skip', position: 'right-4 top-4 rotate-12', tint: 'bg-gray-500/10', className: 'text-gray-600 border-gray-500 bg-white' },
 ].map((stamp) => ({ ...stamp, ...MAIN_ANSWERS.find((a) => a.id === stamp.answer) }));
 
-const SWIPE_VARS = ['--swipe-right', '--swipe-left', '--swipe-up'];
+const SWIPE_VARS = ['--swipe-right', '--swipe-left'];
 
 // Which way a drag points, and how far along it is (1 = far enough to answer)
 function swipeOf(dx, dy) {
-  if (-dy > Math.abs(dx)) return { dir: 'up', amount: -dy / SWIPE_DISTANCE };
   if (Math.abs(dx) >= Math.abs(dy)) {
     return { dir: dx > 0 ? 'right' : 'left', amount: Math.abs(dx) / SWIPE_DISTANCE };
   }
@@ -575,7 +551,7 @@ function useSwipe(onSwipe) {
       if (e.button !== 0 || drag.current) return;
       // In case the last drag ended without a click to swallow
       justDragged.current = false;
-      drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, dy: 0, vx: 0, vy: 0, t: e.timeStamp, active: false, ready: null };
+      drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, dy: 0, vx: 0, t: e.timeStamp, active: false, ready: null };
     },
     onPointerMove: (e) => {
       const d = drag.current;
@@ -597,7 +573,6 @@ function useSwipe(onSwipe) {
       }
       const dt = Math.max(1, e.timeStamp - d.t);
       d.vx = (dx - d.dx) / dt;
-      d.vy = (dy - d.dy) / dt;
       Object.assign(d, { dx, dy, t: e.timeStamp });
       el.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx * 0.05}deg)`;
       const { dir, amount } = swipeOf(dx, dy);
@@ -616,7 +591,7 @@ function useSwipe(onSwipe) {
       const el = e.currentTarget;
       const { dir, amount } = swipeOf(d.dx, d.dy);
       // A quick flick counts even if it's short of the full distance
-      const speed = dir === 'up' ? -d.vy : dir === 'right' ? d.vx : -d.vx;
+      const speed = dir === 'right' ? d.vx : -d.vx;
       if (dir && (amount >= 1 || (amount >= 0.35 && speed > 0.5))) {
         const from = el.style.transform;
         reset(el, false);
@@ -858,7 +833,7 @@ function ProgressBar({ done, total, progress, feedback }) {
                   ANSWER_ACCENT[feedback.answer]
                 )}
               >
-                {feedback.answer === 'love' ? <HeartIcon className="h-4 w-4 fill-current" /> : '+1'}
+                {feedback.answer === 'vote' ? <HeartIcon className="h-4 w-4 fill-current" /> : '+1'}
               </span>
               {feedback.milestone && <Confetti />}
             </span>

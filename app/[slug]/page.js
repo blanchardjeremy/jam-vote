@@ -7,7 +7,6 @@ import { useJamPusher } from '@/lib/hooks/useJamPusher';
 import { getGroupedSongs } from '@/lib/utils/songGrouping';
 import JamHeader from '@/components/jam/JamHeader';
 import JamToolbar from '@/components/jam/JamToolbar';
-import { HeartLegend } from '@/components/SongVoteControls';
 import JamSongList from '@/components/jam/JamSongList';
 import JamEmptyState from '@/components/jam/JamEmptyState';
 import { FireIcon, MusicalNoteIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
@@ -26,8 +25,7 @@ import FavoriteSuggestions, { pickRandomFavorites } from '@/components/jam/Favor
 
 // With "Include favorites" on (⋮ menu), only songs with at least this many
 // loves are listed (played songs always stay visible), and a few favorites
-// are suggested under each section. Knows don't count: plenty of people
-// knowing a song doesn't mean the room wants to play it.
+// are suggested under each section.
 const FAVORITES_VIEW_MIN_COUNT = 5;
 const FAVORITE_SUGGESTION_COUNT = 5;
 
@@ -68,7 +66,6 @@ export default function JamPage() {
     handleEdit,
     handleRemove,
     handleVote,
-    handleKnow,
     allSongs,
     handleTogglePlayed,
     handleDeleteJam,
@@ -144,7 +141,6 @@ export default function JamPage() {
       songs={songs}
       nextSongId={nextSongId}
       onVote={handleVote}
-      onKnow={handleKnow}
       onRemove={setSongToDelete}
       onTogglePlayed={handleTogglePlayed}
       onEdit={handleEdit}
@@ -218,7 +214,6 @@ export default function JamPage() {
         setShowFavorites={setShowFavorites}
       />
 
-      {jam.songs?.length > 0 && <HeartLegend className="-mt-2 mb-4 sm:-mt-4" />}
 
       <JamToolbar 
         songAutocompleteRef={songAutocompleteRef}

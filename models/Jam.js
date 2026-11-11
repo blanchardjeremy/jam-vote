@@ -33,17 +33,6 @@ const jamSongSchema = new mongoose.Schema({
     default: 0,
     required: false
   },
-  knows: {
-    type: Number,
-    default: 0,
-    required: false
-  },
-  // People who answered "I don't know it" in guided voting
-  dontKnows: {
-    type: Number,
-    default: 0,
-    required: false
-  },
   played: {
     type: Boolean,
     default: false,

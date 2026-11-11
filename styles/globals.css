@@ -198,9 +198,6 @@
 @keyframes guide-fly-left {
   to { transform: translateX(-115%) rotate(-12deg); opacity: 0; }
 }
-@keyframes guide-fly-up {
-  to { transform: translateY(-120%); opacity: 0; }
-}
 @keyframes guide-card-sink {
   to { transform: translateY(10px) scale(0.95); opacity: 0; }
 }
@@ -209,9 +206,6 @@
 }
 .guide-fly-left {
   animation: guide-fly-left 280ms cubic-bezier(0.4, 0, 0.9, 0.6) forwards;
-}
-.guide-fly-up {
-  animation: guide-fly-up 280ms cubic-bezier(0.4, 0, 0.9, 0.6) forwards;
 }
 .guide-card-sink {
   animation: guide-card-sink 240ms ease-out forwards;
@@ -227,7 +221,6 @@
   /* No movement: the old card just fades out as the new one fades in */
   .guide-fly-right,
   .guide-fly-left,
-  .guide-fly-up,
   .guide-card-sink {
     animation: guide-fade-out 150ms ease-out forwards;
   }
