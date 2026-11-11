@@ -116,6 +116,20 @@ export default function JamPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showFavorites, jamId, allSongs]);
 
+  // The refresh button on a suggestions box: a new random pick for that box.
+  // Skips the ones just shown when there are enough other favorites.
+  const refreshFavoriteSuggestions = (key) => {
+    const inJam = new Set((jam.songs || []).map((s) => s.song?._id || s.song));
+    const type = key === 'any' ? null : key;
+    const shown = (favoriteSuggestions?.[key] || []).map((s) => s._id);
+    const withoutShown = new Set([...inJam, ...shown]);
+    let picks = pickRandomFavorites(allSongs, type, withoutShown, FAVORITE_SUGGESTION_COUNT);
+    if (picks.length < FAVORITE_SUGGESTION_COUNT) {
+      picks = pickRandomFavorites(allSongs, type, inJam, FAVORITE_SUGGESTION_COUNT);
+    }
+    setFavoriteSuggestions((prev) => ({ ...prev, [key]: picks }));
+  };
+
   // After a suggested favorite is edited, show the changes; if it's no longer
   // a favorite, drop it from the suggestions.
   const handleSuggestionUpdated = (updated) => {
@@ -263,7 +277,7 @@ export default function JamPage() {
                         ...viewEmptyMessage
                       })}
                     </ul>
-                    <FavoriteSuggestions songs={favoriteSuggestions?.banger} hideTypeBadge onSongUpdated={handleSuggestionUpdated} />
+                    <FavoriteSuggestions songs={favoriteSuggestions?.banger} hideTypeBadge onSongUpdated={handleSuggestionUpdated} onRefresh={() => refreshFavoriteSuggestions('banger')} />
                   </>
                 )}
               </div>
@@ -287,7 +301,7 @@ export default function JamPage() {
                         ...viewEmptyMessage
                       })}
                     </ul>
-                    <FavoriteSuggestions songs={favoriteSuggestions?.ballad} hideTypeBadge onSongUpdated={handleSuggestionUpdated} />
+                    <FavoriteSuggestions songs={favoriteSuggestions?.ballad} hideTypeBadge onSongUpdated={handleSuggestionUpdated} onRefresh={() => refreshFavoriteSuggestions('ballad')} />
                   </>
                 )}
               </div>
@@ -302,7 +316,7 @@ export default function JamPage() {
                   ...viewEmptyMessage
                 })}
               </ul>
-              <FavoriteSuggestions songs={favoriteSuggestions?.any} onSongUpdated={handleSuggestionUpdated} />
+              <FavoriteSuggestions songs={favoriteSuggestions?.any} onSongUpdated={handleSuggestionUpdated} onRefresh={() => refreshFavoriteSuggestions('any')} />
             </>
           )}
 

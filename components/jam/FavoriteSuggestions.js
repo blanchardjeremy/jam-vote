@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { StarIcon } from '@heroicons/react/24/solid';
-import { PencilIcon, EllipsisVerticalIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, EllipsisVerticalIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import BaseSongRow from '@/components/SongRowBase';
 import SongChordsButton from '@/components/SongChordsButton';
 import SongRowButton from '@/components/SongRowButton';
@@ -16,14 +16,33 @@ import { useTapToOpenMenu } from '@/lib/hooks/useTapToOpenMenu';
 // "Include favorites": a few favorite songs (not already in the jam) shown
 // under a section's list as ideas. Each row has the chords button and a ⋮ menu
 // (Edit song); play count / last played are left out to keep it uncluttered.
-export default function FavoriteSuggestions({ songs, hideTypeBadge = false, onSongUpdated }) {
+// The refresh button at the top right swaps in a new random pick.
+export default function FavoriteSuggestions({ songs, hideTypeBadge = false, onSongUpdated, onRefresh }) {
+  const [spinKey, setSpinKey] = useState(0);
   if (!songs?.length) return null;
 
   return (
     <div className="border-t-2 border-amber-200 bg-amber-50/40">
-      <p className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
-        From Favorites (Random)
-      </p>
+      <div className="flex items-center justify-between pl-4 pr-2 pt-2">
+        <p className="pt-1 pb-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
+          From Favorites (Random)
+        </p>
+        {onRefresh && (
+          <button
+            type="button"
+            onClick={() => {
+              setSpinKey((k) => k + 1);
+              onRefresh();
+            }}
+            aria-label="Show different favorites"
+            title="Show different favorites"
+            className="rounded-md p-1.5 text-amber-700 transition-colors hover:bg-amber-100 active:bg-amber-200"
+          >
+            {/* Spins once per tap */}
+            <ArrowPathIcon key={spinKey} className={`h-4 w-4 ${spinKey ? 'favorites-refresh-spin' : ''}`} />
+          </button>
+        )}
+      </div>
       <ul className="divide-y divide-amber-100">
         {songs.map((song) => (
           <li key={song._id}>
