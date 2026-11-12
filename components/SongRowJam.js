@@ -1,14 +1,16 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import SongFormModal from "@/components/CreateSongModal";
 import SongRowButtonToolbar from "@/components/SongRowButtonToolbar";
 import { toast } from "sonner";
-import { UserIcon } from "@heroicons/react/24/solid";
+import { UserIcon, FireIcon, MusicalNoteIcon, StarIcon } from "@heroicons/react/24/solid";
 import { UserIcon as UserOutline } from "@heroicons/react/24/outline";
-import HeartToggle, { yourVote, toggleVote, markSeen, VoteHeart } from "@/components/SongVoteControls";
+import HeartToggle, { yourVote, toggleVote, VoteHeart } from "@/components/SongVoteControls";
 import SwipeActions from "@/components/SwipeActions";
 import CaptainNameModal from "@/components/CaptainNameModal";
 import { useJam } from "@/components/JamContext";
 import { signUpAsCaptain, removeAsCaptain } from "@/lib/services/captains";
+import { markViewed } from "@/lib/utils/guideQueue";
+import { useSeenOnScreen } from "@/lib/hooks/useSeenOnScreen";
 import CaptainBadges from "@/components/CaptainBadges";
 import BaseSongRow from "@/components/SongRowBase";
 
@@ -22,7 +24,8 @@ export default function SongRow({
   hideType,
   highlight,
   hostMode,
-  onVoteChange
+  onVoteChange,
+  onViewed
 }) {
   const { song } = jamSong;
   const { jam } = useJam();
@@ -42,8 +45,15 @@ export default function SongRow({
     onVoteChange?.();
   };
   const voteProps = { jamSong, vote, onVote, onChange };
-  // Songs you haven't seen yet get a dot, like an unread email
+  // Once a new song's row has been on screen for a second it counts as
+  // viewed, quietly in the background. This drives the "New" filter only;
+  // there's nothing to see on the row itself.
   const isNew = vote === 'new' && !jamSong.played;
+  const rowRef = useSeenOnScreen(isNew, () => {
+    markViewed(jamSong._id);
+    refreshVote();
+    onViewed?.();
+  });
 
   // Your first name (saved on this device once you've given it), and whether
   // you already captain this song. Read after mount, like the vote.
@@ -76,20 +86,79 @@ export default function SongRow({
     await onTogglePlayed(jamSong._id);
   }, [jamSong._id, jamSong.played, onTogglePlayed]);
   
+  // Host tools: swipe left to switch the song to the other type (banger <->
+  // ballad). Always the same direction, whichever type it is now. Works on
+  // sung songs too, since that's often when you notice.
+  const otherType = song.type === 'banger' ? 'ballad' : 'banger';
+  const otherSection = otherType === 'banger' ? 'Bangers' : 'Ballads';
+  const hostSwipes = {
+    left: {
+      label: `Move to ${otherSection}`,
+      icon: otherType === 'banger' ? <FireIcon className="h-6 w-6" /> : <MusicalNoteIcon className="h-6 w-6" />,
+      color: otherType === 'banger' ? 'bg-orange-400' : 'bg-sky-400',
+      readyColor: otherType === 'banger' ? 'bg-orange-500' : 'bg-sky-600',
+      onSwipe: () => {
+        // The list updates right away, so confirm right away too. If the
+        // save fails, an error shows and the move is undone.
+        toast.success(`Moved ${song.title} to ${otherSection}`);
+        Promise.resolve(onEdit?.(jamSong._id, { type: otherType }, null)).catch(() => {});
+      },
+    },
+    right: null,
+  };
+
+  // Host tools: double-tap a song to add it to favorites. It only adds, so a
+  // stray double tap can't take a favorite away.
+  const lastTap = useRef(0);
+  // Bumped on each favorite double tap to replay the star pop over the row
+  const [starPop, setStarPop] = useState(0);
+  const handleDoubleTap = (e) => {
+    // Taps on the row's buttons and links don't count
+    if (e.target.closest('button, a')) return;
+    const now = Date.now();
+    if (now - lastTap.current > 350) {
+      lastTap.current = now;
+      return;
+    }
+    lastTap.current = 0;
+    setStarPop((n) => n + 1);
+    if (song.favorite) {
+      toast(`${song.title} is already a favorite`);
+      return;
+    }
+    // Confirm right away; if the save fails, an error shows instead
+    toast.success(`Added ${song.title} to favorites`);
+    Promise.resolve(onEdit?.(jamSong._id, { favorite: true }, null)).catch(() => {});
+  };
+
   const handleEdit = async (updatedSong) => {
     onEdit?.(jamSong._id, updatedSong);
   };
   
   return (
     <>
-      {/* Swipe left to vote (the easy thumb motion), right to captain */}
+      {/* Swipe left to vote (the easy thumb motion), right to captain.
+          With host tools on: left moves it to the other section (banger <-> ballad). */}
+      <div ref={rowRef} className="relative">
+        {/* The star that pops up when the host double-taps to favorite */}
+        {starPop > 0 && (
+          <div
+            key={starPop}
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"
+            onAnimationEnd={() => setStarPop(0)}
+          >
+            <StarIcon className="favorite-star-pop h-14 w-14 text-amber-400 drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)]" />
+          </div>
+        )}
       <SwipeActions
-        // Played songs can't be voted on or captained any more
-        disabled={jamSong.played || !vote}
-        left={vote === 'voted'
+        // Played songs can't be voted on or captained, but the host can
+        // still move them between Bangers and Ballads
+        disabled={hostMode ? false : jamSong.played || !vote}
+        left={hostMode ? hostSwipes.left : vote === 'voted'
           ? { label: 'Unvote', icon: <VoteHeart className="h-6 w-6" />, color: 'bg-gray-400', readyColor: 'bg-gray-500', onSwipe: () => toggleVote(jamSong, vote, voteProps) }
           : { label: 'Vote', icon: <VoteHeart filled className="h-6 w-6" />, color: 'bg-rose-300', readyColor: 'bg-rose-500', onSwipe: () => toggleVote(jamSong, vote, voteProps) }}
-        right={isCaptain
+        right={hostMode ? hostSwipes.right : isCaptain
           ? { label: 'Uncaptain', icon: <UserOutline className="h-6 w-6" />, color: 'bg-gray-400', readyColor: 'bg-gray-500', onSwipe: toggleCaptain }
           : { label: 'Captain', icon: <UserIcon className="h-6 w-6" />, color: 'bg-indigo-400', readyColor: 'bg-indigo-600', onSwipe: toggleCaptain }}
       >
@@ -99,12 +168,7 @@ export default function SongRow({
         hideType={hideType}
         // Plays / last played live in the Edit Song form to keep the jam list uncluttered
         hidePlayStats
-        // Tapping a new song marks it seen
-        onClick={isNew ? () => markSeen(jamSong, vote, voteProps) : undefined}
-        titleClassName={isNew && 'text-primary'}
-        titleAdornment={isNew && (
-          <span className="h-2 w-2 shrink-0 rounded-full bg-primary" role="img" aria-label="Not voted yet" />
-        )}
+        onClick={hostMode ? handleDoubleTap : undefined}
         className={jamSong.played ? 'bg-gray-200 opacity-50' : ''}
         leftControl={<HeartToggle {...voteProps} />}
         rightActions={
@@ -121,6 +185,7 @@ export default function SongRow({
         highlight={highlight}
       />
       </SwipeActions>
+      </div>
 
       {/* Modals */}
       <CaptainNameModal

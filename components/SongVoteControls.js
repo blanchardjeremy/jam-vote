@@ -1,28 +1,21 @@
-import { keys, storage, voteStatus } from "@/lib/utils/guideQueue";
+import { keys, storage, voteStatus, markViewed } from "@/lib/utils/guideQueue";
 import { cn } from "@/lib/utils";
 
 // This device's vote on a song: 'voted' | 'seen' | 'new'
 export const yourVote = voteStatus;
 
-// Vote for a song, or take the vote back. Taking it back still leaves the
-// song marked seen, so it doesn't come back as new.
+// Vote for a song, or take the vote back. Taking it back leaves the song
+// marked viewed, so it doesn't come back as new.
 export function toggleVote(jamSong, vote, { onVote, onChange }) {
   const id = jamSong._id;
   const voted = vote === 'voted';
   if (voted) {
     storage.remove(keys.vote(id));
-    storage.set(keys.seen(id), 'true');
+    markViewed(id);
   } else {
     storage.set(keys.vote(id), 'true');
   }
   if (onVote) Promise.resolve(onVote(id, voted ? 'unvote' : 'vote')).catch(() => {});
-  onChange?.();
-}
-
-// Tapping a new song's row marks it seen, so it loses its new-song dot
-export function markSeen(jamSong, vote, { onChange }) {
-  if (vote !== 'new' || jamSong.played) return;
-  storage.set(keys.seen(jamSong._id), 'true');
   onChange?.();
 }
 
