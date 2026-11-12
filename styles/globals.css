@@ -258,3 +258,14 @@
 @keyframes guide-fade-out {
   to { opacity: 0; }
 }
+
+/* Favorites suggestions refresh button: one turn per tap */
+@keyframes favorites-refresh-spin {
+  to { transform: rotate(360deg); }
+}
+.favorites-refresh-spin {
+  animation: favorites-refresh-spin 450ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .favorites-refresh-spin { animation: none; }
+}
